@@ -45,7 +45,7 @@ source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
 
 # Install in editable mode (This triggers the Cython compilation)
 pip install -e .
-
+```
 
 ---
 
