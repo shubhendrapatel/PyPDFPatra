@@ -62,11 +62,15 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         style = getattr(box.node, "style", {})
 
         # Using W3C model: box.x/y is margin origin, box.w/h is content box dimensions
-        # Backgrounds paint over the padding and border box.
-        padding_x = box.x + box.margin_left
-        padding_y = box.y + box.margin_top
-        padding_w = box.padding_left + box.w + box.padding_right
-        padding_h = box.padding_top + box.h + box.padding_bottom
+        border_left = getattr(box, "border_left", 0)
+        border_right = getattr(box, "border_right", 0)
+        border_top = getattr(box, "border_top", 0)
+        border_bottom = getattr(box, "border_bottom", 0)
+
+        border_box_x = box.x + box.margin_left
+        border_box_y = box.y + box.margin_top
+        border_box_w = border_left + box.padding_left + box.w + box.padding_right + border_right
+        border_box_h = border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
 
         # Paint Backgrounds spanning multiple pages
         bg_color_str = style.get("background-color")
@@ -74,37 +78,53 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             r, g, b = _parse_color(bg_color_str)
             pdf.set_fill_color(r, g, b)
             
-            start_page = int(padding_y / PAGE_HEIGHT)
-            end_page = int((padding_y + padding_h) / PAGE_HEIGHT)
+            start_page = int(border_box_y / PAGE_HEIGHT)
+            end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
             
             for p in range(start_page, end_page + 1):
                 _ensure_page(pdf, p)
                 
-                local_y = padding_y - (p * PAGE_HEIGHT)
-                local_h = padding_h
+                local_y = border_box_y - (p * PAGE_HEIGHT)
+                local_h = border_box_h
                 
-                # Clip top if it bleeds from a previous page
                 if local_y < 0:
                     local_h += local_y
                     local_y = 0
                 
-                # Clip bottom if it bleeds into the next page
                 if local_y + local_h > PAGE_HEIGHT:
                     local_h = PAGE_HEIGHT - local_y
                     
                 if local_h > 0:
-                    pdf.rect(x=padding_x, y=local_y, w=padding_w, h=local_h, style="F")
+                    pdf.rect(x=border_box_x, y=local_y, w=border_box_w, h=local_h, style="F")
             
-            # CRITICAL FIX: Reset fill color to prevent black bleeding
             pdf.set_fill_color(0, 0, 0)
+            
+        # Draw Borders (MVP: Solid rectangles on the first page of the box)
+        for edge, b_w, offset_x, offset_y, w, h in [
+            ("top", border_top, border_box_x, border_box_y, border_box_w, border_top),
+            ("bottom", border_bottom, border_box_x, border_box_y + border_box_h - border_bottom, border_box_w, border_bottom),
+            ("left", border_left, border_box_x, border_box_y + border_top, border_left, border_box_h - border_top - border_bottom),
+            ("right", border_right, border_box_x + border_box_w - border_right, border_box_y + border_top, border_right, border_box_h - border_top - border_bottom),
+        ]:
+            if b_w > 0 and style.get(f"border-{edge}-style", "solid") not in ("none", "hidden"):
+                color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
+                r, g, b = _parse_color(color_str)
+                pdf.set_fill_color(r, g, b)
+                
+                page_idx = int(offset_y / PAGE_HEIGHT)
+                _ensure_page(pdf, page_idx)
+                local_y = offset_y - (page_idx * PAGE_HEIGHT)
+                if h > 0 and w > 0:
+                    pdf.rect(x=offset_x, y=local_y, w=w, h=h, style="F")
+                pdf.set_fill_color(0, 0, 0)
 
         # Paint Text Content on a specific page
         if isinstance(box, TextBox):
             text_content = box.text_content
 
             if text_content:
-                content_x = padding_x + box.padding_left
-                content_y = padding_y + box.padding_top
+                content_x = border_box_x + border_left + box.padding_left
+                content_y = border_box_y + border_top + box.padding_top
                 
                 page_idx = int(content_y / PAGE_HEIGHT)
                 _ensure_page(pdf, page_idx)
