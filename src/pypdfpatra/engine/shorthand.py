@@ -1,0 +1,73 @@
+"""
+pypdfpatra.engine.shorthand
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Provides functions to expand W3C CSS shorthand properties into their
+fundamental sub-properties (e.g., margin: 10px 20px -> margin-top, etc).
+"""
+
+__all__ = ["expand_shorthand_properties"]
+
+
+def _expand_quad_shorthand(prop: str, value: str, output_dict: dict) -> None:
+    """
+    Expands TRBL (Top, Right, Bottom, Left) shorthands like margin and padding.
+    W3C Spec:
+    - 1 value: Top, Right, Bottom, Left
+    - 2 values: [Top, Bottom], [Right, Left]
+    - 3 values: Top, [Right, Left], Bottom
+    - 4 values: Top, Right, Bottom, Left
+    """
+    if not value:
+        return
+
+    # A simple split by whitespace handles most basic pixel/em cases.
+    parts = value.strip().split()
+    parts_count = len(parts)
+
+    if parts_count == 1:
+        top = right = bottom = left = parts[0]
+    elif parts_count == 2:
+        top = bottom = parts[0]
+        right = left = parts[1]
+    elif parts_count == 3:
+        top = parts[0]
+        right = left = parts[1]
+        bottom = parts[2]
+    elif parts_count >= 4:
+        top = parts[0]
+        right = parts[1]
+        bottom = parts[2]
+        left = parts[3]
+    else:
+        return
+
+    output_dict[f"{prop}-top"] = top
+    output_dict[f"{prop}-right"] = right
+    output_dict[f"{prop}-bottom"] = bottom
+    output_dict[f"{prop}-left"] = left
+
+
+def expand_shorthand_properties(style_dict: dict) -> dict:
+    """
+    Takes a dictionary of computed CSS properties and explodes any shorthand
+    properties into their individual fundamental W3C components.
+
+    Args:
+        style_dict (dict): A dictionary mapping CSS properties to their string values.
+
+    Returns:
+        dict: A new dictionary with shorthands fully expanded.
+    """
+    expanded = {}
+    
+    for prop, val in style_dict.items():
+        if prop in ("margin", "padding"):
+            _expand_quad_shorthand(prop, val, expanded)
+        else:
+            # We preserve existing fundamental properties
+            # If the user explicitly defined `margin-top: 10px; margin: 0px`,
+            # we will overwrite but for simpler AST parsing this is usually handled
+            # by cascade order. Right now simply inject.
+            expanded[prop] = val
+
+    return expanded

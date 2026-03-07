@@ -231,6 +231,10 @@ def resolve_styles(node: Node, parent_style: dict = None) -> None:
         if str(val).lower() == "inherit" and prop in parent_style:
             computed_style[prop] = parent_style[prop]
 
+    # 5.5 Expand all shorthands (e.g., margin -> margin-top, margin-bottom...)
+    from pypdfpatra.engine.shorthand import expand_shorthand_properties
+    computed_style = expand_shorthand_properties(computed_style)
+
     # Assign finalized dict back to node
     node.style = computed_style
 
