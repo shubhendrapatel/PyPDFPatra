@@ -17,13 +17,6 @@ ext_modules = cythonize(
             if __import__("sys").platform == "win32"
             else ["-O3"],
         ),
-        Extension(
-            "pypdfpatra.engine.layout",
-            sources=["src/pypdfpatra/engine/layout.pyx"],
-            extra_compile_args=["/O2"]
-            if __import__("sys").platform == "win32"
-            else ["-O3"],
-        ),
     ],
     compiler_directives={
         "boundscheck": False,
