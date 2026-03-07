@@ -29,11 +29,28 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
     for rule in rules:
         # Check if the rule is a 'Qualified Rule' (has a selector and declarations)
         if isinstance(rule, tinycss2.ast.QualifiedRule):
-            # Convert the selector tokens to a string (e.g. ['div'] -> 'div')
-            selector = "".join([t.value for t in rule.prelude if hasattr(t, "value")])
+            # Convert the selector tokens to a string (e.g. ['div'], ['.', 'custom-box'])
+            selector = "".join([t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t) for t in rule.prelude]).strip()
 
-            # Simple Matcher: Check if tag name matches selector
-            if selector.strip() == node.tag:
+            matched = False
+            # 1. ID Matcher (#my-id)
+            if selector.startswith("#"):
+                target_id = selector[1:]
+                if node.props.get("id") == target_id:
+                    matched = True
+            # 2. Class Matcher (.my-class)
+            elif selector.startswith("."):
+                target_class = selector[1:]
+                # Handle multiple classes (e.g., class="btn primary")
+                node_classes = node.props.get("class", "").split()
+                if target_class in node_classes:
+                    matched = True
+            # 3. Simple Tag Matcher (div)
+            else:
+                if selector == node.tag:
+                    matched = True
+
+            if matched:
                 _inject_declarations(node, rule.content)
 
     # 1.5. Apply Inline Styles (e.g. <div style="...">)
@@ -49,7 +66,7 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
             if isinstance(decl, tinycss2.ast.Declaration):
                 node.style[decl.name] = "".join(
                     [
-                        str(t.value) if hasattr(t, "value") else str(t)
+                        t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t)
                         for t in decl.value
                     ]
                 )
@@ -73,8 +90,9 @@ def _inject_declarations(node: Node, content: List[tinycss2.ast.Node]) -> None:
     declarations = tinycss2.parse_declaration_list(content)
     for decl in declarations:
         if isinstance(decl, tinycss2.ast.Declaration):
-            # Store the property and its value in the high-speed Node.style
-            # Convert all values to strings to handle both string and numeric tokens
             node.style[decl.name] = "".join(
-                [str(t.value) if hasattr(t, "value") else str(t) for t in decl.value]
-            )
+                [
+                    t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t)
+                    for t in decl.value
+                ]
+            ).strip()
