@@ -1,4 +1,3 @@
-from typing import List
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
 from pypdfpatra.engine.font_metrics import measure_text, get_line_height
 

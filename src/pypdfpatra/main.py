@@ -4,8 +4,6 @@ pypdfpatra.main
 The public WeasyPrint-style API for PyPDFPatra.
 """
 
-# TODO: use tinycss2 for css parsing
-import tinycss2
 import fpdf
 
 from pypdfpatra.api import build_tree
