@@ -11,10 +11,22 @@ from pypdfpatra.engine.font_metrics import parse_font
 
 
 def _parse_color(color_str: str) -> tuple:
-    """Parses a hex color string (e.g. '#ff0000') to an RGB tuple."""
+    """Parses a hex color string or common named color to an RGB tuple."""
     if not color_str:
         return (0, 0, 0)
-    color_str = color_str.strip()
+    color_str = color_str.strip().lower()
+    
+    named_colors = {
+        "black": (0, 0, 0), "white": (255, 255, 255), "red": (255, 0, 0),
+        "green": (0, 128, 0), "blue": (0, 0, 255), "yellow": (255, 255, 0),
+        "cyan": (0, 255, 255), "magenta": (255, 0, 255), "gray": (128, 128, 128),
+        "grey": (128, 128, 128), "silver": (192, 192, 192), "transparent": (0, 0, 0),
+        "currentcolor": (0, 0, 0), "inherit": (0, 0, 0)
+    }
+    
+    if color_str in named_colors:
+        return named_colors[color_str]
+
     if color_str.startswith("#"):
         try:
             if len(color_str) == 7:
@@ -106,9 +118,23 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             ("left", border_left, border_box_x, border_box_y + border_top, border_left, border_box_h - border_top - border_bottom),
             ("right", border_right, border_box_x + border_box_w - border_right, border_box_y + border_top, border_right, border_box_h - border_top - border_bottom),
         ]:
-            if b_w > 0 and style.get(f"border-{edge}-style", "solid") not in ("none", "hidden"):
+            border_style = style.get(f"border-{edge}-style", style.get("border-style", "solid"))
+            if b_w > 0 and border_style not in ("none", "hidden"):
                 color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
                 r, g, b = _parse_color(color_str)
+                
+                # Basic 3D effect for inset/outset
+                if border_style == "outset":
+                    if edge in ("top", "left"):
+                        r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+                    else:
+                        r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+                elif border_style == "inset":
+                    if edge in ("top", "left"):
+                        r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+                    else:
+                        r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+                
                 pdf.set_fill_color(r, g, b)
                 
                 page_idx = int(offset_y / PAGE_HEIGHT)
