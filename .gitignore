@@ -1,0 +1,41 @@
+# --- Python & Cython Specific ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.c
+*.cpp
+
+# Generated C/C++ files from Cython
+src/pypdfpatra/engine/*.c
+src/pypdfpatra/engine/*.cpp
+
+# --- Build & Distribution ---
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Virtual Environment ---
+.venv/
+venv/
+ENV/
+env/
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+

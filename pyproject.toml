@@ -1,0 +1,33 @@
+[project]
+name = "pypdfpatra"
+version = "0.1.0"
+dependencies = [
+    "tinycss2", # For CSS parsing
+    "pillow",   # For image handling
+    "ruff",     # linting propose
+    "fpdf2",    # MVP PDF Rendering backend
+]
+
+[build-system]
+requires = ["hatchling", "hatch-cython", "Cython>=3.0"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.wheel.hooks.cython]
+dependencies = ["hatch-cython"]
+
+[tool.hatch.build.targets.wheel.hooks.cython.options]
+directives = { boundscheck = false, wraparound = false, language_level = "3" }
+compile_args = ["-O3"]
+
+# Only compile Cython source files inside the engine directory.
+# This prevents hatch-cython from touching api.py, main.py, etc. which
+# must remain as pure-Python since they subclass Python-stdlib classes.
+[tool.hatch.build.targets.wheel.hooks.cython.options.files]
+targets = [
+    "*/engine/*.pyx",
+]
+
+[tool.ruff]
+# Exclude the engine folder where Cython files live
+exclude = ["src/pypdfpatra/engine/*.pyx", "src/pypdfpatra/engine/*.pxd"]

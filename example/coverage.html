@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PyPDFPatra Tag Coverage Test</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>Tag Coverage Test (H1)</h1>
+    <p>This document tests the default User-Agent stylesheet for various HTML elements implemented in PyPDFPatra.</p>
+
+    <hr>
+
+    <h2>Headings (H2)</h2>
+    <h3>Heading 3 (H3)</h3>
+    <h4>Heading 4 (H4)</h4>
+    <h5>Heading 5 (H5)</h5>
+    <h6>Heading 6 (H6)</h6>
+
+    <hr>
+
+    <h2>Block Elements</h2>
+    <div>This is a generic block-level <b>div</b> element.</div>
+    <p>This is a paragraph <b>p</b> with default top/bottom margins.</p>
+    <blockquote>
+        This is a <b>blockquote</b>. It should have left and right margins (40px) according to WebKit defaults.
+    </blockquote>
+    <figure style="background-color: #eee;">
+        This is a <b>figure</b>. It behaves similarly to blockquote with margins.
+    </figure>
+    <pre>This is a pre element.
+It preserves explicit
+line breaks and uses monospace.</pre>
+
+    <hr>
+
+    <h2>Lists</h2>
+    <h3>Unordered List (ul)</h3>
+    <ul>
+        <li>First item</li>
+        <li>Second item</li>
+        <li>Third item</li>
+    </ul>
+
+    <h3>Ordered List (ol)</h3>
+    <ol>
+        <li>Step one</li>
+        <li>Step two</li>
+        <li>Step three</li>
+    </ol>
+
+    <h3>Definition List (dl)</h3>
+    <dl>
+        <dt><b>dt element</b></dt>
+        <dd>This is the <b>dd</b> element containing the definition. It has a left margin.</dd>
+    </dl>
+
+    <hr>
+
+    <h2>Tables (Basic Block Logic)</h2>
+    <table style="background-color: #f9f9f9;">
+        <caption>Table Caption</caption>
+        <thead>
+            <tr>
+                <th>Header 1 (th)</th>
+                <th>Header 2 (th)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Data A1 (td)</td>
+                <td>Data B1 (td)</td>
+            </tr>
+            <tr>
+                <td>Data A2</td>
+                <td>Data B2</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>Forms</h2>
+    <form style="background-color: #fffae6;">
+        <fieldset>
+            <legend>Fieldset Legend</legend>
+            <p>This is inside a fieldset. It should have some padding and borders (if border rendering were enabled).</p>
+        </fieldset>
+    </form>
+
+    <hr>
+
+    <h2>Inline Formatting</h2>
+    <p>
+        Here is some text with various inline tags:
+        <b>Bold (b)</b>, <i>Italic (i)</i>, <u>Underline (u)</u>, <s>Strikethrough (s)</s>.
+    </p>
+    <p>
+        More text semantics: <strong>Strong (strong)</strong>, <em>Emphasis (em)</em>, <cite>Citation (cite)</cite>, <var>Variable (var)</var>.
+    </p>
+    <p>
+        Computer code formatting: <code>Code (code)</code>, <kbd>Keyboard (kbd)</kbd>, <samp>Sample (samp)</samp>.
+    </p>
+    <p>
+        Subscript/Superscript tests: H<sub>2</sub>O and E=mc<sup>2</sup>.
+    </p>
+    <p>
+        A standard link: <a href="#">Link (a)</a>.
+    </p>
+    <p>
+        Image placeholder: <img style="width: 50px; height: 50px; background-color: #ccc;" />
+    </p>
+
+</body>
+</html>
