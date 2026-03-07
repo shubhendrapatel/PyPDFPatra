@@ -36,6 +36,11 @@ cdef class Box:
         self.padding_bottom = 0.0
         self.padding_left   = 0.0
 
+        self.border_top    = 0.0
+        self.border_right  = 0.0
+        self.border_bottom = 0.0
+        self.border_left   = 0.0
+
 cdef class BlockBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)

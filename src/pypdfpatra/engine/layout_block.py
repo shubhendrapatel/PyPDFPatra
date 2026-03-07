@@ -63,6 +63,21 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     box.padding_left = padding_left
     box.padding_right = padding_right
 
+    border_top = _parse_length(style.get("border-top-width", "0px"), aw)
+    border_bottom = _parse_length(style.get("border-bottom-width", "0px"), aw)
+    border_left = _parse_length(style.get("border-left-width", "0px"), aw)
+    border_right = _parse_length(style.get("border-right-width", "0px"), aw)
+
+    if style.get("border-top-style", "none") in ("none", "hidden"): border_top = 0.0
+    if style.get("border-bottom-style", "none") in ("none", "hidden"): border_bottom = 0.0
+    if style.get("border-left-style", "none") in ("none", "hidden"): border_left = 0.0
+    if style.get("border-right-style", "none") in ("none", "hidden"): border_right = 0.0
+
+    box.border_top = border_top
+    box.border_bottom = border_bottom
+    box.border_left = border_left
+    box.border_right = border_right
+
     # --- W3C Width Calculation ---
     box_sizing = style.get("box-sizing", "content-box").strip().lower()
     css_width = _parse_length(style.get("width", "auto"), aw)
@@ -81,8 +96,8 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     box.y = cb_y
 
     # --- Normal Flow Children Layout ---
-    content_x = box.x + margin_left + padding_left
-    current_border_box_bottom = box.y + margin_top + padding_top
+    content_x = box.x + margin_left + border_left + padding_left
+    current_border_box_bottom = box.y + margin_top + border_top + padding_top
 
     # Pass 1: Wrap contiguous inline/text boxes into W3C anonymous block boxes
     new_children = []

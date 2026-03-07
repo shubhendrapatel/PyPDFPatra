@@ -32,6 +32,11 @@ cdef class Box:
     cdef public double padding_bottom
     cdef public double padding_left
 
+    cdef public double border_top
+    cdef public double border_right
+    cdef public double border_bottom
+    cdef public double border_left
+
     # Render Tree Structure
     cdef public list children
     cdef public object node  # Reference back to the DOM Node
