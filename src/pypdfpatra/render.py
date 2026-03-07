@@ -137,6 +137,10 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
                 
                 color_str = style.get("color", "#000000")
                 r, g, b = _parse_color(color_str)
+                # Force FPDF to emit the non-stroking color by invalidating its cache
+                # because fill_color and text_color both use the same `rg` PDF operator.
+                dummy_r = 1 if r == 0 else r - 1
+                pdf.set_text_color(dummy_r, g, b)
                 pdf.set_text_color(r, g, b)
                 # Words are precisely positioned top-left by the IFC
                 pdf.cell(w=box.w, h=box.h, text=text_content, align="L")

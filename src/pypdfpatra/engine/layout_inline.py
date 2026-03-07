@@ -42,31 +42,40 @@ def layout_inline_context(
         line_box.y = current_y
         line_box.w = cb_w
 
-        # Determine line height (max height of contents)
+        # Determine line height (max height of outer box dimensions)
         max_h = 0.0
-        for child in current_line_boxes:
-            if child.h > max_h:
-                max_h = child.h
+        for item in current_line_boxes:
+            child, outer_w, outer_h = item
+            if outer_h > max_h:
+                max_h = outer_h
 
         if max_h == 0:
-            # Fallback for empty lines
             max_h = 20.0
 
         line_box.h = max_h
 
-        # Center horizontally if needed, or just left-align (default W3C is left-aligned)
-        # For each child, their 'y' is currently relative to the line box top.
-        for child in current_line_boxes:
-            # Simple baseline alignment: align to bottom of line box
-            child.y = current_y + (max_h - child.h)
+        def shift_box(b, dx, dy):
+            b.x += dx
+            b.y += dy
+            for c in b.children:
+                shift_box(c, dx, dy)
+
+        # Center horizontally if needed. Right now, W3C aligned left.
+        for item in current_line_boxes:
+            child, outer_w, outer_h = item
+            # Align bottom of outer box to bottom of line box
+            target_outer_y = current_y + (max_h - outer_h)
+            
+            # target_outer_y is where the margin-top starts.
+            target_content_y = target_outer_y + child.margin_top + child.border_top + child.padding_top
+            
+            dy = target_content_y - child.y
+            shift_box(child, 0, dy)
+            
             line_box.children.append(child)
 
         parent_box.children.append(line_box)
-
-        # Advance Y for next line
         current_y += max_h
-
-        # Reset for next line
         current_line_boxes.clear()
         current_line_width = 0.0
         current_line_ends_with_space = False
@@ -93,23 +102,20 @@ def layout_inline_context(
             style = getattr(child.node, "style", {}) if child.node else {}
             white_space = style.get("white-space", "normal")
             
-            # Evaluate font properties specifically for this child text node
             from pypdfpatra.engine.font_metrics import parse_font
             family, fpdf_style, size = parse_font(style)
             space_width = measure_text(" ", family, size, fpdf_style)
 
             if white_space == "pre":
-                # Preserve exact formatting (newlines break lines, spaces are measured exactly)
                 lines = content.split('\n')
                 for i, line in enumerate(lines):
                     if i > 0:
-                        commit_line()  # Hard break for newline
+                        commit_line()
 
                     if not line:
                         continue
 
                     word_w = measure_text(line, family, size, fpdf_style)
-                    
                     if current_line_width + word_w > cb_w and current_line_width > 0:
                         commit_line()
 
@@ -117,53 +123,67 @@ def layout_inline_context(
                     word_box.w = word_w
                     word_box.h = get_line_height(family, size, fpdf_style)
                     word_box.x = line_x + current_line_width
+                    word_box.y = 0.0 # Will be shifted
                     
                     current_line_width += word_w
-                    current_line_boxes.append(word_box)
+                    current_line_boxes.append((word_box, word_w, word_box.h))
             else:
-                # Normal word wrapping
                 import re
                 tokens = [t for t in re.split(r'(\s+)', content) if t]
 
                 for token in tokens:
                     if token.isspace():
-                        # Only inject a space width if we aren't at the start of a line
-                        # and haven't already added a space just before this.
                         if current_line_width > 0 and not current_line_ends_with_space:
                             current_line_width += space_width
                             current_line_ends_with_space = True
                         continue
 
                     word_w = measure_text(token, family, size, fpdf_style)
-
-                    # If word exceeds available width on current line, wrap it
                     if current_line_width + word_w > cb_w and current_line_width > 0:
                         commit_line()
                         current_line_ends_with_space = False
 
-                    # Create a fragment box for this specific word
                     word_box = TextBox(text_content=token, node=child.node)
                     word_box.w = word_w
                     word_box.h = get_line_height(family, size, fpdf_style)
-
-                    # Position horizontally within the line
                     word_box.x = line_x + current_line_width
-
+                    word_box.y = 0.0 # Will be shifted
+                    
                     current_line_width += word_w
-                    current_line_boxes.append(word_box)
+                    current_line_boxes.append((word_box, word_w, word_box.h))
                     current_line_ends_with_space = False
 
         else:
-            # For non-text inline blocks (like empty spans or images later)
-            # We treat them as indivisible inline blocks
-            if current_line_width + child.w > cb_w and current_line_width > 0:
+            if child.__class__.__name__ == "InlineBlockBox":
+                from pypdfpatra.engine.layout_block import layout_block_context
+                child_style = getattr(child.node, "style", {})
+                
+                from pypdfpatra.engine.layout_block import _parse_length
+                css_width = _parse_length(child_style.get("width", "auto"), cb_w)
+                if css_width <= 0:
+                    css_width = 150.0
+                
+                layout_block_context(child, 0.0, 0.0, css_width)
+
+            child_total_w = child.margin_left + child.border_left + child.padding_left + child.w + child.padding_right + child.border_right + child.margin_right
+            child_total_h = child.margin_top + child.border_top + child.padding_top + child.h + child.padding_bottom + child.border_bottom + child.margin_bottom
+
+            if current_line_width + child_total_w > cb_w and current_line_width > 0:
                 commit_line()
 
-            child.x = line_x + current_line_width
-            current_line_width += child.w
-            current_line_boxes.append(child)
+            target_content_x = line_x + current_line_width + child.margin_left + child.border_left + child.padding_left
+            dx = target_content_x - child.x
+            
+            def shift_box_hz(b, dx_hz):
+                b.x += dx_hz
+                for c in b.children:
+                    shift_box_hz(c, dx_hz)
+                    
+            shift_box_hz(child, dx)
 
-    # Commit any remaining boxes
+            current_line_width += child_total_w
+            current_line_boxes.append((child, child_total_w, child_total_h))
+
     commit_line()
 
     # The parent block box height expands to fit all the line boxes

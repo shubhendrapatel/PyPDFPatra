@@ -8,7 +8,7 @@ Accepts a Box (part of the Render Tree) and calculates geometry.
 """
 
 from __future__ import annotations
-from pypdfpatra.engine.tree import Box, BlockBox, InlineBox, TextBox, AnonymousBlockBox
+from pypdfpatra.engine.tree import Box, BlockBox, InlineBox, TextBox, AnonymousBlockBox, InlineBlockBox
 
 
 def _parse_length(value: str, parent_value: float) -> float:
@@ -104,7 +104,7 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     current_anonymous_block = None
 
     for child_box in box.children:
-        if isinstance(child_box, (InlineBox, TextBox)):
+        if isinstance(child_box, (InlineBox, TextBox, InlineBlockBox)):
             if current_anonymous_block is None:
                 current_anonymous_block = AnonymousBlockBox(node=None)
                 current_anonymous_block.margin_top = (

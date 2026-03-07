@@ -50,6 +50,9 @@ cdef class AnonymousBlockBox(BlockBox):
 cdef class InlineBox(Box):
     pass
 
+cdef class InlineBlockBox(Box):
+    pass
+
 cdef class LineBox(Box):
     pass
 

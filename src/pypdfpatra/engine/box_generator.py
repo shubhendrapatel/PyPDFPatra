@@ -32,11 +32,26 @@ def generate_box_tree(node: Node) -> Box | None:
 
     tag = getattr(node, "tag", "")
 
+    # Process form inputs (synthesize text children representing their values)
+    if tag in ("input", "textarea") and display != "none":
+        # Form inputs don't usually have children in the DOM, so synthesize one
+        value = node.props.get("value") or node.props.get("placeholder") or ""
+        if tag == "textarea" and not value and node.children:
+            # For textarea, content might actually be a DOM child
+            pass
+        elif value:
+            text_node = Node(tag="#text", props={})
+            text_node.style = {"content": value}
+            node.children = [text_node]
+
     # Determine the fundamental W3C box type and instantiate the Box geometry object
     if tag == "#text":
         box = TextBox(text_content=style.get("content", ""), node=node)
     elif display in ("block", "list-item"):
         box = BlockBox(node=node)
+    elif display == "inline-block":
+        from pypdfpatra.engine.tree import InlineBlockBox
+        box = InlineBlockBox(node=node)
     else:
         # Defaults to inline for spans, anchors, strong, etc.
         box = InlineBox(node=node)

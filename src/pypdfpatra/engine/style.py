@@ -145,6 +145,25 @@ USER_AGENT_STYLES = {
         "border": "2px solid #c0c0c0",
     },
     "legend": {"display": "block"},
+    "input": {
+        "display": "inline-block",
+        "padding": "1px 2px",
+        "border": "2px inset #ffffff",
+        "background-color": "#ffffff",
+    },
+    "button": {
+        "display": "inline-block",
+        "padding": "1px 6px",
+        "border": "2px outset #f0f0f0",
+        "background-color": "#f0f0f0",
+        "text-align": "center",
+    },
+    "textarea": {
+        "display": "inline-block",
+        "padding": "2px",
+        "border": "1px solid #767676",
+        "background-color": "#ffffff",
+    },
     # Inline formatting defaults
     "span": {"display": "inline"},
     "b": {"display": "inline", "font-weight": "bold"},

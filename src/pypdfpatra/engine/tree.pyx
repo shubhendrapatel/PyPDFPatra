@@ -53,6 +53,10 @@ cdef class InlineBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)
 
+cdef class InlineBlockBox(Box):
+    def __init__(self, object node=None):
+        super().__init__(node)
+
 cdef class LineBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)
