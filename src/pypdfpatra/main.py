@@ -10,7 +10,7 @@ import fpdf
 
 from pypdfpatra.api import build_tree
 from pypdfpatra.matcher import apply_styles
-from pypdfpatra.engine import resolve_styles, generate_box_tree, layout_block_context
+from pypdfpatra.engine import resolve_styles, generate_box_tree, layout_block_context, parse_stylesheets
 from pypdfpatra.render import draw_boxes
 from pypdfpatra.logger import logger
 
@@ -39,7 +39,7 @@ class HTML:
 
         # 2. CSS Matching & W3C Style Resolution (CSSOM Phase)
         logger.info("[2/5] Resolving W3C Cascading Styles...")
-        rules = []
+        rules = parse_stylesheets(root_node)
         apply_styles(root_node, rules)
         resolve_styles(root_node)
 

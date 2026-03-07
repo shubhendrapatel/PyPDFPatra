@@ -10,6 +10,7 @@ from .style import resolve_styles
 from .box_generator import generate_box_tree
 from .layout_block import layout_block_context
 from .layout_inline import layout_inline_context
+from .css_parser import parse_stylesheets
 
 __all__ = [
     "Box",
@@ -23,4 +24,5 @@ __all__ = [
     "generate_box_tree",
     "layout_block_context",
     "layout_inline_context",
+    "parse_stylesheets",
 ]
