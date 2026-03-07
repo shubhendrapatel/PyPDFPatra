@@ -115,7 +115,9 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
                 family, fpdf_style, size = parse_font(style)
                 pdf.set_font(family, style=fpdf_style, size=size)
                 
-                pdf.set_text_color(0, 0, 0)
+                color_str = style.get("color", "#000000")
+                r, g, b = _parse_color(color_str)
+                pdf.set_text_color(r, g, b)
                 # Words are precisely positioned top-left by the IFC
                 pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
 
