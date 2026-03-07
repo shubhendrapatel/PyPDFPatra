@@ -142,6 +142,7 @@ USER_AGENT_STYLES = {
         "padding-bottom": "0.625em",
         "padding-left": "0.75em",
         "padding-right": "0.75em",
+        "border": "2px solid #c0c0c0",
     },
     "legend": {"display": "block"},
     # Inline formatting defaults
