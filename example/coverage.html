@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>PyPDFPatra Tag Coverage Test</title>
     <meta charset="utf-8">
@@ -13,6 +14,8 @@
         .highlight-box {
             background-color: #ffffcc;
             margin: 10px 40px;
+            border: 4px solid #f0ad4e;
+            padding: 10px;
         }
 
         /* Test ID Selector */
@@ -21,8 +24,38 @@
             color: #d9534f;
             font-weight: bold;
         }
+        
+        /* Comprehensive Box Model Tests */
+        .box-model-1 {
+            width: 200px;
+            height: 100px;
+            background-color: #e6f7ff;
+            border-top: 5px solid #005ce6;
+            border-bottom: 5px dashed #005ce6;
+            padding: 15px 30px;
+            margin-bottom: 20px;
+        }
+        
+        .box-model-2 {
+            width: 50%;
+            background-color: #fff0e6;
+            border: 2px solid #ff6600;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-left: 5%;
+            padding-right: 5%;
+            margin: 0px 20px 20px 20px;
+        }
+        
+        /* Test inherit and transparent */
+        .inherited-color {
+            color: inherit;
+            border: 1px solid currentColor;
+            padding: 5px;
+        }
     </style>
 </head>
+
 <body>
     <h1>Tag Coverage Test (H1)</h1>
     <p>This document tests the default User-Agent stylesheet for various HTML elements implemented in PyPDFPatra.</p>
@@ -41,7 +74,7 @@
     <div>This is a generic block-level <b>div</b> element.</div>
     <p id="special-text">This is a paragraph <b>p</b> testing the ID selector pipeline!</p>
     <blockquote class="highlight-box">
-        This is a <b>blockquote</b> testing the Class Selector and margin shorthand parsing!
+        This is a <b>blockquote</b> testing the Class Selector and margin shorthand parsing! with border.
     </blockquote>
     <figure style="background-color: #eee;">
         This is a <b>figure</b>. It behaves similarly to blockquote with margins.
@@ -102,7 +135,8 @@ line breaks and uses monospace.</pre>
     <form style="background-color: #fffae6;">
         <fieldset>
             <legend>Fieldset Legend</legend>
-            <p>This is inside a fieldset. It should have some padding and borders (if border rendering were enabled).</p>
+            <p>This is inside a fieldset. It should have some padding and borders (if border rendering were enabled).
+            </p>
         </fieldset>
     </form>
 
@@ -114,7 +148,8 @@ line breaks and uses monospace.</pre>
         <b>Bold (b)</b>, <i>Italic (i)</i>, <u>Underline (u)</u>, <s>Strikethrough (s)</s>.
     </p>
     <p>
-        More text semantics: <strong>Strong (strong)</strong>, <em>Emphasis (em)</em>, <cite>Citation (cite)</cite>, <var>Variable (var)</var>.
+        More text semantics: <strong>Strong (strong)</strong>, <em>Emphasis (em)</em>, <cite>Citation (cite)</cite>,
+        <var>Variable (var)</var>.
     </p>
     <p>
         Computer code formatting: <code>Code (code)</code>, <kbd>Keyboard (kbd)</kbd>, <samp>Sample (samp)</samp>.
@@ -130,18 +165,34 @@ line breaks and uses monospace.</pre>
     </p>
 
     <hr>
-    
+
     <h2>HTML Entities</h2>
     <p>
         Checking character entity decoding: 5 &lt; 10, 10 &gt; 5, You &amp; Me, Copyright &copy; 2026.
     </p>
 
     <hr>
+
+    <h2>Comprehensive Box Model Tests</h2>
+    <div class="box-model-1">
+        This is box-model-1. It tests explicit width (200px), height (100px), mixed borders (solid top, dashed bottom), padding shorthand (15px 30px), and background color.
+    </div>
     
+    <div class="box-model-2">
+        This is box-model-2. It tests percentage width (50%), uniform borders, explicit padding directions, margin shorthand (4 values), and percentage paddings.
+        <div class="inherited-color">
+            This nested div tests "inherit" and "currentColor".
+        </div>
+    </div>
+
+    <hr>
+
     <h2>Color Contrast Test</h2>
     <div style="background-color: #002244; color: #ffffff; padding: 20px;">
-        This block has a dark blue background (#002244) and white text (#ffffff) to ensure proper color contrast rendering.
+        This block has a dark blue background (#002244) and white text (#ffffff) to ensure proper color contrast
+        rendering.
     </div>
 
 </body>
+
 </html>
