@@ -3,6 +3,25 @@
 <head>
     <title>PyPDFPatra Tag Coverage Test</title>
     <meta charset="utf-8">
+    <style>
+        /* Test Tag Selector */
+        h1 {
+            color: #004d99;
+        }
+
+        /* Test Class Selector and Margin Shorthand */
+        .highlight-box {
+            background-color: #ffffcc;
+            margin: 10px 40px;
+        }
+
+        /* Test ID Selector */
+        #special-text {
+            font-size: 1.2em;
+            color: #d9534f;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <h1>Tag Coverage Test (H1)</h1>
@@ -20,9 +39,9 @@
 
     <h2>Block Elements</h2>
     <div>This is a generic block-level <b>div</b> element.</div>
-    <p>This is a paragraph <b>p</b> with default top/bottom margins.</p>
-    <blockquote>
-        This is a <b>blockquote</b>. It should have left and right margins (40px) according to WebKit defaults.
+    <p id="special-text">This is a paragraph <b>p</b> testing the ID selector pipeline!</p>
+    <blockquote class="highlight-box">
+        This is a <b>blockquote</b> testing the Class Selector and margin shorthand parsing!
     </blockquote>
     <figure style="background-color: #eee;">
         This is a <b>figure</b>. It behaves similarly to blockquote with margins.
@@ -109,6 +128,20 @@ line breaks and uses monospace.</pre>
     <p>
         Image placeholder: <img style="width: 50px; height: 50px; background-color: #ccc;" />
     </p>
+
+    <hr>
+    
+    <h2>HTML Entities</h2>
+    <p>
+        Checking character entity decoding: 5 &lt; 10, 10 &gt; 5, You &amp; Me, Copyright &copy; 2026.
+    </p>
+
+    <hr>
+    
+    <h2>Color Contrast Test</h2>
+    <div style="background-color: #002244; color: #ffffff; padding: 20px;">
+        This block has a dark blue background (#002244) and white text (#ffffff) to ensure proper color contrast rendering.
+    </div>
 
 </body>
 </html>
