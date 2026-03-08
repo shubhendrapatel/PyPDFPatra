@@ -57,10 +57,28 @@ def generate_box_tree(node: Node) -> Box | None:
         box = InlineBox(node=node)
 
     # Process children
-    for child in node.children:
+    for child in getattr(node, "children", []):
         if isinstance(child, Node):
             child_box = generate_box_tree(child)
             if child_box is not None:
                 box.children.append(child_box)
+
+    # Generate MarkerBox for list-items
+    if display == "list-item":
+        from pypdfpatra.engine.tree import MarkerBox
+        list_style_type = style.get("list-style-type", "disc").strip().lower()
+        
+        marker_content = "__disc__"
+        if list_style_type == "circle":
+            marker_content = "__circle__"
+        elif list_style_type == "square":
+            marker_content = "__square__"
+        elif list_style_type in ("decimal", "decimal-leading-zero"):
+            marker_content = "1." # MVP placeholder for numbers
+
+        marker_box = MarkerBox(text_content=marker_content, node=node)
+        
+        # Insert at the beginning of the children list
+        box.children.insert(0, marker_box)
 
     return box

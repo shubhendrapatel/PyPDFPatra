@@ -167,6 +167,34 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             )
             prev_margin_bottom = child_box.margin_bottom
 
+        elif child_box.__class__.__name__ == "MarkerBox":
+            from pypdfpatra.engine.font_metrics import measure_text, get_line_height
+            from pypdfpatra.engine.font_metrics import parse_font
+            
+            # Use the list-item's style for the marker
+            style = getattr(box.node, "style", {}) if box.node else {}
+            family, fpdf_style, size = parse_font(style)
+            
+            # Layout the marker, placed outside the principal box
+            content = child_box.text_content
+            if content in ("__disc__", "__circle__", "__square__"):
+                marker_w = size * 0.4
+                marker_h = size * 0.4
+                y_offset = (size * 0.8) - marker_h  # Align visually with text baseline
+            else:
+                marker_w = measure_text(content, family, size, fpdf_style)
+                marker_h = get_line_height(family, size, fpdf_style)
+                y_offset = 0.0
+            
+            # Position to the left of content_x, vertically aligned with current Y
+            child_box.x = content_x - marker_w - 5.0  # 5pt gap
+            child_box.y = current_border_box_bottom + y_offset
+            child_box.w = marker_w
+            child_box.h = marker_h
+            
+            # Do NOT advance `current_border_box_bottom`, because the marker floats out of flow
+            # relative to the first line of the principal block.
+
     return current_border_box_bottom
 
 

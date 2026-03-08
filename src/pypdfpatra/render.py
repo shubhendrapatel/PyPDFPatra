@@ -265,7 +265,7 @@ def _draw_borders(pdf: fpdf.FPDF, style: dict, border_top: float, border_bottom:
 
 
 def _draw_text(pdf: fpdf.FPDF, box: TextBox, style: dict, border_box_x: float, border_box_y: float, border_top: float, border_left: float) -> None:
-    """Paints correctly formatted and styled inline text primitives."""
+    """Paints correctly formatted and styled inline text primitives or vector list markers."""
     text_content = box.text_content
     if not text_content:
         return
@@ -277,15 +277,33 @@ def _draw_text(pdf: fpdf.FPDF, box: TextBox, style: dict, border_box_x: float, b
     _ensure_page(pdf, page_idx)
     
     local_y = content_y - (page_idx * PAGE_HEIGHT)
-    pdf.set_xy(content_x, local_y)
     
+    color_str = style.get("color", "#000000")
+    r, g, b = _parse_color(color_str)
+
+    if box.__class__.__name__ == "MarkerBox" and text_content in ("__disc__", "__circle__", "__square__"):
+        # Draw vector shapes for list markers
+        pdf.set_fill_color(r, g, b)
+        pdf.set_draw_color(r, g, b)
+        pdf.set_line_width(0.5)
+        
+        if text_content == "__disc__":
+            pdf.ellipse(x=content_x, y=local_y, w=box.w, h=box.h, style="F")
+        elif text_content == "__circle__":
+            pdf.ellipse(x=content_x, y=local_y, w=box.w, h=box.h, style="D")
+        elif text_content == "__square__":
+            pdf.rect(x=content_x, y=local_y, w=box.w, h=box.h, style="F")
+            
+        pdf.set_fill_color(0, 0, 0)
+        pdf.set_draw_color(0, 0, 0)
+        return
+
+    pdf.set_xy(content_x, local_y)
     family, fpdf_style, size = parse_font(style)
     
     from pypdfpatra.engine.font_metrics import FontMetrics
     FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
     
-    color_str = style.get("color", "#000000")
-    r, g, b = _parse_color(color_str)
     # Force FPDF to emit the non-stroking color by invalidating its cache
     # because fill_color and text_color both use the same `rg` PDF operator.
     dummy_r = 1 if r == 0 else r - 1
@@ -331,7 +349,7 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         _draw_borders(pdf, style, border_top, border_bottom, border_left, border_right, border_box_x, border_box_y, border_box_w, border_box_h)
 
         # Paint Text Content
-        if isinstance(box, TextBox):
+        if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
             _draw_text(pdf, box, style, border_box_x, border_box_y, border_top, border_left)
 
         # Paint children (Z-order: backgrounds, borders, then children)
