@@ -2,7 +2,7 @@ import fpdf
 
 def parse_font(style: dict, base_size: float = 16.0) -> tuple:
     """Parses CSS dictionary into (family, style_str, size_float) for FPDF."""
-    family = style.get("font-family", "helvetica").split(",")[0].strip().strip("'\"").lower()
+    family = style.get("font-family", "helvetica").split(",")[0].strip().strip("'\"").lower().replace(" ", "")
     if family == "monospace":
         family = "courier"
         
@@ -46,7 +46,32 @@ class FontMetrics:
             cls._instance = cls()
             cls._pdf = fpdf.FPDF(unit="pt")
             cls._pdf.add_page()
+            cls._registered_fonts_data = {}  # Store for rendering phase
+            
         return cls._instance
+
+    def register_font(self, family: str, style: str, path: str):
+        """Registers a custom TTF font for measurement and later rendering."""
+        key = f"{family}-{style}"
+        if key not in self._registered_fonts_data:
+            self._pdf.add_font(family, style=style, fname=path)
+            self._registered_fonts_data[key] = {"family": family, "style": style, "path": path}
+
+    def set_font_safe(
+        self,
+        pdf_instance: fpdf.FPDF,
+        font_family: str,
+        font_size: float,
+        font_style: str,
+    ):
+        """Attempts to set a font, falling back to base styles if a specific bold/italic TTF is unmapped."""
+        try:
+            pdf_instance.set_font(font_family, style=font_style, size=font_size)
+        except fpdf.errors.FPDFException:
+            try:
+                pdf_instance.set_font(font_family, style="", size=font_size)
+            except fpdf.errors.FPDFException:
+                pdf_instance.set_font("helvetica", style="", size=font_size)
 
     def get_text_width(
         self,
@@ -58,7 +83,7 @@ class FontMetrics:
         """
         Returns the width of the given string in points.
         """
-        self._pdf.set_font(font_family, style=font_style, size=font_size)
+        self.set_font_safe(self._pdf, font_family, font_size, font_style)
         return self._pdf.get_string_width(text)
 
     def get_line_height(

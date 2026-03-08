@@ -302,7 +302,9 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
                 pdf.set_xy(content_x, local_y)
                 
                 family, fpdf_style, size = parse_font(style)
-                pdf.set_font(family, style=fpdf_style, size=size)
+                
+                from pypdfpatra.engine.font_metrics import FontMetrics
+                FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
                 
                 color_str = style.get("color", "#000000")
                 r, g, b = _parse_color(color_str)
@@ -312,6 +314,8 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
                 pdf.set_text_color(dummy_r, g, b)
                 pdf.set_text_color(r, g, b)
                 # Words are precisely positioned top-left by the IFC
+                
+                # Thanks to true TTF support via @font-face, Unicode renders natively!
                 pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
 
         # Paint children (Z-order: backgrounds, borders, then children)
