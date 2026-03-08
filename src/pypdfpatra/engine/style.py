@@ -101,12 +101,14 @@ USER_AGENT_STYLES = {
         "margin-top": "1em",
         "margin-bottom": "1em",
         "padding-left": "40px",
+        "list-style-type": "disc",
     },
     "ol": {
         "display": "block",
         "margin-top": "1em",
         "margin-bottom": "1em",
         "padding-left": "40px",
+        "list-style-type": "decimal",
     },
     "menu": {
         "display": "block",
@@ -203,6 +205,7 @@ INHERITED_PROPERTIES = frozenset(
         "text-decoration",  # Technically not inherited in W3C but effectively cascaded in renderers
         "visibility",
         "white-space",
+        "list-style-type",
     }
 )
 
