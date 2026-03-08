@@ -68,10 +68,14 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     border_left = _parse_length(style.get("border-left-width", "0px"), aw)
     border_right = _parse_length(style.get("border-right-width", "0px"), aw)
 
-    if style.get("border-top-style", "none") in ("none", "hidden"): border_top = 0.0
-    if style.get("border-bottom-style", "none") in ("none", "hidden"): border_bottom = 0.0
-    if style.get("border-left-style", "none") in ("none", "hidden"): border_left = 0.0
-    if style.get("border-right-style", "none") in ("none", "hidden"): border_right = 0.0
+    if style.get("border-top-style", "none") in ("none", "hidden"):
+        border_top = 0.0
+    if style.get("border-bottom-style", "none") in ("none", "hidden"):
+        border_bottom = 0.0
+    if style.get("border-left-style", "none") in ("none", "hidden"):
+        border_left = 0.0
+    if style.get("border-right-style", "none") in ("none", "hidden"):
+        border_right = 0.0
 
     box.border_top = border_top
     box.border_bottom = border_bottom
