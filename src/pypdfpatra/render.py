@@ -368,10 +368,13 @@ def _draw_text(
     dummy_r = 1 if r == 0 else r - 1
     pdf.set_text_color(dummy_r, g, b)
     pdf.set_text_color(r, g, b)
-    # Words are precisely positioned top-left by the IFC
+
+    # Map CSS text-align to FPDF align code
+    align_map = {"left": "L", "center": "C", "right": "R", "justify": "J"}
+    fpdf_align = align_map.get(style.get("text-align", "left"), "L")
 
     # Thanks to true TTF support via @font-face, Unicode renders natively!
-    pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
+    pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
 
 
 def _draw_image(
@@ -450,6 +453,16 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         border_box_h = (
             border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
         )
+
+        # Skip drawing borders/backgrounds for captions wrapping the table
+        if box.__class__.__name__ == "TableBox":
+            caption_h = 0.0
+            for child in box.children:
+                if getattr(child.node, "tag", "") == "caption":
+                    caption_h += child.h + child.margin_top + child.margin_bottom + child.border_top + child.border_bottom + child.padding_top + child.padding_bottom
+            
+            border_box_y += caption_h
+            border_box_h -= caption_h
 
         # Paint Backgrounds spanning multiple pages
         _draw_background(

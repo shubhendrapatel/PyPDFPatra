@@ -146,7 +146,7 @@ USER_AGENT_STYLES = {
     "tfoot": {"display": "table-footer-group"},
     "tr": {"display": "table-row"},
     "td": {"display": "table-cell"},
-    "th": {"display": "table-cell", "font-weight": "bold"},
+    "th": {"display": "table-cell", "font-weight": "bold", "text-align": "center"},
     "caption": {"display": "block", "text-align": "center"},
     # Forms
     "form": {"display": "block", "margin-top": "0em"},

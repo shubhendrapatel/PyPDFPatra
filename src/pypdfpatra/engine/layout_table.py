@@ -22,34 +22,21 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     style = getattr(box.node, "style", {}) if box.node else {}
     box_sizing, css_width = _resolve_box_geometry(box, cb_w, style)
 
-    # Assume exactly cb_w for the table width in MVP fluid auto layout
-    table_w = css_width if css_width > 0 else cb_w
     box.x = cb_x
     box.y = cb_y
-    box.w = table_w
-    
-    content_x = box.x + box.margin_left + box.border_left + box.padding_left
-    current_y = box.y + box.margin_top + box.border_top + box.padding_top
-    
-    # Lay out the table caption if present
-    for child in box.children:
-        if getattr(child.node, "tag", "") == "caption":
-            # Treat as block context
-            layout_block_context(child, content_x, current_y, box.w)
-            current_y += (
-                child.margin_top
-                + child.border_top
-                + child.padding_top
-                + child.h
-                + child.padding_bottom
-                + child.border_bottom
-                + child.margin_bottom
-            )
-            
+    # We will determine box.w dynamically
+
+    from pypdfpatra.engine.layout_block import _parse_length
+    spacing_val = str(style.get("border-spacing", "0px"))
+    parts = spacing_val.split()
+    h_spacing = _parse_length(parts[0], cb_w) if parts else 0.0
+    v_spacing = h_spacing
+    if len(parts) > 1:
+        v_spacing = _parse_length(parts[1], cb_w)
+
     # 1. Collect all rows and cells
     rows = []
     
-    # Helper to scan for rows (skipping over thead/tbody/tfoot for now)
     def _scan_for_rows(parent_box: Box):
         for child in parent_box.children:
             if isinstance(child, TableRowBox):
@@ -60,6 +47,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     _scan_for_rows(box)
     
     if not rows:
+        box.w = css_width if css_width > 0 else cb_w
         box.h = 0.0
         return
         
@@ -72,6 +60,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         row_cells.append(cells)
         
     if num_cols == 0:
+        box.w = css_width if css_width > 0 else cb_w
         box.h = 0.0
         return
         
@@ -111,7 +100,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             if cell_padded_w > col_widths[i]:
                 col_widths[i] = cell_padded_w
                 
-    total_table_w = sum(col_widths)
+    total_table_w = sum(col_widths) + (num_cols + 1) * h_spacing
     
     # Scale width if exceeding bounds or explicitly forced
     if css_width > 0:
@@ -120,12 +109,35 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             col_widths = [cw + extra for cw in col_widths]
             total_table_w = css_width
     elif total_table_w > cb_w and cb_w > 0:
-        scale = cb_w / total_table_w
-        col_widths = [cw * scale for cw in col_widths]
+        available_column_w = cb_w - (num_cols + 1) * h_spacing
+        current_column_sum = sum(col_widths)
+        if current_column_sum > 0:
+            scale = available_column_w / current_column_sum
+            col_widths = [cw * scale for cw in col_widths]
         total_table_w = cb_w
         
     box.w = total_table_w
     
+    content_x = box.x + box.margin_left + box.border_left + box.padding_left
+    current_y = box.y + box.margin_top + box.border_top + box.padding_top
+    
+    # Lay out the table caption if present AFTER box.w is calculated
+    for child in box.children:
+        if getattr(child.node, "tag", "") == "caption":
+            # Treat as block context
+            layout_block_context(child, content_x, current_y, box.w)
+            current_y += (
+                child.margin_top
+                + child.border_top
+                + child.padding_top
+                + child.h
+                + child.padding_bottom
+                + child.border_bottom
+                + child.margin_bottom
+            )
+
+    current_y += v_spacing
+
     # 3. Layout cells and synchronize row heights
     for row in rows:
         # Resolve row geometry (mostly margins/borders, usually 0 for TR)
@@ -142,9 +154,8 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         max_cell_h = 0.0
         
         for i, cell in enumerate(cells):
-            # Layout the cell as a block container!
-            # It gets its designated column width constraint
-            cell_x = row_content_x + sum(col_widths[:i])
+            # It gets its designated column width constraint + spacing offsets
+            cell_x = row_content_x + h_spacing + sum(col_widths[:i]) + (i * h_spacing)
             # Layout the block context within the cell
             layout_block_context(cell, cell_x, row.y, col_widths[i])
             
@@ -156,6 +167,6 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             cell.h = max_cell_h - cell.padding_top - cell.padding_bottom - cell.border_top - cell.border_bottom
             
         row.h = max_cell_h
-        current_y += row.h + row.border_top + row.border_bottom + row.margin_top + row.margin_bottom
+        current_y += row.h + row.border_top + row.border_bottom + row.margin_top + row.margin_bottom + v_spacing
         
     box.h = current_y - box.y - box.margin_top - box.border_top - box.padding_top
