@@ -189,6 +189,42 @@ def _process_inline_box(
             css_width = 150.0
 
         layout_block_context(child, 0.0, 0.0, css_width)
+        
+    elif child.__class__.__name__ == "ImageBox":
+        child_style = getattr(child.node, "style", {})
+        from pypdfpatra.engine.layout_block import _parse_length
+
+        css_width = _parse_length(child_style.get("width", "auto"), cb_w)
+        css_height = _parse_length(child_style.get("height", "auto"), cb_w)
+
+        # Fallback to HTML attributes if no CSS width/height is present
+        if css_width <= 0:
+            attr_w = getattr(child.node, "props", {}).get("width")
+            if attr_w:
+                css_width = float(attr_w.replace("px", ""))
+        if css_height <= 0:
+            attr_h = getattr(child.node, "props", {}).get("height")
+            if attr_h:
+                css_height = float(attr_h.replace("px", ""))
+
+        if css_width > 0 and css_height <= 0:
+            child.w = css_width
+            child.h = (child.image_h / child.image_w * css_width) if child.image_w > 0 else css_width
+        elif css_height > 0 and css_width <= 0:
+            child.h = css_height
+            child.w = (child.image_w / child.image_h * css_height) if child.image_h > 0 else css_height
+        elif css_width > 0 and css_height > 0:
+            child.w = css_width
+            child.h = css_height
+        else:
+            child.w = child.image_w
+            child.h = child.image_h
+
+        # Responsive layout: don't bleed outside container
+        if child.w > cb_w and cb_w > 0:
+            ratio = cb_w / child.w
+            child.w = cb_w
+            child.h *= ratio
 
     child_total_w = (
         child.margin_left

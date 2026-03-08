@@ -71,6 +71,11 @@ cdef class TableRowBox(Box):
 cdef class TableCellBox(Box):
     pass
 
+cdef class ImageBox(Box):
+    cdef public str img_src
+    cdef public float image_w
+    cdef public float image_h
+
 cdef class TextBox(Box):
     cdef public str text_content
 

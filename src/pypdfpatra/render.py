@@ -374,6 +374,34 @@ def _draw_text(
     pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
 
 
+def _draw_image(
+    pdf: fpdf.FPDF,
+    box: Box,
+    style: dict,
+    border_box_x: float,
+    border_box_y: float,
+    border_top: float,
+    border_left: float,
+) -> None:
+    """Paints external image assets onto the PDF respecting absolute geometry."""
+    img_src = getattr(box, "img_src", "")
+    if not img_src:
+        return
+
+    content_x = border_box_x + border_left + box.padding_left
+    content_y = border_box_y + border_top + box.padding_top
+
+    page_idx = int(content_y / PAGE_HEIGHT)
+    _ensure_page(pdf, page_idx)
+
+    local_y = content_y - (page_idx * PAGE_HEIGHT)
+
+    try:
+        pdf.image(name=img_src, x=content_x, y=local_y, w=box.w, h=box.h)
+    except Exception as e:
+        print(f"pypdfpatra - ERROR - Failed to render image {img_src}: {e}")
+
+
 def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
@@ -427,6 +455,12 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         # Paint Text Content
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
             _draw_text(
+                pdf, box, style, border_box_x, border_box_y, border_top, border_left
+            )
+            
+        # Paint Image Content
+        if box.__class__.__name__ == "ImageBox":
+            _draw_image(
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
 

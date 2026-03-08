@@ -82,6 +82,13 @@ cdef class TableCellBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)
 
+cdef class ImageBox(Box):
+    def __init__(self, str img_src="", float image_w=0.0, float image_h=0.0, object node=None):
+        super().__init__(node)
+        self.img_src = img_src
+        self.image_w = image_w
+        self.image_h = image_h
+
 cdef class TextBox(Box):
     def __init__(self, str text_content="", object node=None):
         super().__init__(node)

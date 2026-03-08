@@ -56,8 +56,21 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         box = BlockBox(node=node)
     elif display == "inline-block":
         from pypdfpatra.engine.tree import InlineBlockBox
-
         box = InlineBlockBox(node=node)
+    elif tag == "img":
+        from pypdfpatra.engine.tree import ImageBox
+        from pypdfpatra.engine.image import get_image_info
+        
+        src = getattr(node, "props", {}).get("src", "")
+        # Assuming base_url is injected into the node during parsing (we'll need to pass it down or rely on CWD)
+        base_url = getattr(node, "base_url", "")
+        
+        info = get_image_info(src, base_url)
+        
+        img_w = info["width"] if info else 100.0  # Default fallback box
+        img_h = info["height"] if info else 100.0
+        
+        box = ImageBox(img_src=info["src"] if info else src, image_w=img_w, image_h=img_h, node=node)
     elif display == "table":
         from pypdfpatra.engine.tree import TableBox
         box = TableBox(node=node)
