@@ -174,6 +174,32 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             )
             prev_margin_bottom = child_box.margin_bottom
 
+        elif child_box.__class__.__name__ == "TableBox":
+            from pypdfpatra.engine.layout_table import layout_table_context
+            
+            # Setup margins for margin collapsing
+            child_style = getattr(child_box.node, "style", {}) if getattr(child_box, "node", None) else {}
+            child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
+            
+            if first_child:
+                collapsed_margin = child_mt
+                first_child = False
+            else:
+                collapsed_margin = max(prev_margin_bottom, child_mt)
+                
+            child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+            
+            layout_table_context(child_box, content_x, child_margin_box_y, box.w)
+            
+            current_border_box_bottom = (
+                child_box.y
+                + child_box.margin_top
+                + child_box.padding_top
+                + child_box.h
+                + child_box.padding_bottom
+            )
+            prev_margin_bottom = child_box.margin_bottom
+
         elif child_box.__class__.__name__ == "MarkerBox":
             from pypdfpatra.engine.font_metrics import measure_text, get_line_height
             from pypdfpatra.engine.font_metrics import parse_font

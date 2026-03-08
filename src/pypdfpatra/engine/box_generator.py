@@ -58,6 +58,18 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         from pypdfpatra.engine.tree import InlineBlockBox
 
         box = InlineBlockBox(node=node)
+    elif display == "table":
+        from pypdfpatra.engine.tree import TableBox
+        box = TableBox(node=node)
+    elif display in ("table-row-group", "table-header-group", "table-footer-group"):
+        from pypdfpatra.engine.tree import TableRowGroupBox
+        box = TableRowGroupBox(node=node)
+    elif display == "table-row":
+        from pypdfpatra.engine.tree import TableRowBox
+        box = TableRowBox(node=node)
+    elif display == "table-cell":
+        from pypdfpatra.engine.tree import TableCellBox
+        box = TableCellBox(node=node)
     else:
         # Defaults to inline for spans, anchors, strong, etc.
         box = InlineBox(node=node)

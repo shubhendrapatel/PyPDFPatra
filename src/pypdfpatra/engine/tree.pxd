@@ -59,6 +59,18 @@ cdef class LineBox(Box):
 cdef class MarkerBox(Box):
     cdef public str text_content
 
+cdef class TableBox(Box):
+    pass
+
+cdef class TableRowGroupBox(Box):
+    pass
+
+cdef class TableRowBox(Box):
+    pass
+
+cdef class TableCellBox(Box):
+    pass
+
 cdef class TextBox(Box):
     cdef public str text_content
 

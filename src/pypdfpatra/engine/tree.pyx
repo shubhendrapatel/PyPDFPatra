@@ -66,6 +66,22 @@ cdef class MarkerBox(Box):
         super().__init__(node)
         self.text_content = text_content
 
+cdef class TableBox(Box):
+    def __init__(self, object node=None):
+        super().__init__(node)
+
+cdef class TableRowGroupBox(Box):
+    def __init__(self, object node=None):
+        super().__init__(node)
+
+cdef class TableRowBox(Box):
+    def __init__(self, object node=None):
+        super().__init__(node)
+
+cdef class TableCellBox(Box):
+    def __init__(self, object node=None):
+        super().__init__(node)
+
 cdef class TextBox(Box):
     def __init__(self, str text_content="", object node=None):
         super().__init__(node)
