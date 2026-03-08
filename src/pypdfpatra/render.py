@@ -252,11 +252,21 @@ def _draw_borders(
     border_box_h: float,
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
+    # Ensure lines don't cross each other at the corners (the "math crossing" fix)
+    # Style 0 J = butt caps (ends exactly at coordinates)
+    # Style 2 J = projecting square (default, extends half-width past)
+    # Since set_line_cap_style isn't consistently available in all fpdf2 versions,
+    # we use the raw PDF operator via _out.
+    pdf._out("0 J")
+
     def half(w):
         return w / 2.0
 
-    for edge, b_w, line_x1, line_y1, line_x2, line_y2 in [
-        # Lines are centered on their coordinate, so offset by b_w/2 to hug the border-box edge
+    # Draw order: Top, Bottom, Left, Right
+    # To avoid "crossing", we adjust the start/end of vertical lines
+    # so they sit perfectly between the top and bottom lines.
+    edges = [
+        # edge, b_w, x1, y1, x2, y2
         (
             "top",
             border_top,
@@ -277,19 +287,21 @@ def _draw_borders(
             "left",
             border_left,
             border_box_x + half(border_left),
-            border_box_y,
+            border_box_y + border_top,
             border_box_x + half(border_left),
-            border_box_y + border_box_h,
+            border_box_y + border_box_h - border_bottom,
         ),
         (
             "right",
             border_right,
             border_box_x + border_box_w - half(border_right),
-            border_box_y,
+            border_box_y + border_top,
             border_box_x + border_box_w - half(border_right),
-            border_box_y + border_box_h,
+            border_box_y + border_box_h - border_bottom,
         ),
-    ]:
+    ]
+
+    for edge, b_w, line_x1, line_y1, line_x2, line_y2 in edges:
         border_style = style.get(
             f"border-{edge}-style", style.get("border-style", "solid")
         )
@@ -362,6 +374,9 @@ def _draw_borders(
 
         pdf.set_line_width(0.2)
         pdf.set_draw_color(0, 0, 0)
+
+    # Restore default line cap (2 J = projecting square)
+    pdf._out("2 J")
 
 
 def _draw_text(
