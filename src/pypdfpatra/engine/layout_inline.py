@@ -9,8 +9,15 @@ def _flatten_inline(boxes: list[Box]) -> list[Box]:
     for b in boxes:
         if isinstance(b, TextBox):
             flat.append(b)
-        elif hasattr(b, "children") and b.__class__.__name__ == "InlineBox":
-            flat.extend(_flatten_inline(b.children))
+        elif b.__class__.__name__ == "InlineBox":
+            href = getattr(b.node, "props", {}).get("href")
+            children = _flatten_inline(b.children)
+            if href:
+                for c in children:
+                    # Inherit the anchor's href if the child node doesn't have one
+                    if "href" not in c.node.props:
+                        c.node.props["href"] = href
+            flat.extend(children)
         else:
             flat.append(b)
     return flat

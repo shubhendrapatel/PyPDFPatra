@@ -577,6 +577,20 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             border_box_w,
             border_box_h,
         )
+        
+        # Hyperlinks (Phase 7: Advanced PDF Features)
+        href = getattr(box.node, "props", {}).get("href")
+        if href:
+            page_idx = int(border_box_y / PAGE_HEIGHT)
+            local_y = border_box_y - (page_idx * PAGE_HEIGHT)
+            # Create a clickable annotation over the entire border-box area.
+            # We add a 2pt vertical buffer to ensure the click area is robust.
+            click_h = border_box_h
+            if box.__class__.__name__ == "TextBox":
+                # For inline text, often the height is slightly different 
+                # from the line-height; we want a tight but clickable area.
+                pass
+            pdf.link(x=border_box_x, y=local_y, w=border_box_w, h=click_h, link=href)
 
         # Paint Text Content
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
