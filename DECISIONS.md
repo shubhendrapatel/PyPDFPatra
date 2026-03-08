@@ -43,6 +43,14 @@ This document tracks important implementation decisions, design choices, and CSS
 
 ## Deferred Features
 
+### Fragmentation vs. Shifting (CSS2.1 §13.3)
+**Context**: Large blocks near page boundaries.
+**Decision**: We currently use a "threshold-based shifting" (e.g., 20px). The user pointed out that while atomic elements (images, short single-line boxes) should shift, fragmentable content (long paragraphs, lists) should break.
+**Planned Improvement**:
+1.  **Atomic Content**: Elements like `<img>`, `<table>` (unless row-breaking is implemented), or boxes with `page-break-inside: avoid` will use the shifting logic.
+2.  **Fragmentable Content**: Block containers will be allowed to break between children. Paragraphs (IFC) already break line-by-line.
+3.  **Border Integrity (`box-decoration-break`)**: We will implement support for controlling whether borders "close" on each page fragment. By default (W3C `slice`), a fragmented box should have no bottom border on page N and no top border on page N+1. Our renderer will be updated to detect fragmentation and omit borders accordingly unless `box-decoration-break: clone` is used.
+
 ### Overflow Clipping (`overflow: hidden`)
 **Context**: In `coverage.html`, `white-space: pre` blocks can bleed outside their containers if the content is too long. the block uses white-space: pre, which explicitly prevents line wrapping. According to W3C standards, the default behavior for overflow is visible, meaning the text should bleed outside its container if it's too long to fit.
 
