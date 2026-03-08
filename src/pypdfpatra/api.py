@@ -116,22 +116,23 @@ class PatraParser(HTMLParser):
         """
         if not self.stack:
             return
-            
+
         # Check if we are inside a <pre> tag (which preserves whitespace)
         in_pre = any(node.tag == "pre" for node in self.stack)
-        
+
         # Discard strings that are ONLY whitespace (like newlines between HTML tags)
         # to prevent creating empty text nodes between block elements.
         if not data.strip() and not in_pre:
             return
-            
+
         if in_pre:
             cleaned = data
         else:
             import re
+
             # Collapse multiple whitespaces into a single space, but KEEP leading/trailing
-            cleaned = re.sub(r'\s+', ' ', data)
-        
+            cleaned = re.sub(r"\s+", " ", data)
+
         text_node = Node("#text")
         text_node.style["content"] = cleaned
         self.stack[-1].add_child(text_node)

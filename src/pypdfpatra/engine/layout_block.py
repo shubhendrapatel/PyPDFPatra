@@ -8,7 +8,14 @@ Accepts a Box (part of the Render Tree) and calculates geometry.
 """
 
 from __future__ import annotations
-from pypdfpatra.engine.tree import Box, BlockBox, InlineBox, TextBox, AnonymousBlockBox, InlineBlockBox
+from pypdfpatra.engine.tree import (
+    Box,
+    BlockBox,
+    InlineBox,
+    TextBox,
+    AnonymousBlockBox,
+    InlineBlockBox,
+)
 
 
 def _parse_length(value: str, parent_value: float) -> float:
@@ -170,11 +177,11 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
         elif child_box.__class__.__name__ == "MarkerBox":
             from pypdfpatra.engine.font_metrics import measure_text, get_line_height
             from pypdfpatra.engine.font_metrics import parse_font
-            
+
             # Use the list-item's style for the marker
             style = getattr(box.node, "style", {}) if box.node else {}
             family, fpdf_style, size = parse_font(style)
-            
+
             # Layout the marker, placed outside the principal box
             content = child_box.text_content
             if content in ("__disc__", "__circle__", "__square__"):
@@ -185,13 +192,13 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 marker_w = measure_text(content, family, size, fpdf_style)
                 marker_h = get_line_height(family, size, fpdf_style)
                 y_offset = 0.0
-            
+
             # Position to the left of content_x, vertically aligned with current Y
             child_box.x = content_x - marker_w - 5.0  # 5pt gap
             child_box.y = current_border_box_bottom + y_offset
             child_box.w = marker_w
             child_box.h = marker_h
-            
+
             # Do NOT advance `current_border_box_bottom`, because the marker floats out of flow
             # relative to the first line of the principal block.
 
@@ -211,7 +218,7 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
         cb_w: Available width (width of containing block's content box).
     """
     style = getattr(box.node, "style", {}) if box.node else {}
-    
+
     box_sizing, css_width = _resolve_box_geometry(box, cb_w, style)
 
     # --- Absolute Positioning (Margin Box Origin) ---
@@ -220,11 +227,15 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
 
     # --- Normal Flow Children Layout ---
     content_x = box.x + box.margin_left + box.border_left + box.padding_left
-    current_border_box_bottom = box.y + box.margin_top + box.border_top + box.padding_top
+    current_border_box_bottom = (
+        box.y + box.margin_top + box.border_top + box.padding_top
+    )
 
     _wrap_inline_children(box)
-    
-    current_border_box_bottom = _layout_block_children(box, content_x, current_border_box_bottom)
+
+    current_border_box_bottom = _layout_block_children(
+        box, content_x, current_border_box_bottom
+    )
 
     # --- W3C Height Calculation ---
     css_height = _parse_length(style.get("height", "auto"), cb_w)

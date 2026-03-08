@@ -256,6 +256,7 @@ def resolve_styles(node: Node, parent_style: dict = None) -> None:
 
     # 5.5 Expand all shorthands (e.g., margin -> margin-top, margin-bottom...)
     from pypdfpatra.engine.shorthand import expand_shorthand_properties
+
     computed_style = expand_shorthand_properties(computed_style)
 
     # Assign finalized dict back to node

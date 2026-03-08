@@ -1,11 +1,19 @@
 import fpdf
 
+
 def parse_font(style: dict, base_size: float = 16.0) -> tuple:
     """Parses CSS dictionary into (family, style_str, size_float) for FPDF."""
-    family = style.get("font-family", "helvetica").split(",")[0].strip().strip("'\"").lower().replace(" ", "")
+    family = (
+        style.get("font-family", "helvetica")
+        .split(",")[0]
+        .strip()
+        .strip("'\"")
+        .lower()
+        .replace(" ", "")
+    )
     if family == "monospace":
         family = "courier"
-        
+
     size_str = style.get("font-size", "1em").strip().lower()
     size = base_size
     if size_str.endswith("em"):
@@ -27,8 +35,9 @@ def parse_font(style: dict, base_size: float = 16.0) -> tuple:
         fpdf_style += "I"
     if "underline" in style.get("text-decoration", ""):
         fpdf_style += "U"
-        
+
     return family, fpdf_style, size
+
 
 class FontMetrics:
     """
@@ -47,7 +56,7 @@ class FontMetrics:
             cls._pdf = fpdf.FPDF(unit="pt")
             cls._pdf.add_page()
             cls._registered_fonts_data = {}  # Store for rendering phase
-            
+
         return cls._instance
 
     def register_font(self, family: str, style: str, path: str):
@@ -55,7 +64,11 @@ class FontMetrics:
         key = f"{family}-{style}"
         if key not in self._registered_fonts_data:
             self._pdf.add_font(family, style=style, fname=path)
-            self._registered_fonts_data[key] = {"family": family, "style": style, "path": path}
+            self._registered_fonts_data[key] = {
+                "family": family,
+                "style": style,
+                "path": path,
+            }
 
     def set_font_safe(
         self,

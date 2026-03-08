@@ -60,13 +60,18 @@ def _commit_line(
         child, _, outer_h = item
         # Align bottom of outer box to bottom of line box
         target_outer_y = current_y + (max_h - outer_h)
-        
+
         # target_outer_y is where the margin-top starts.
-        target_content_y = target_outer_y + getattr(child, "margin_top", 0) + getattr(child, "border_top", 0) + getattr(child, "padding_top", 0)
-        
+        target_content_y = (
+            target_outer_y
+            + getattr(child, "margin_top", 0)
+            + getattr(child, "border_top", 0)
+            + getattr(child, "padding_top", 0)
+        )
+
         dy = target_content_y - child.y
         _shift_box(child, 0, dy)
-        
+
         line_box.children.append(child)
 
     parent_box.children.append(line_box)
@@ -74,9 +79,14 @@ def _commit_line(
 
 
 def _process_text_box(
-    child: TextBox, cb_w: float, line_x: float, current_y: float,
-    current_line_width: float, current_line_ends_with_space: bool,
-    current_line_boxes: list[tuple[Box, float, float]], parent_box: Box
+    child: TextBox,
+    cb_w: float,
+    line_x: float,
+    current_y: float,
+    current_line_width: float,
+    current_line_ends_with_space: bool,
+    current_line_boxes: list[tuple[Box, float, float]],
+    parent_box: Box,
 ) -> tuple[float, float, bool]:
     content = child.text_content
     if not content:
@@ -84,16 +94,19 @@ def _process_text_box(
 
     style = getattr(child.node, "style", {}) if child.node else {}
     white_space = style.get("white-space", "normal")
-    
+
     from pypdfpatra.engine.font_metrics import parse_font
+
     family, fpdf_style, size = parse_font(style)
     space_width = measure_text(" ", family, size, fpdf_style)
 
     if white_space == "pre":
-        lines = content.split('\n')
+        lines = content.split("\n")
         for i, line in enumerate(lines):
             if i > 0:
-                consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)
+                consumed_h = _commit_line(
+                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                )
                 current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
@@ -104,7 +117,9 @@ def _process_text_box(
 
             word_w = measure_text(line, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)
+                consumed_h = _commit_line(
+                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                )
                 current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
@@ -114,13 +129,14 @@ def _process_text_box(
             word_box.w = word_w
             word_box.h = get_line_height(family, size, fpdf_style)
             word_box.x = line_x + current_line_width
-            word_box.y = 0.0 # Will be shifted
-            
+            word_box.y = 0.0  # Will be shifted
+
             current_line_width += word_w
             current_line_boxes.append((word_box, word_w, word_box.h))
     else:
         import re
-        tokens = [t for t in re.split(r'(\s+)', content) if t]
+
+        tokens = [t for t in re.split(r"(\s+)", content) if t]
 
         for token in tokens:
             if token.isspace():
@@ -131,7 +147,9 @@ def _process_text_box(
 
             word_w = measure_text(token, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)
+                consumed_h = _commit_line(
+                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                )
                 current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
@@ -141,8 +159,8 @@ def _process_text_box(
             word_box.w = word_w
             word_box.h = get_line_height(family, size, fpdf_style)
             word_box.x = line_x + current_line_width
-            word_box.y = 0.0 # Will be shifted
-            
+            word_box.y = 0.0  # Will be shifted
+
             current_line_width += word_w
             current_line_boxes.append((word_box, word_w, word_box.h))
             current_line_ends_with_space = False
@@ -151,32 +169,63 @@ def _process_text_box(
 
 
 def _process_inline_box(
-    child: Box, cb_w: float, line_x: float, current_y: float,
-    current_line_width: float, current_line_boxes: list[tuple[Box, float, float]], parent_box: Box
+    child: Box,
+    cb_w: float,
+    line_x: float,
+    current_y: float,
+    current_line_width: float,
+    current_line_boxes: list[tuple[Box, float, float]],
+    parent_box: Box,
 ) -> tuple[float, float, bool]:
     if child.__class__.__name__ == "InlineBlockBox":
         from pypdfpatra.engine.layout_block import layout_block_context
+
         child_style = getattr(child.node, "style", {})
-        
+
         from pypdfpatra.engine.layout_block import _parse_length
+
         css_width = _parse_length(child_style.get("width", "auto"), cb_w)
         if css_width <= 0:
             css_width = 150.0
-        
+
         layout_block_context(child, 0.0, 0.0, css_width)
 
-    child_total_w = child.margin_left + child.border_left + child.padding_left + child.w + child.padding_right + child.border_right + child.margin_right
-    child_total_h = child.margin_top + child.border_top + child.padding_top + child.h + child.padding_bottom + child.border_bottom + child.margin_bottom
+    child_total_w = (
+        child.margin_left
+        + child.border_left
+        + child.padding_left
+        + child.w
+        + child.padding_right
+        + child.border_right
+        + child.margin_right
+    )
+    child_total_h = (
+        child.margin_top
+        + child.border_top
+        + child.padding_top
+        + child.h
+        + child.padding_bottom
+        + child.border_bottom
+        + child.margin_bottom
+    )
 
     if current_line_width + child_total_w > cb_w and current_line_width > 0:
-        consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)
+        consumed_h = _commit_line(
+            current_line_boxes, line_x, current_y, cb_w, parent_box
+        )
         current_y += consumed_h
         current_line_boxes.clear()
         current_line_width = 0.0
 
-    target_content_x = line_x + current_line_width + child.margin_left + child.border_left + child.padding_left
+    target_content_x = (
+        line_x
+        + current_line_width
+        + child.margin_left
+        + child.border_left
+        + child.padding_left
+    )
     dx = target_content_x - child.x
-    
+
     _shift_box(child, dx, 0)
 
     current_line_width += child_total_w
@@ -217,13 +266,29 @@ def layout_inline_context(
     flat_children = _flatten_inline(inline_children)
     for child in flat_children:
         if isinstance(child, TextBox):
-            current_y, current_line_width, current_line_ends_with_space = _process_text_box(
-                child, cb_w, line_x, current_y, current_line_width,
-                current_line_ends_with_space, current_line_boxes, parent_box
+            current_y, current_line_width, current_line_ends_with_space = (
+                _process_text_box(
+                    child,
+                    cb_w,
+                    line_x,
+                    current_y,
+                    current_line_width,
+                    current_line_ends_with_space,
+                    current_line_boxes,
+                    parent_box,
+                )
             )
         else:
-            current_y, current_line_width, current_line_ends_with_space = _process_inline_box(
-                child, cb_w, line_x, current_y, current_line_width, current_line_boxes, parent_box
+            current_y, current_line_width, current_line_ends_with_space = (
+                _process_inline_box(
+                    child,
+                    cb_w,
+                    line_x,
+                    current_y,
+                    current_line_width,
+                    current_line_boxes,
+                    parent_box,
+                )
             )
 
     consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)

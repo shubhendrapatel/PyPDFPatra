@@ -36,7 +36,11 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
     # Process form inputs (synthesize text children representing their values)
     if tag in ("input", "textarea") and display != "none":
         # Form inputs don't usually have children in the DOM, so synthesize one
-        value = getattr(node, "props", {}).get("value") or getattr(node, "props", {}).get("placeholder") or ""
+        value = (
+            getattr(node, "props", {}).get("value")
+            or getattr(node, "props", {}).get("placeholder")
+            or ""
+        )
         if tag == "textarea" and not value and getattr(node, "children", []):
             # For textarea, content might actually be a DOM child
             pass
@@ -52,6 +56,7 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         box = BlockBox(node=node)
     elif display == "inline-block":
         from pypdfpatra.engine.tree import InlineBlockBox
+
         box = InlineBlockBox(node=node)
     else:
         # Defaults to inline for spans, anchors, strong, etc.
@@ -71,22 +76,23 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         if isinstance(child, Node):
             child_style = getattr(child, "style", {})
             child_display = child_style.get("display", "inline").strip().lower()
-            
+
             # Pass counter down only if it's a list item
             if child_display == "list-item" or getattr(child, "tag", "") == "li":
                 child_box = generate_box_tree(child, _list_index=child_li_counter)
                 child_li_counter += 1
             else:
                 child_box = generate_box_tree(child)
-                
+
             if child_box is not None:
                 box.children.append(child_box)
 
     # Generate MarkerBox for list-items
     if display == "list-item":
         from pypdfpatra.engine.tree import MarkerBox
+
         list_style_type = style.get("list-style-type", "disc").strip().lower()
-        
+
         marker_content = "__disc__"
         if list_style_type == "circle":
             marker_content = "__circle__"
@@ -100,7 +106,7 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
                 marker_content = f"{val}."
 
         marker_box = MarkerBox(text_content=marker_content, node=node)
-        
+
         # Insert at the beginning of the children list
         box.children.insert(0, marker_box)
 

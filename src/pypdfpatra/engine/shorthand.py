@@ -43,7 +43,7 @@ def _expand_quad_shorthand(prop: str, value: str, output_dict: dict) -> None:
 
     # Handle border-width -> border-top-width
     if prop.startswith("border-"):
-        prefix, suffix = "border", prop[6:] # e.g. '-width'
+        prefix, suffix = "border", prop[6:]  # e.g. '-width'
     else:
         prefix, suffix = prop, ""
 
@@ -59,21 +59,34 @@ def _expand_border_shorthand(value: str, output_dict: dict) -> None:
     then expands those into TRBL parts.
     """
     width, style, color = "medium", "none", "currentcolor"
-    
+
     parts = value.strip().split()
     for part in parts:
         part_lower = part.lower()
-        if part_lower in ("none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"):
+        if part_lower in (
+            "none",
+            "hidden",
+            "dotted",
+            "dashed",
+            "solid",
+            "double",
+            "groove",
+            "ridge",
+            "inset",
+            "outset",
+        ):
             style = part
-        elif part_lower in ("thin", "medium", "thick") or (any(char.isdigit() for char in part) and not part.startswith("#")):
+        elif part_lower in ("thin", "medium", "thick") or (
+            any(char.isdigit() for char in part) and not part.startswith("#")
+        ):
             width = part
         else:
             color = part
-            
+
     output_dict["border-width"] = width
     output_dict["border-style"] = style
     output_dict["border-color"] = color
-    
+
     # Expand to top, right, bottom, left
     _expand_quad_shorthand("border-width", width, output_dict)
     _expand_quad_shorthand("border-style", style, output_dict)
@@ -92,9 +105,15 @@ def expand_shorthand_properties(style_dict: dict) -> dict:
         dict: A new dictionary with shorthands fully expanded.
     """
     expanded = {}
-    
+
     for prop, val in style_dict.items():
-        if prop in ("margin", "padding", "border-width", "border-style", "border-color"):
+        if prop in (
+            "margin",
+            "padding",
+            "border-width",
+            "border-style",
+            "border-color",
+        ):
             _expand_quad_shorthand(prop, val, expanded)
         elif prop == "border":
             _expand_border_shorthand(val, expanded)

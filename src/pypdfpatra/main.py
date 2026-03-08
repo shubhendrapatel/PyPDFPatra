@@ -8,12 +8,18 @@ import fpdf
 
 from pypdfpatra.api import build_tree
 from pypdfpatra.matcher import apply_styles
-from pypdfpatra.engine import resolve_styles, generate_box_tree, layout_block_context, parse_stylesheets
+from pypdfpatra.engine import (
+    resolve_styles,
+    generate_box_tree,
+    layout_block_context,
+    parse_stylesheets,
+)
 from pypdfpatra.render import draw_boxes
 from pypdfpatra.logger import logger
 
 
 import os
+
 
 class HTML:
     """
@@ -21,10 +27,12 @@ class HTML:
     Follows the API conventions of WeasyPrint.
     """
 
-    def __init__(self, string: str = None, filename: str = None, base_url: str = None, **kwargs):
+    def __init__(
+        self, string: str = None, filename: str = None, base_url: str = None, **kwargs
+    ):
         """
         Initializes the document configuration.
-        
+
         Args:
             string (str, optional): A string containing HTML code.
             filename (str, optional): A path or URL to an HTML file.
@@ -40,7 +48,7 @@ class HTML:
             if string.endswith(".html") or string.endswith(".htm"):
                 filename = string
                 string = None
-                
+
         if filename is not None:
             if not self.base_url:
                 self.base_url = os.path.dirname(os.path.abspath(filename))
@@ -81,14 +89,19 @@ class HTML:
         pdf = fpdf.FPDF(unit="pt", format="A4")
         pdf.set_auto_page_break(False)
         pdf.add_page()
-        
+
         # Load custom fonts
         from pypdfpatra.engine.font_metrics import FontMetrics
+
         fm = FontMetrics.get_instance()
         if hasattr(fm, "_registered_fonts_data"):
             for font_key, font_args in fm._registered_fonts_data.items():
                 try:
-                    pdf.add_font(font_args['family'], style=font_args['style'], fname=font_args['path'])
+                    pdf.add_font(
+                        font_args["family"],
+                        style=font_args["style"],
+                        fname=font_args["path"],
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to add font to PDF: {e}")
 

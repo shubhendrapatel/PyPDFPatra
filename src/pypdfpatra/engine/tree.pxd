@@ -56,6 +56,9 @@ cdef class InlineBlockBox(Box):
 cdef class LineBox(Box):
     pass
 
+cdef class MarkerBox(Box):
+    cdef public str text_content
+
 cdef class TextBox(Box):
     cdef public str text_content
 

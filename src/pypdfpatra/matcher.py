@@ -30,7 +30,16 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
         # Check if the rule is a 'Qualified Rule' (has a selector and declarations)
         if isinstance(rule, tinycss2.ast.QualifiedRule):
             # Convert the selector tokens to a string (e.g. ['div'], ['.', 'custom-box'])
-            selector = "".join([t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t) for t in rule.prelude]).strip()
+            selector = "".join(
+                [
+                    t.serialize()
+                    if hasattr(t, "serialize")
+                    else str(t.value)
+                    if hasattr(t, "value")
+                    else str(t)
+                    for t in rule.prelude
+                ]
+            ).strip()
 
             matched = False
             # 1. ID Matcher (#my-id)
@@ -66,7 +75,11 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
             if isinstance(decl, tinycss2.ast.Declaration):
                 node.style[decl.name] = "".join(
                     [
-                        t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t)
+                        t.serialize()
+                        if hasattr(t, "serialize")
+                        else str(t.value)
+                        if hasattr(t, "value")
+                        else str(t)
                         for t in decl.value
                     ]
                 )
@@ -92,7 +105,11 @@ def _inject_declarations(node: Node, content: List[tinycss2.ast.Node]) -> None:
         if isinstance(decl, tinycss2.ast.Declaration):
             node.style[decl.name] = "".join(
                 [
-                    t.serialize() if hasattr(t, "serialize") else str(t.value) if hasattr(t, "value") else str(t)
+                    t.serialize()
+                    if hasattr(t, "serialize")
+                    else str(t.value)
+                    if hasattr(t, "value")
+                    else str(t)
                     for t in decl.value
                 ]
             ).strip()
