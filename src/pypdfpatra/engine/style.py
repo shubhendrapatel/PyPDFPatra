@@ -125,15 +125,15 @@ USER_AGENT_STYLES = {
     "dl": {"display": "block", "margin-top": "1em", "margin-bottom": "1em"},
     "dd": {"display": "block", "margin-left": "40px"},
     "li": {"display": "list-item"},
-    # Tables (Basic Block Support in MVP)
-    "table": {"display": "block", "margin-top": "0px", "margin-bottom": "0px"},
-    "thead": {"display": "block"},
-    "tbody": {"display": "block"},
-    "tfoot": {"display": "block"},
-    "tr": {"display": "block"},
-    "td": {"display": "block"},
-    "th": {"display": "block", "font-weight": "bold"},
-    "caption": {"display": "block"},
+    # Tables
+    "table": {"display": "table", "margin-top": "0px", "margin-bottom": "0px"},
+    "thead": {"display": "table-header-group"},
+    "tbody": {"display": "table-row-group"},
+    "tfoot": {"display": "table-footer-group"},
+    "tr": {"display": "table-row"},
+    "td": {"display": "table-cell"},
+    "th": {"display": "table-cell", "font-weight": "bold"},
+    "caption": {"display": "block", "text-align": "center"},
     # Forms
     "form": {"display": "block", "margin-top": "0em"},
     "fieldset": {
