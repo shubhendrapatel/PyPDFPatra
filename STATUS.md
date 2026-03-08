@@ -20,9 +20,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Pagination**: Implement W3C Paged Media logic for page boundaries. (✅)
 - **Fragmentation**: Implement line-breaking and block-fragmentation across pages. (✅)
 
-### Phase 7: Advanced PDF Features (⬜ Not Started)
+### Phase 7: Advanced PDF Features (🔄 In Progress)
 - **AcroForms**: Implement interactive fillable widgets. (⬜)
-- **Navigation**: PDF Outlines (Bookmarks) and Hyperlink Annotations. (⬜)
+- **Navigation**: PDF Outlines (Bookmarks) (⬜) and Hyperlink Annotations. (✅)
 
 ---
 
