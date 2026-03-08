@@ -40,3 +40,12 @@ This document tracks important implementation decisions, design choices, and CSS
 ### TrueType Fonts & Text Measurement
 **Context**: Calculating the geometry of text blocks.
 **Decision**: FPDF's built-in fonts (Helvetica) lack comprehensive Unicode support. We require explicit TTF font inclusion. `font_metrics.py` dynamically interfaces with FPDF's internal font dictionary cache to measure string widths before drawing them, feeding those floating-point measurements back up to the Inline Formatting Context (`layout_inline.py`) to trigger accurate line-wrapping.
+
+## Deferred Features
+
+### Overflow Clipping (`overflow: hidden`)
+**Context**: In `coverage.html`, `white-space: pre` blocks can bleed outside their containers if the content is too long. the block uses white-space: pre, which explicitly prevents line wrapping. According to W3C standards, the default behavior for overflow is visible, meaning the text should bleed outside its container if it's too long to fit.
+
+However, in a professional PDF, we usually expect this content to be clipped so it doesn't cross borders or bleed into the page margins.
+
+**Decision**: We have decided **not** to implement `overflow: hidden` at this stage. While `fpdf2` supports block-based clipping via `pdf.rect_clip()`, the interaction between clipping and our multi-page slicing logic requires careful design to avoid cutting off legitimate content at page boundaries. We will revisit this at a later date after core navigation features are solidified.
