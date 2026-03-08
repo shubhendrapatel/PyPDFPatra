@@ -103,6 +103,13 @@ USER_AGENT_STYLES = {
         "margin-bottom": "2.33em",
         "font-weight": "bold",
     },
+    # Text decoration inline elements
+    "del": {"display": "inline", "text-decoration": "line-through"},
+    "s": {"display": "inline", "text-decoration": "line-through"},
+    "strike": {"display": "inline", "text-decoration": "line-through"},
+    "ins": {"display": "inline", "text-decoration": "underline"},
+    "u": {"display": "inline", "text-decoration": "underline"},
+    "a": {"display": "inline", "color": "#0000EE", "text-decoration": "underline"},
     # Lists
     "ul": {
         "display": "block",

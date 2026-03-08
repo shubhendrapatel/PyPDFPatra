@@ -376,6 +376,26 @@ def _draw_text(
     # Thanks to true TTF support via @font-face, Unicode renders natively!
     pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
 
+    # Draw text decoration lines (underline and line-through)
+    decoration = style.get("text-decoration", "none").strip().lower()
+    if decoration not in ("none", ""):
+        line_w = box.w
+        line_weight = max(0.4, size * 0.05)  # Scale line weight with font size
+
+        pdf.set_draw_color(r, g, b)
+        pdf.set_line_width(line_weight)
+
+        if "underline" in decoration:
+            underline_y = local_y + box.h - line_weight
+            pdf.line(content_x, underline_y, content_x + line_w, underline_y)
+
+        if "line-through" in decoration:
+            strikethrough_y = local_y + box.h * 0.55
+            pdf.line(content_x, strikethrough_y, content_x + line_w, strikethrough_y)
+
+        pdf.set_line_width(0.2)  # Reset to default
+        pdf.set_draw_color(0, 0, 0)
+
 
 def _draw_image(
     pdf: fpdf.FPDF,
