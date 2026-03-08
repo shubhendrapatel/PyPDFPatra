@@ -33,8 +33,8 @@ def parse_font(style: dict, base_size: float = 16.0) -> tuple:
         fpdf_style += "B"
     if style.get("font-style", "") == "italic":
         fpdf_style += "I"
-    if "underline" in style.get("text-decoration", ""):
-        fpdf_style += "U"
+    # Note: We do NOT add "U" here — text-decoration:underline is drawn
+    # manually in render.py using pdf.line() for better positioning control.
 
     return family, fpdf_style, size
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import io
 from urllib.request import urlopen
-from urllib.error import URLError
 from PIL import Image
 
 # Simple cache so we don't fetch/parse the same image multiple times during layout & render

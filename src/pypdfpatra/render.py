@@ -252,7 +252,8 @@ def _draw_borders(
     border_box_h: float,
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
-    half = lambda w: w / 2.0
+    def half(w):
+        return w / 2.0
 
     for edge, b_w, line_x1, line_y1, line_x2, line_y2 in [
         # Lines are centered on their coordinate, so offset by b_w/2 to hug the border-box edge
