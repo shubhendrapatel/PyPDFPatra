@@ -98,7 +98,7 @@ def _wrap_inline_children(box: Box) -> None:
     current_anonymous_block = None
 
     for child_box in box.children:
-        if isinstance(child_box, (InlineBox, TextBox, InlineBlockBox)):
+        if isinstance(child_box, (InlineBox, TextBox, InlineBlockBox)) or child_box.__class__.__name__ == "ImageBox":
             if current_anonymous_block is None:
                 current_anonymous_block = AnonymousBlockBox(node=None)
                 current_anonymous_block.margin_top = (
