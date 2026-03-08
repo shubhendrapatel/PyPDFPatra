@@ -256,24 +256,48 @@ def _draw_borders(
 
     for edge, b_w, line_x1, line_y1, line_x2, line_y2 in [
         # Lines are centered on their coordinate, so offset by b_w/2 to hug the border-box edge
-        ("top",    border_top,
-             border_box_x,               border_box_y + half(border_top),
-             border_box_x + border_box_w, border_box_y + half(border_top)),
-        ("bottom", border_bottom,
-             border_box_x,               border_box_y + border_box_h - half(border_bottom),
-             border_box_x + border_box_w, border_box_y + border_box_h - half(border_bottom)),
-        ("left",   border_left,
-             border_box_x + half(border_left),   border_box_y,
-             border_box_x + half(border_left),   border_box_y + border_box_h),
-        ("right",  border_right,
-             border_box_x + border_box_w - half(border_right), border_box_y,
-             border_box_x + border_box_w - half(border_right), border_box_y + border_box_h),
+        (
+            "top",
+            border_top,
+            border_box_x,
+            border_box_y + half(border_top),
+            border_box_x + border_box_w,
+            border_box_y + half(border_top),
+        ),
+        (
+            "bottom",
+            border_bottom,
+            border_box_x,
+            border_box_y + border_box_h - half(border_bottom),
+            border_box_x + border_box_w,
+            border_box_y + border_box_h - half(border_bottom),
+        ),
+        (
+            "left",
+            border_left,
+            border_box_x + half(border_left),
+            border_box_y,
+            border_box_x + half(border_left),
+            border_box_y + border_box_h,
+        ),
+        (
+            "right",
+            border_right,
+            border_box_x + border_box_w - half(border_right),
+            border_box_y,
+            border_box_x + border_box_w - half(border_right),
+            border_box_y + border_box_h,
+        ),
     ]:
-        border_style = style.get(f"border-{edge}-style", style.get("border-style", "solid"))
+        border_style = style.get(
+            f"border-{edge}-style", style.get("border-style", "solid")
+        )
         if b_w <= 0 or border_style in ("none", "hidden"):
             continue
 
-        color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
+        color_str = style.get(
+            f"border-{edge}-color", style.get("border-color", "#000000")
+        )
         r, g, b = _parse_color(color_str)
 
         # Basic 3D effect for inset/outset
@@ -315,12 +339,22 @@ def _draw_borders(
                 sign = 1 if edge == "bottom" else -1
                 pdf.line(line_x1, local_y1, line_x2, local_y2)
                 pdf.set_line_width(b_w / 3.0)
-                pdf.line(line_x1, local_y1 + sign * inner_offset * 2, line_x2, local_y2 + sign * inner_offset * 2)
+                pdf.line(
+                    line_x1,
+                    local_y1 + sign * inner_offset * 2,
+                    line_x2,
+                    local_y2 + sign * inner_offset * 2,
+                )
             else:
                 sign = 1 if edge == "right" else -1
                 pdf.line(line_x1, local_y1, line_x2, local_y2)
                 pdf.set_line_width(b_w / 3.0)
-                pdf.line(line_x1 + sign * inner_offset * 2, local_y1, line_x2 + sign * inner_offset * 2, local_y2)
+                pdf.line(
+                    line_x1 + sign * inner_offset * 2,
+                    local_y1,
+                    line_x2 + sign * inner_offset * 2,
+                    local_y2,
+                )
         else:
             # solid, groove, ridge, inset, outset all fall back to solid line
             pdf.line(line_x1, local_y1, line_x2, local_y2)
@@ -445,16 +479,16 @@ def _draw_image(
         # Draw fallback border
         pdf.set_draw_color(200, 200, 200)
         pdf.rect(x=content_x, y=local_y, w=box.w, h=box.h, style="D")
-        
+
         # Draw alt text or filename inside
         alt_text = getattr(box, "alt_text", "")
         if not alt_text:
             alt_text = img_src.split("/")[-1].split("\\")[-1]
-            
+
         pdf.set_xy(content_x + 2, local_y + 2)
         pdf.set_text_color(150, 150, 150)
         pdf.set_font("Helvetica", size=8)
-        
+
         # FPDF cell has a weird bug where if w > actual we can clip, but let's just do a simple cell
         # truncate text if needed
         pdf.cell(w=max(0, box.w - 4), h=10, text=alt_text, align="L")
@@ -498,8 +532,16 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             caption_h = 0.0
             for child in box.children:
                 if getattr(child.node, "tag", "") == "caption":
-                    caption_h += child.h + child.margin_top + child.margin_bottom + child.border_top + child.border_bottom + child.padding_top + child.padding_bottom
-            
+                    caption_h += (
+                        child.h
+                        + child.margin_top
+                        + child.margin_bottom
+                        + child.border_top
+                        + child.border_bottom
+                        + child.padding_top
+                        + child.padding_bottom
+                    )
+
             border_box_y += caption_h
             border_box_h -= caption_h
 
@@ -527,7 +569,7 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             _draw_text(
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
-            
+
         # Paint Image Content
         if box.__class__.__name__ == "ImageBox":
             _draw_image(

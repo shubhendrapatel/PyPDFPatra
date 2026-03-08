@@ -14,7 +14,9 @@ from __future__ import annotations
 from pypdfpatra.engine.tree import Node, Box, BlockBox, InlineBox, TextBox
 
 
-def generate_box_tree(node: Node, base_url: str = "", _list_index: int = None) -> Box | None:
+def generate_box_tree(
+    node: Node, base_url: str = "", _list_index: int = None
+) -> Box | None:
     """
     Recursively processes an HTML DOM Node and generates the appropriate W3C
     Formatting Context Box geometries based on the computed CSS `display` style.
@@ -62,30 +64,41 @@ def generate_box_tree(node: Node, base_url: str = "", _list_index: int = None) -
     elif tag == "img":
         from pypdfpatra.engine.tree import ImageBox
         from pypdfpatra.engine.image import get_image_info
-        
+
         src = getattr(node, "props", {}).get("src", "")
         alt_text = getattr(node, "props", {}).get("alt", "")
-        
+
         info = get_image_info(src, base_url)
-        
+
         img_w = info["width"] if info else 100.0  # Default fallback box
         img_h = info["height"] if info else 100.0
-        
-        box = ImageBox(img_src=info["src"] if info else src, image_w=img_w, image_h=img_h, alt_text=alt_text, node=node)
+
+        box = ImageBox(
+            img_src=info["src"] if info else src,
+            image_w=img_w,
+            image_h=img_h,
+            alt_text=alt_text,
+            node=node,
+        )
     elif display == "inline-block":
         from pypdfpatra.engine.tree import InlineBlockBox
+
         box = InlineBlockBox(node=node)
     elif display == "table":
         from pypdfpatra.engine.tree import TableBox
+
         box = TableBox(node=node)
     elif display in ("table-row-group", "table-header-group", "table-footer-group"):
         from pypdfpatra.engine.tree import TableRowGroupBox
+
         box = TableRowGroupBox(node=node)
     elif display == "table-row":
         from pypdfpatra.engine.tree import TableRowBox
+
         box = TableRowBox(node=node)
     elif display == "table-cell":
         from pypdfpatra.engine.tree import TableCellBox
+
         box = TableCellBox(node=node)
     else:
         # Defaults to inline for spans, anchors, strong, etc.
@@ -108,7 +121,9 @@ def generate_box_tree(node: Node, base_url: str = "", _list_index: int = None) -
 
             # Pass counter down only if it's a list item
             if child_display == "list-item" or getattr(child, "tag", "") == "li":
-                child_box = generate_box_tree(child, base_url, _list_index=child_li_counter)
+                child_box = generate_box_tree(
+                    child, base_url, _list_index=child_li_counter
+                )
                 child_li_counter += 1
             else:
                 child_box = generate_box_tree(child, base_url)

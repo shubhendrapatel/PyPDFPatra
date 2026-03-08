@@ -207,7 +207,7 @@ def _process_inline_box(
             css_width = 150.0
 
         layout_block_context(child, 0.0, 0.0, css_width)
-        
+
     elif child.__class__.__name__ == "ImageBox":
         child_style = getattr(child.node, "style", {})
         from pypdfpatra.engine.layout_block import _parse_length
@@ -227,10 +227,18 @@ def _process_inline_box(
 
         if css_width > 0 and css_height <= 0:
             child.w = css_width
-            child.h = (child.image_h / child.image_w * css_width) if child.image_w > 0 else css_width
+            child.h = (
+                (child.image_h / child.image_w * css_width)
+                if child.image_w > 0
+                else css_width
+            )
         elif css_height > 0 and css_width <= 0:
             child.h = css_height
-            child.w = (child.image_w / child.image_h * css_height) if child.image_h > 0 else css_height
+            child.w = (
+                (child.image_w / child.image_h * css_height)
+                if child.image_h > 0
+                else css_height
+            )
         elif css_width > 0 and css_height > 0:
             child.w = css_width
             child.h = css_height
@@ -348,7 +356,9 @@ def layout_inline_context(
                 )
             )
 
-    consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box, text_align)
+    consumed_h = _commit_line(
+        current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
+    )
     current_y += consumed_h
 
     # The parent block box height expands to fit all the line boxes

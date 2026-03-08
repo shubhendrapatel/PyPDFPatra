@@ -41,12 +41,12 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
     # Parse spacing.
     margin_top = _parse_length(style.get("margin-top", "0px"), aw)
     margin_bottom = _parse_length(style.get("margin-bottom", "0px"), aw)
-    
+
     margin_left_str = style.get("margin-left", "0px").strip().lower()
     margin_right_str = style.get("margin-right", "0px").strip().lower()
     margin_left = _parse_length(margin_left_str, aw)
     margin_right = _parse_length(margin_right_str, aw)
-    
+
     padding_top = _parse_length(style.get("padding-top", "0px"), aw)
     padding_bottom = _parse_length(style.get("padding-bottom", "0px"), aw)
     padding_left = _parse_length(style.get("padding-left", "0px"), aw)
@@ -78,12 +78,17 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
 
     if css_width_str != "auto":
         if box_sizing == "border-box":
-            box.w = max(0.0, css_width - padding_left - padding_right - border_left - border_right)
+            box.w = max(
+                0.0,
+                css_width - padding_left - padding_right - border_left - border_right,
+            )
         else:  # content-box
             box.w = css_width
-            
+
         # W3C auto margin calculation for centering
-        remaining_w = aw - (box.w + padding_left + padding_right + border_left + border_right)
+        remaining_w = aw - (
+            box.w + padding_left + padding_right + border_left + border_right
+        )
         if remaining_w > 0:
             if margin_left_str == "auto" and margin_right_str == "auto":
                 margin_left = remaining_w / 2.0
@@ -94,7 +99,16 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
                 margin_right = remaining_w - margin_left
     else:
         # width: auto
-        box.w = max(0.0, aw - margin_left - margin_right - padding_left - padding_right - border_left - border_right)
+        box.w = max(
+            0.0,
+            aw
+            - margin_left
+            - margin_right
+            - padding_left
+            - padding_right
+            - border_left
+            - border_right,
+        )
 
     box.margin_top = margin_top
     box.margin_bottom = margin_bottom
@@ -114,7 +128,10 @@ def _wrap_inline_children(box: Box) -> None:
     current_anonymous_block = None
 
     for child_box in box.children:
-        if isinstance(child_box, (InlineBox, TextBox, InlineBlockBox)) or child_box.__class__.__name__ == "ImageBox":
+        if (
+            isinstance(child_box, (InlineBox, TextBox, InlineBlockBox))
+            or child_box.__class__.__name__ == "ImageBox"
+        ):
             if current_anonymous_block is None:
                 current_anonymous_block = AnonymousBlockBox(node=None)
                 current_anonymous_block.margin_top = (
@@ -152,7 +169,7 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             child_box.x = content_x
             child_box.y = current_border_box_bottom
             child_box.w = box.w
-            
+
             style = getattr(box.node, "style", {}) if box.node else {}
             text_align = style.get("text-align", "left").strip().lower()
 
@@ -195,21 +212,25 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
 
         elif child_box.__class__.__name__ == "TableBox":
             from pypdfpatra.engine.layout_table import layout_table_context
-            
+
             # Setup margins for margin collapsing
-            child_style = getattr(child_box.node, "style", {}) if getattr(child_box, "node", None) else {}
+            child_style = (
+                getattr(child_box.node, "style", {})
+                if getattr(child_box, "node", None)
+                else {}
+            )
             child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
-            
+
             if first_child:
                 collapsed_margin = child_mt
                 first_child = False
             else:
                 collapsed_margin = max(prev_margin_bottom, child_mt)
-                
+
             child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
-            
+
             layout_table_context(child_box, content_x, child_margin_box_y, box.w)
-            
+
             current_border_box_bottom = (
                 child_box.y
                 + child_box.margin_top

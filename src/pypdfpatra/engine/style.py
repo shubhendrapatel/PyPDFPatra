@@ -52,8 +52,8 @@ USER_AGENT_STYLES = {
         "white-space": "pre",
     },
     "hr": {
-        "display": "block", 
-        "margin-top": "0.5em", 
+        "display": "block",
+        "margin-top": "0.5em",
         "margin-bottom": "0.5em",
         "border-top-width": "1px",
         "border-top-style": "solid",
