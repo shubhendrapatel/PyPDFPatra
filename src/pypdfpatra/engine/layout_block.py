@@ -166,7 +166,6 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
     prev_margin_bottom = 0.0
     first_child = True
 
-
     for child_box in box.children:
         # Pagination: Determine if the child box overflows the current page area.
         current_page_idx = int(current_border_box_bottom / PAGE_HEIGHT)
@@ -213,11 +212,15 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             # Fragmentation Check: If a block has an explicit height or a minimum threshold
             # that exceeds the remaining page space, shift the block to the next page.
             if child_margin_box_y + 20 > page_boundary:
-                current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
-                child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+                current_border_box_bottom = (
+                    current_page_idx + 1
+                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                child_margin_box_y = (
+                    current_border_box_bottom + collapsed_margin - child_mt
+                )
 
             layout_block_context(child_box, content_x, child_margin_box_y, box.w)
-            
+
             # Update current cursor
             current_border_box_bottom = (
                 child_box.y
@@ -248,8 +251,12 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
 
             # Tables are shifted to the next page if they start too close to the boundary.
             if child_margin_box_y + 40 > page_boundary:
-                current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
-                child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+                current_border_box_bottom = (
+                    current_page_idx + 1
+                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                child_margin_box_y = (
+                    current_border_box_bottom + collapsed_margin - child_mt
+                )
 
             layout_table_context(child_box, content_x, child_margin_box_y, box.w)
 
@@ -300,20 +307,28 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     style = getattr(box.node, "style", {}) if box.node else {}
     box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
 
-    # Pagination Look-Ahead: Determine if the box fits on the current page 
+    # Pagination Look-Ahead: Determine if the box fits on the current page
     # based on its explicit height.
     css_height = _parse_length(style.get("height", "auto"), cb_w)
-    
+
     if css_height > 0:
         total_h = css_height
         if box_sizing == "content-box":
-            total_h += box.padding_top + box.padding_bottom + box.border_top + box.border_bottom
-        
+            total_h += (
+                box.padding_top
+                + box.padding_bottom
+                + box.border_top
+                + box.border_bottom
+            )
+
         current_page_idx = int(cb_y / PAGE_HEIGHT)
         page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
 
         # If the block's border-box exceeds the boundary, jump to the next page top.
-        if cb_y + total_h > page_boundary and cb_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5:
+        if (
+            cb_y + total_h > page_boundary
+            and cb_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5
+        ):
             cb_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
 
     # --- Absolute Positioning (Margin Box Origin) ---
@@ -335,7 +350,14 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     # --- W3C Height Calculation ---
     if css_height > 0:
         if box_sizing == "border-box":
-            box.h = max(0.0, css_height - box.padding_top - box.padding_bottom - box.border_top - box.border_bottom)
+            box.h = max(
+                0.0,
+                css_height
+                - box.padding_top
+                - box.padding_bottom
+                - box.border_top
+                - box.border_bottom,
+            )
         else:  # content-box
             box.h = css_height
     else:

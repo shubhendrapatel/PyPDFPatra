@@ -191,9 +191,6 @@ def _parse_color(color_str: str) -> tuple:
     return (0, 0, 0)
 
 
-
-
-
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
     """Ensures the PDF has enough pages to draw at the given 0-indexed page."""
     target_page = page_idx + 1
@@ -577,7 +574,7 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             border_box_w,
             border_box_h,
         )
-        
+
         # Hyperlinks (Phase 7: Advanced PDF Features)
         href = getattr(box.node, "props", {}).get("href")
         if href:
@@ -587,7 +584,7 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
             # We add a 2pt vertical buffer to ensure the click area is robust.
             click_h = border_box_h
             if box.__class__.__name__ == "TextBox":
-                # For inline text, often the height is slightly different 
+                # For inline text, often the height is slightly different
                 # from the line-height; we want a tight but clickable area.
                 pass
             pdf.link(x=border_box_x, y=local_y, w=border_box_w, h=click_h, link=href)
