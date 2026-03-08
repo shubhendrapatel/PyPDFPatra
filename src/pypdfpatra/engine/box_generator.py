@@ -14,17 +14,22 @@ from __future__ import annotations
 from pypdfpatra.engine.tree import Node, Box, BlockBox, InlineBox, TextBox
 
 
-def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
+def generate_box_tree(node: Node, base_url: str = "", _list_index: int = None) -> Box | None:
     """
-    Recursively walks the DOM tree and builds the Render Tree.
+    Recursively processes an HTML DOM Node and generates the appropriate W3C
+    Formatting Context Box geometries based on the computed CSS `display` style.
 
     Args:
-        node: The root DOM Node.
-        _list_index: Internal counter passed down to `list-item` nodes.
+        node (Node): The root or current DOM Node.
+        base_url (str): The base directory for parsing relative image/resource paths.
+        _list_index (int, optional): Internal counter for list-item numbering.
 
     Returns:
-        The root Box of the Render Tree, or None if `display: none`.
+        Box | None: The generated Cython Box hierarchy, or None if the element
+                    is `display: none` or otherwise not rendered.
     """
+    if not isinstance(node, Node):
+        return None
     style = getattr(node, "style", {})
     display = style.get("display", "inline").strip().lower()
 
@@ -54,16 +59,11 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         box = TextBox(text_content=style.get("content", ""), node=node)
     elif display in ("block", "list-item"):
         box = BlockBox(node=node)
-    elif display == "inline-block":
-        from pypdfpatra.engine.tree import InlineBlockBox
-        box = InlineBlockBox(node=node)
     elif tag == "img":
         from pypdfpatra.engine.tree import ImageBox
         from pypdfpatra.engine.image import get_image_info
         
         src = getattr(node, "props", {}).get("src", "")
-        # Assuming base_url is injected into the node during parsing (we'll need to pass it down or rely on CWD)
-        base_url = getattr(node, "base_url", "")
         
         info = get_image_info(src, base_url)
         
@@ -71,6 +71,9 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
         img_h = info["height"] if info else 100.0
         
         box = ImageBox(img_src=info["src"] if info else src, image_w=img_w, image_h=img_h, node=node)
+    elif display == "inline-block":
+        from pypdfpatra.engine.tree import InlineBlockBox
+        box = InlineBlockBox(node=node)
     elif display == "table":
         from pypdfpatra.engine.tree import TableBox
         box = TableBox(node=node)
@@ -104,10 +107,10 @@ def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
 
             # Pass counter down only if it's a list item
             if child_display == "list-item" or getattr(child, "tag", "") == "li":
-                child_box = generate_box_tree(child, _list_index=child_li_counter)
+                child_box = generate_box_tree(child, base_url, _list_index=child_li_counter)
                 child_li_counter += 1
             else:
-                child_box = generate_box_tree(child)
+                child_box = generate_box_tree(child, base_url)
 
             if child_box is not None:
                 box.children.append(child_box)

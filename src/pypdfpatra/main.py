@@ -77,7 +77,7 @@ class HTML:
 
         # 3. W3C Render Tree Generation
         logger.info("[3/5] Generating W3C Box Tree...")
-        root_box = generate_box_tree(root_node)
+        root_box = generate_box_tree(root_node, self.base_url)
 
         # 4. W3C Block Formatting Context Layout
         logger.info("[4/5] Calculating Layout Geometry...")
