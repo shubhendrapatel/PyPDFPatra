@@ -32,6 +32,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     4. Row height synchronization.
     """
     style = getattr(box.node, "style", {}) if box.node else {}
+    # print(f"DEBUG: layout_table_context cb_w={cb_w} for tag={getattr(box.node, 'tag', 'unknown')}")
     box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
 
     box.x = cb_x
@@ -129,6 +130,11 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             extra = (css_width - total_table_w) / num_cols
             col_widths = [cw + extra for cw in col_widths]
             total_table_w = css_width
+    # Also handle table-layout: auto expansion if cb_w is set but css_width isnt
+    elif total_table_w < cb_w and cb_w > 0:
+        extra = (cb_w - total_table_w) / num_cols
+        col_widths = [cw + extra for cw in col_widths]
+        total_table_w = cb_w
     elif total_table_w > cb_w and cb_w > 0:
         available_column_w = cb_w - (num_cols + 1) * h_spacing
         current_column_sum = sum(col_widths)

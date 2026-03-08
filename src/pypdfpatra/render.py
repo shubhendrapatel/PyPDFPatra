@@ -8,7 +8,7 @@ drawing commands to a lightweight PDF backend (fpdf2).
 import fpdf
 from pypdfpatra.engine.tree import Box, TextBox
 from pypdfpatra.engine.font_metrics import parse_font
-from pypdfpatra.defaults import PAGE_HEIGHT
+from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 
 
 NAMED_COLORS = {
@@ -219,15 +219,17 @@ def _draw_background(
         for p in range(start_page, end_page + 1):
             _ensure_page(pdf, p)
 
+            # Local coordinates for this specific page fragment
             local_y = border_box_y - (p * PAGE_HEIGHT)
             local_h = border_box_h
 
-            if local_y < 0:
-                local_h += local_y
-                local_y = 0
+            # Clip against page boundaries (top/bottom margins)
+            if local_y < DEFAULT_MARGIN_TOP:
+                local_h -= (DEFAULT_MARGIN_TOP - local_y)
+                local_y = DEFAULT_MARGIN_TOP
 
-            if local_y + local_h > PAGE_HEIGHT:
-                local_h = PAGE_HEIGHT - local_y
+            if local_y + local_h > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
+                local_h = (PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM) - local_y
 
             if local_h > 0:
                 pdf.rect(
@@ -308,67 +310,52 @@ def _draw_borders(
         )
         r, g, b = _parse_color(color_str)
 
-        # Basic 3D effect for inset/outset
-        if border_style == "outset":
-            if edge in ("top", "left"):
-                r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
-            else:
-                r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-        elif border_style == "inset":
-            if edge in ("top", "left"):
-                r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-            else:
-                r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
-
         pdf.set_draw_color(r, g, b)
         pdf.set_line_width(b_w)
 
-        page_idx = int(min(line_y1, line_y2) / PAGE_HEIGHT)
-        _ensure_page(pdf, page_idx)
-        local_y1 = line_y1 - (page_idx * PAGE_HEIGHT)
-        local_y2 = line_y2 - (page_idx * PAGE_HEIGHT)
+        start_page = int(line_y1 / PAGE_HEIGHT)
+        end_page = int(line_y2 / PAGE_HEIGHT)
 
-        if border_style == "dashed":
-            dash = b_w * 3
-            gap = b_w * 2
-            pdf.set_dash_pattern(dash=dash, gap=gap)
-            pdf.line(line_x1, local_y1, line_x2, local_y2)
-            pdf.set_dash_pattern()  # Reset
-        elif border_style == "dotted":
-            dash = b_w
-            gap = b_w
-            pdf.set_dash_pattern(dash=dash, gap=gap)
-            pdf.line(line_x1, local_y1, line_x2, local_y2)
-            pdf.set_dash_pattern()  # Reset
-        elif border_style == "double":
-            # Draw two thinner lines with a gap between them
-            inner_offset = b_w / 3.0
-            if edge in ("top", "bottom"):
-                sign = 1 if edge == "bottom" else -1
-                pdf.line(line_x1, local_y1, line_x2, local_y2)
-                pdf.set_line_width(b_w / 3.0)
-                pdf.line(
-                    line_x1,
-                    local_y1 + sign * inner_offset * 2,
-                    line_x2,
-                    local_y2 + sign * inner_offset * 2,
-                )
+        for p in range(start_page, end_page + 1):
+            _ensure_page(pdf, p)
+            
+            # Line coordinates relative to this page
+            p_y1 = line_y1 - (p * PAGE_HEIGHT)
+            p_y2 = line_y2 - (p * PAGE_HEIGHT)
+            
+            # Clipping vertical fragments
+            if p_y1 < DEFAULT_MARGIN_TOP:
+                p_y1 = DEFAULT_MARGIN_TOP
+            if p_y2 < DEFAULT_MARGIN_TOP:
+                p_y2 = DEFAULT_MARGIN_TOP
+            if p_y1 > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
+                p_y1 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            if p_y2 > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
+                p_y2 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            
+            if p_y1 == p_y2 and edge in ("left", "right"):
+                continue # Whole fragment clipped out
+
+            # Only draw horizontal borders on their respective first/last pages
+            if edge == "top" and p != start_page:
+                continue
+            if edge == "bottom" and p != end_page:
+                continue
+
+            if border_style == "dashed":
+                pdf.set_dash_pattern(dash=b_w * 3, gap=b_w * 2)
+                pdf.line(line_x1, p_y1, line_x2, p_y2)
+                pdf.set_dash_pattern()
+            elif border_style == "dotted":
+                pdf.set_dash_pattern(dash=b_w, gap=b_w)
+                pdf.line(line_x1, p_y1, line_x2, p_y2)
+                pdf.set_dash_pattern()
             else:
-                sign = 1 if edge == "right" else -1
-                pdf.line(line_x1, local_y1, line_x2, local_y2)
-                pdf.set_line_width(b_w / 3.0)
-                pdf.line(
-                    line_x1 + sign * inner_offset * 2,
-                    local_y1,
-                    line_x2 + sign * inner_offset * 2,
-                    local_y2,
-                )
-        else:
-            # solid, groove, ridge, inset, outset all fall back to solid line
-            pdf.line(line_x1, local_y1, line_x2, local_y2)
+                # solid, groove, ridge, inset, outset, double fall back to solid line
+                pdf.line(line_x1, p_y1, line_x2, p_y2)
 
-        pdf.set_line_width(0.2)
-        pdf.set_draw_color(0, 0, 0)
+    pdf.set_line_width(0.2)
+    pdf.set_draw_color(0, 0, 0)
 
     # Restore default line cap (2 J = projecting square)
     pdf._out("2 J")
