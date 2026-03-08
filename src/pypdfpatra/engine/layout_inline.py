@@ -29,6 +29,7 @@ def _commit_line(
     current_y: float,
     cb_w: float,
     parent_box: Box,
+    text_align: str = "left",
 ) -> float:
     """
     Constructs a LineBox from the accumulated inline boxes and appends it to the parent.
@@ -56,6 +57,21 @@ def _commit_line(
     line_box.h = max_h
 
     # Center horizontally if needed. Right now, W3C aligned left.
+    text_align = text_align.strip().lower()
+
+    # Calculate total line width
+    total_line_width = 0.0
+    if current_line_boxes:
+        last_box, last_w, _ = current_line_boxes[-1]
+        total_line_width = (last_box.x + last_w) - line_x
+
+    # Calculate horizontal shift
+    dx = 0.0
+    if text_align == "center":
+        dx = max(0.0, (cb_w - total_line_width) / 2.0)
+    elif text_align == "right":
+        dx = max(0.0, cb_w - total_line_width)
+
     for item in current_line_boxes:
         child, _, outer_h = item
         # Align bottom of outer box to bottom of line box
@@ -70,7 +86,7 @@ def _commit_line(
         )
 
         dy = target_content_y - child.y
-        _shift_box(child, 0, dy)
+        _shift_box(child, dx, dy)
 
         line_box.children.append(child)
 
@@ -87,6 +103,7 @@ def _process_text_box(
     current_line_ends_with_space: bool,
     current_line_boxes: list[tuple[Box, float, float]],
     parent_box: Box,
+    text_align: str = "left",
 ) -> tuple[float, float, bool]:
     content = child.text_content
     if not content:
@@ -105,7 +122,7 @@ def _process_text_box(
         for i, line in enumerate(lines):
             if i > 0:
                 consumed_h = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
                 current_y += consumed_h
                 current_line_boxes.clear()
@@ -118,7 +135,7 @@ def _process_text_box(
             word_w = measure_text(line, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
                 consumed_h = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
                 current_y += consumed_h
                 current_line_boxes.clear()
@@ -148,7 +165,7 @@ def _process_text_box(
             word_w = measure_text(token, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
                 consumed_h = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box
+                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
                 current_y += consumed_h
                 current_line_boxes.clear()
@@ -176,6 +193,7 @@ def _process_inline_box(
     current_line_width: float,
     current_line_boxes: list[tuple[Box, float, float]],
     parent_box: Box,
+    text_align: str = "left",
 ) -> tuple[float, float, bool]:
     if child.__class__.__name__ == "InlineBlockBox":
         from pypdfpatra.engine.layout_block import layout_block_context
@@ -247,7 +265,7 @@ def _process_inline_box(
 
     if current_line_width + child_total_w > cb_w and current_line_width > 0:
         consumed_h = _commit_line(
-            current_line_boxes, line_x, current_y, cb_w, parent_box
+            current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
         )
         current_y += consumed_h
         current_line_boxes.clear()
@@ -271,7 +289,7 @@ def _process_inline_box(
 
 
 def layout_inline_context(
-    parent_box: Box, cb_x: float, cb_y: float, cb_w: float
+    parent_box: Box, cb_x: float, cb_y: float, cb_w: float, text_align: str = "left"
 ) -> None:
     """
     Implements a basic W3C Inline Formatting Context (IFC).
@@ -283,6 +301,7 @@ def layout_inline_context(
         cb_x: X coordinate of the content area.
         cb_y: Y coordinate of the content area starting point.
         cb_w: Available width for lines.
+        text_align: Horizontal alignment for the generated line boxes.
     """
     inline_children = parent_box.children
     if not inline_children:
@@ -312,6 +331,7 @@ def layout_inline_context(
                     current_line_ends_with_space,
                     current_line_boxes,
                     parent_box,
+                    text_align,
                 )
             )
         else:
@@ -324,10 +344,11 @@ def layout_inline_context(
                     current_line_width,
                     current_line_boxes,
                     parent_box,
+                    text_align,
                 )
             )
 
-    consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box)
+    consumed_h = _commit_line(current_line_boxes, line_x, current_y, cb_w, parent_box, text_align)
     current_y += consumed_h
 
     # The parent block box height expands to fit all the line boxes

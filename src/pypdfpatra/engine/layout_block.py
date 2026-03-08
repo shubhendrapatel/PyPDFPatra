@@ -41,21 +41,16 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
     # Parse spacing.
     margin_top = _parse_length(style.get("margin-top", "0px"), aw)
     margin_bottom = _parse_length(style.get("margin-bottom", "0px"), aw)
-    margin_left = _parse_length(style.get("margin-left", "0px"), aw)
-    margin_right = _parse_length(style.get("margin-right", "0px"), aw)
+    
+    margin_left_str = style.get("margin-left", "0px").strip().lower()
+    margin_right_str = style.get("margin-right", "0px").strip().lower()
+    margin_left = _parse_length(margin_left_str, aw)
+    margin_right = _parse_length(margin_right_str, aw)
+    
     padding_top = _parse_length(style.get("padding-top", "0px"), aw)
     padding_bottom = _parse_length(style.get("padding-bottom", "0px"), aw)
     padding_left = _parse_length(style.get("padding-left", "0px"), aw)
     padding_right = _parse_length(style.get("padding-right", "0px"), aw)
-
-    box.margin_top = margin_top
-    box.margin_bottom = margin_bottom
-    box.margin_left = margin_left
-    box.margin_right = margin_right
-    box.padding_top = padding_top
-    box.padding_bottom = padding_bottom
-    box.padding_left = padding_left
-    box.padding_right = padding_right
 
     border_top = _parse_length(style.get("border-top-width", "0px"), aw)
     border_bottom = _parse_length(style.get("border-bottom-width", "0px"), aw)
@@ -78,16 +73,37 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
 
     # --- W3C Width Calculation ---
     box_sizing = style.get("box-sizing", "content-box").strip().lower()
-    css_width = _parse_length(style.get("width", "auto"), aw)
+    css_width_str = style.get("width", "auto").strip().lower()
+    css_width = _parse_length(css_width_str, aw)
 
-    if css_width > 0:
+    if css_width_str != "auto":
         if box_sizing == "border-box":
-            box.w = max(0.0, css_width - padding_left - padding_right)
+            box.w = max(0.0, css_width - padding_left - padding_right - border_left - border_right)
         else:  # content-box
             box.w = css_width
+            
+        # W3C auto margin calculation for centering
+        remaining_w = aw - (box.w + padding_left + padding_right + border_left + border_right)
+        if remaining_w > 0:
+            if margin_left_str == "auto" and margin_right_str == "auto":
+                margin_left = remaining_w / 2.0
+                margin_right = remaining_w / 2.0
+            elif margin_left_str == "auto":
+                margin_left = remaining_w - margin_right
+            elif margin_right_str == "auto":
+                margin_right = remaining_w - margin_left
     else:
         # width: auto
-        box.w = max(0.0, aw - margin_left - margin_right - padding_left - padding_right)
+        box.w = max(0.0, aw - margin_left - margin_right - padding_left - padding_right - border_left - border_right)
+
+    box.margin_top = margin_top
+    box.margin_bottom = margin_bottom
+    box.margin_left = margin_left
+    box.margin_right = margin_right
+    box.padding_top = padding_top
+    box.padding_bottom = padding_bottom
+    box.padding_left = padding_left
+    box.padding_right = padding_right
 
     return box_sizing, css_width
 
@@ -136,9 +152,12 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             child_box.x = content_x
             child_box.y = current_border_box_bottom
             child_box.w = box.w
+            
+            style = getattr(box.node, "style", {}) if box.node else {}
+            text_align = style.get("text-align", "left").strip().lower()
 
             layout_inline_context(
-                child_box, content_x, current_border_box_bottom, box.w
+                child_box, content_x, current_border_box_bottom, box.w, text_align
             )
 
             current_border_box_bottom = child_box.y + child_box.h

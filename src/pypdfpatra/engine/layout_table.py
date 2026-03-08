@@ -7,9 +7,9 @@ Handles grid calculation, fluid column widths ("table-layout: auto"), and row he
 """
 
 from __future__ import annotations
-from pypdfpatra.engine.tree import Box, TableBox, TableRowGroupBox, TableRowBox, TableCellBox
-from pypdfpatra.engine.layout_block import layout_block_context
-from pypdfpatra.engine.layout_block import _resolve_box_geometry
+from pypdfpatra.engine.tree import Box, TableBox, TableRowGroupBox, TableRowBox, TableCellBox, TextBox
+from pypdfpatra.engine.layout_block import layout_block_context, _resolve_box_geometry, _parse_length
+from pypdfpatra.engine.font_metrics import measure_text, parse_font
 
 def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -> None:
     """
@@ -26,7 +26,6 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     box.y = cb_y
     # We will determine box.w dynamically
 
-    from pypdfpatra.engine.layout_block import _parse_length
     spacing_val = str(style.get("border-spacing", "0px"))
     parts = spacing_val.split()
     h_spacing = _parse_length(parts[0], cb_w) if parts else 0.0
@@ -66,9 +65,6 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         
     # 2. Distribute column widths dynamically (Shrink-to-fit)
     col_widths = [0.0] * num_cols
-    
-    from pypdfpatra.engine.font_metrics import measure_text, parse_font
-    from pypdfpatra.engine.tree import TextBox
 
     def _get_text_nodes(n: Box) -> list:
         res = []
