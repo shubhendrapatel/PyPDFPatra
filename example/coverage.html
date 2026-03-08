@@ -1,260 +1,268 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>PyPDFPatra Tag Coverage Test</title>
     <meta charset="utf-8">
+    <title>PyPDFPatra - Comprehensive W3C Feature Coverage</title>
     <style>
-        /* Test Tag Selector */
-        h1 {
-            color: #004d99;
+        /* CSS Reset / Base Styling */
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
         }
 
-        /* Test Class Selector and Margin Shorthand */
-        .highlight-box {
-            background-color: #ffffcc;
-            margin: 10px 40px;
-            border: 4px solid #f0ad4e;
+        h1 {
+            color: #004d99;
+            border-bottom: 2px solid #004d99;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            border-left: 5px solid #004d99;
+            margin-top: 30px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        /* 1. Box Model & Borders */
+        .border-solid { border: 2px solid black; }
+        .border-dashed { border: 2px dashed green; }
+        .border-dotted { border: 2px dotted blue; }
+        .border-double { border: 6px double red; }
+        .border-inset { border: 4px inset #ccc; }
+        .border-outset { border: 4px outset #ccc; }
+        .border-mixed {
+            border-top: 4px solid red;
+            border-right: 4px dashed blue;
+            border-bottom: 4px dotted green;
+            border-left: 4px double orange;
+        }
+
+        .box-padding {
+            padding: 15px;
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+        }
+
+        .box-margin {
+            margin: 20px;
+            background-color: #fff7e6;
+            border: 1px solid #ffd591;
+            padding: 5px;
+        }
+
+        /* 2. Centering & Display */
+        .centered-block {
+            width: 300px;
+            margin: 20px auto;
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            text-align: center;
             padding: 10px;
         }
 
-        /* Test ID Selector */
-        #special-text {
-            font-size: 1.2em;
-            color: #d9534f;
+        .inline-block-box {
+            display: inline-block;
+            width: 80px;
+            height: 40px;
+            background-color: #fff0f6;
+            border: 1px solid #ffadd2;
+            margin: 5px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* 3. Tables */
+        .table-collapse {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .table-separate {
+            border-collapse: separate;
+            border-spacing: 10px;
+            width: 100%;
+        }
+        .table-cell {
+            border: 1px solid #888;
+            padding: 8px;
+        }
+        .table-header {
+            background-color: #eee;
             font-weight: bold;
         }
-        
-        /* Comprehensive Box Model Tests */
-        .box-model-1 {
-            width: 200px;
-            height: 100px;
-            background-color: #e6f7ff;
-            border-top: 5px solid #005ce6;
-            border-bottom: 5px dashed #005ce6;
-            padding: 15px 30px;
-            margin-bottom: 20px;
+
+        /* 4. Inheritance & Colors */
+        .parent-box {
+            color: purple;
+            font-style: italic;
+            border: 2px solid currentColor;
+            padding: 10px;
         }
-        
-        .box-model-2 {
-            width: 50%;
-            background-color: #fff0e6;
-            border: 2px solid #ff6600;
-            padding-top: 10px;
-            padding-bottom: 10px;
-            padding-left: 5%;
-            padding-right: 5%;
-            margin: 0px 20px 20px 20px;
-        }
-        
-        /* Test inherit and transparent */
-        .inherited-color {
+        .child-inherit {
             color: inherit;
-            border: 1px solid currentColor;
+            border: 1px solid #ccc;
+            margin-top: 5px;
             padding: 5px;
         }
+
+        /* 5. Typography */
+        .pre-text {
+            white-space: pre;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
     </style>
 </head>
-
 <body>
-    <h1>Tag Coverage Test (H1)</h1>
-    <p>This document tests the default User-Agent stylesheet for various HTML elements implemented in PyPDFPatra.</p>
 
-    <hr>
+    <h1>PyPDFPatra Coverage Showcase</h1>
+    <p>This document demonstrates the full range of supported W3C CSS features in the current engine.</p>
 
-    <h2>Headings (H2)</h2>
-    <h3>Heading 3 (H3)</h3>
-    <h4>Heading 4 (H4)</h4>
-    <h5>Heading 5 (H5)</h5>
-    <h6>Heading 6 (H6)</h6>
+    <h2>1. Visual Box Model & Borders</h2>
+    <div class="section">
+        <div class="border-solid" style="padding: 10px; margin-bottom: 10px;">Solid Border</div>
+        <div class="border-dashed" style="padding: 10px; margin-bottom: 10px;">Dashed Border</div>
+        <div class="border-dotted" style="padding: 10px; margin-bottom: 10px;">Dotted Border</div>
+        <div class="border-double" style="padding: 10px; margin-bottom: 10px;">Double Border</div>
+        <div class="border-inset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Inset Border (3D Effect)</div>
+        <div class="border-outset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Outset Border (3D Effect)</div>
+        <div class="border-mixed" style="padding: 10px;">Per-Edge Mixed Styles</div>
+    </div>
 
-    <hr>
+    <div class="section">
+        <div class="box-padding">Box with 15px internal padding</div>
+        <div class="box-margin">Box with 20px external margin</div>
+    </div>
 
-    <h2>Text Decorations</h2>
-    <p>
-        This is <del>deleted text using del tag</del> in a sentence.
-        This is <s>struck-through text using s tag</s> in a sentence.
-        This is <ins>inserted text using ins tag</ins> in a sentence.
-        This is <u>underlined text using u tag</u> in a sentence.
-        This is a <a href="#">hyperlink using a tag</a> in a sentence.
-        This is <span style="text-decoration: line-through;">CSS line-through via span</span> and
-        <span style="text-decoration: underline;">CSS underline via span</span>.
-    </p>
-
-    <hr>
-
-    <h2>Block Elements</h2>
-    <div>This is a generic block-level <b>div</b> element.</div>
-
-    <p id="special-text">This is a paragraph <b>p</b> testing the ID selector pipeline!</p>
-    <blockquote class="highlight-box">
-        This is a <b>blockquote</b> testing the Class Selector and margin shorthand parsing! with border.
-    </blockquote>
-    <figure style="background-color: #eee;">
-        This is a <b>figure</b>. It behaves similarly to blockquote with margins.
-    </figure>
-    <pre>This is a pre element.
-It preserves explicit
-line breaks and uses monospace.</pre>
-
-    <hr>
-
-    <h2>Lists</h2>
-    <h3>Unordered List (ul)</h3>
-    <ul style="list-style-type: disc;">
-        <li>First item (disc)</li>
-        <li style="list-style-type: circle;">Second item (circle)</li>
-        <li style="list-style-type: square;">Third item (square)</li>
-    </ul>
-
-    <h3>Ordered List (ol)</h3>
-    <ol style="list-style-type: decimal;">
-        <li>Step one</li>
-        <li>Step two</li>
-        <li>Step three</li>
-    </ol>
-
-    <h3>Ordered List with Offset</h3>
-    <ol start="5">
-        <li>Fifth item</li>
-        <li>Sixth item</li>
-    </ol>
-
-    <h3>Definition List (dl)</h3>
-    <dl>
-        <dt><b>dt element</b></dt>
-        <dd>This is the <b>dd</b> element containing the definition. It has a left margin.</dd>
-    </dl>
-
-    <hr>
-
-    <h2>Tables (Basic Block Logic)</h2>
-    <table style="background-color: #f9f9f9; margin-bottom: 20px; border: 2px solid #333;">
-        <caption>Table Caption</caption>
-        <thead>
-            <tr>
-                <th style="border: 1px solid #999; padding: 5px;">Header 1 (th)</th>
-                <th style="border: 1px solid #999; padding: 5px;">Header 2 (th)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td style="border: 1px solid #999; padding: 5px;">Data A1 (td)</td>
-                <td style="border: 1px solid #999; padding: 5px;">Data B1 (td)</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #999; padding: 5px;">Data A2</td>
-                <td style="border: 1px solid #999; padding: 5px;">Data B2</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <hr>
-    
-    <h2>External Assets (Images)</h2>
-    <div style="background-color: #eef; padding: 10px; margin-bottom: 20px;">
-        <h3>Intrinsic Size</h3>
-        <p>This image should be 100x100 natively:</p>
-        <img src="test_image1.png" />
+    <h2>2. Layout & Positioning</h2>
+    <div class="section">
+        <div class="centered-block">
+            <b>Centered Block</b><br>
+            Using <code>margin: auto</code>
+        </div>
         
-        <h3>Missing Image Fallback</h3>
-        <p>This image does not exist, so it should render a fallback box with the alt text.</p>
-        <img src="does_not_exist.png" alt="A missing fallback image" style="width: 120px; height: 60px;" />
-
-        <h3>CSS Sized (Maintains Aspect Ratio)</h3>
-        <p>This same image is forced to 50px width via CSS, preserving 50px height natively.</p>
-        <img src="test_image1.png" style="width: 50px;" />
-
-        <h3>Block Level Context</h3>
-        <div style="text-align: center; border: 1px solid #000; padding: 5px;">
-            <p>Centered block element:</p>
-            <img src="test_image2.png" />
+        <div style="background-color: #f0f0f0; padding: 10px;">
+            <b>Inline Blocks:</b><br>
+            <div class="inline-block-box">Box 1</div>
+            <div class="inline-block-box">Box 2</div>
+            <div class="inline-block-box">Box 3</div>
         </div>
     </div>
 
-    <hr>
+    <h2>3. Table Formatting Context (TFC)</h2>
+    <div class="section">
+        <b>Border-Collapse: Collapse</b>
+        <table class="table-collapse">
+            <thead>
+                <tr>
+                    <th class="table-cell table-header">Metric</th>
+                    <th class="table-cell table-header">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="table-cell">CPU Usage</td>
+                    <td class="table-cell">12%</td>
+                </tr>
+                <tr>
+                    <td class="table-cell">Memory</td>
+                    <td class="table-cell">256MB</td>
+                </tr>
+            </tbody>
+        </table>
 
-    <h2>Borders</h2>
-    <div style="padding: 8px; margin-bottom: 8px; border: 2px solid #333;">solid border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border: 2px dashed #333;">dashed border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border: 2px dotted #333;">dotted border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border: 4px double #333;">double border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border: 3px inset #888;">inset border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border: 3px outset #888;">outset border</div>
-    <div style="padding: 8px; margin-bottom: 8px; border-top: 2px solid red; border-right: 2px dashed blue; border-bottom: 2px dotted green; border-left: 2px double orange;">mixed per-edge borders</div>
-
-    <hr>
-
-    <h2>Forms</h2>
-    <form style="background-color: #fffae6;">
-        <fieldset>
-            <legend>Fieldset Legend</legend>
-            <p>This is inside a fieldset. It should have some padding and borders (if border rendering were enabled).
-            </p>
-            <div style="margin-top: 10px;">
-                <label>Text Input:</label>
-                <input type="text" value="PyPDFPatra Form Input" />
-                <button style="color: blue;">Submit Form</button>
-            </div>
-            <div style="margin-top: 10px;">
-                <textarea>This is a multi-line textarea testing inline-block replacement.</textarea>
-            </div>
-        </fieldset>
-    </form>
-
-    <hr>
-
-    <h2>Inline Formatting</h2>
-    <p>
-        Here is some text with various inline tags:
-        <b>Bold (b)</b>, <i>Italic (i)</i>, <u>Underline (u)</u>, <s>Strikethrough (s)</s>.
-    </p>
-    <p>
-        More text semantics: <strong>Strong (strong)</strong>, <em>Emphasis (em)</em>, <cite>Citation (cite)</cite>,
-        <var>Variable (var)</var>.
-    </p>
-    <p>
-        Computer code formatting: <code>Code (code)</code>, <kbd>Keyboard (kbd)</kbd>, <samp>Sample (samp)</samp>.
-    </p>
-    <p>
-        Subscript/Superscript tests: H<sub>2</sub>O and E=mc<sup>2</sup>.
-    </p>
-    <p>
-        A standard link: <a href="#">Link (a)</a>.
-    </p>
-    <p>
-        Image placeholder: <img style="width: 50px; height: 50px; background-color: #ccc;" />
-    </p>
-
-    <hr>
-
-    <h2>HTML Entities</h2>
-    <p>
-        Checking character entity decoding: 5 &lt; 10, 10 &gt; 5, You &amp; Me, Copyright &copy; 2026.
-    </p>
-
-    <hr>
-
-    <h2>Comprehensive Box Model Tests</h2>
-    <div class="box-model-1">
-        This is box-model-1. It tests explicit width (200px), height (100px), mixed borders (solid top, dashed bottom), padding shorthand (15px 30px), and background color.
+        <b>Border-Collapse: Separate (Spacing: 10px)</b>
+        <table class="table-separate">
+            <tr>
+                <td class="table-cell">Cell 1</td>
+                <td class="table-cell">Cell 2</td>
+            </tr>
+            <tr>
+                <td class="table-cell">Cell 3</td>
+                <td class="table-cell">Cell 4</td>
+            </tr>
+        </table>
     </div>
-    
-    <div class="box-model-2">
-        This is box-model-2. It tests percentage width (50%), uniform borders, explicit padding directions, margin shorthand (4 values), and percentage paddings.
-        <div class="inherited-color">
-            This nested div tests "inherit" and "currentColor".
+
+    <h2>4. Lists & Markers</h2>
+    <div class="section">
+        <ul style="list-style-type: disc;">
+            <li>Standard Disc Bullet</li>
+            <li style="list-style-type: circle;">Circle Bullet</li>
+            <li style="list-style-type: square;">Square Bullet</li>
+        </ul>
+        <ol style="list-style-type: decimal;">
+            <li>First Step</li>
+            <li>Second Step</li>
+            <li style="list-style-type: decimal-leading-zero;">Leading Zero Step (03)</li>
+        </ol>
+    </div>
+
+    <h2>5. Typography & Text Decor</h2>
+    <div class="section">
+        <p><b>Alignments:</b></p>
+        <p class="text-right">This text is aligned to the <b>right</b>.</p>
+        <p class="text-center">This text is aligned to the <b>center</b>.</p>
+        
+        <p><b>Decorations:</b></p>
+        <p>
+            <u>Underline via u tag</u>, <ins>Underline via ins</ins>, 
+            <span style="text-decoration: underline;">Underline via CSS</span>.
+        </p>
+        <p>
+            <s>Strikethrough via s</s>, <del>Strikethrough via del</del>, 
+            <span style="text-decoration: line-through;">Strikethrough via CSS</span>.
+        </p>
+        
+        <p><b>White Space:</b></p>
+        <div class="pre-text">This block preserves
+    indentation
+        and multiple     spaces
+using white-space: pre;</div>
+    </div>
+
+    <h2>6. Replaced Elements (Images & Forms)</h2>
+    <div class="section">
+        <b>Image with Alt Fallback:</b><br>
+        <img src="missing.png" alt="Fallback Logo" style="width: 100px; height: 50px; border: 1px solid red; margin: 10px 0;">
+        <br>
+        <b>Form Controls:</b><br>
+        <form style="margin-top: 10px;">
+            <input type="text" value="Text input value">
+            <button style="background-color: #004d99; color: white; padding: 5px 10px; border: none;">Action Button</button>
+            <br><br>
+            <textarea style="width: 100%; height: 50px;">Multi-line textarea content testing overflow and formatting.</textarea>
+        </form>
+    </div>
+
+    <h2>7. Inheritance & Advanced CSS</h2>
+    <div class="section">
+        <div class="parent-box">
+            Parent Box (Color: Purple, Style: Italic)
+            <div class="child-inherit">
+                Child Box (using <code>color: inherit</code>)
+            </div>
+            <div style="border: 2px solid currentColor; margin-top: 5px; padding: 5px;">
+                Border using <code>currentColor</code> (should be purple)
+            </div>
         </div>
-    </div>
-
-    <hr>
-
-    <h2>Color Contrast Test</h2>
-    <div style="background-color: #002244; color: #ffffff; padding: 20px;">
-        This block has a dark blue background (#002244) and white text (#ffffff) to ensure proper color contrast
-        rendering.
+        <div style="color: #ff0000; margin-top: 10px;">
+            Named colors: <span style="color: papayawhip; background-color: darkblue;">PapayaWhip on DarkBlue</span>,
+            <span style="color: limegreen;">LimeGreen Text</span>.
+        </div>
     </div>
 
 </body>
-
 </html>
