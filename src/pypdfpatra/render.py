@@ -200,6 +200,103 @@ def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
     pdf.page = target_page
 
 
+def _draw_background(pdf: fpdf.FPDF, style: dict, border_box_x: float, border_box_y: float, border_box_w: float, border_box_h: float) -> None:
+    """Paints background colors across potentially multiple pages."""
+    bg_color_str = style.get("background-color")
+    if bg_color_str:
+        r, g, b = _parse_color(bg_color_str)
+        pdf.set_fill_color(r, g, b)
+        
+        start_page = int(border_box_y / PAGE_HEIGHT)
+        end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
+        
+        for p in range(start_page, end_page + 1):
+            _ensure_page(pdf, p)
+            
+            local_y = border_box_y - (p * PAGE_HEIGHT)
+            local_h = border_box_h
+            
+            if local_y < 0:
+                local_h += local_y
+                local_y = 0
+            
+            if local_y + local_h > PAGE_HEIGHT:
+                local_h = PAGE_HEIGHT - local_y
+                
+            if local_h > 0:
+                pdf.rect(x=border_box_x, y=local_y, w=border_box_w, h=local_h, style="F")
+        
+        pdf.set_fill_color(0, 0, 0)
+
+
+def _draw_borders(pdf: fpdf.FPDF, style: dict, border_top: float, border_bottom: float, border_left: float, border_right: float, border_box_x: float, border_box_y: float, border_box_w: float, border_box_h: float) -> None:
+    """Paints element borders, adding basic 3D shadow effects for inset/outset rules."""
+    for edge, b_w, offset_x, offset_y, w, h in [
+        ("top", border_top, border_box_x, border_box_y, border_box_w, border_top),
+        ("bottom", border_bottom, border_box_x, border_box_y + border_box_h - border_bottom, border_box_w, border_bottom),
+        ("left", border_left, border_box_x, border_box_y + border_top, border_left, border_box_h - border_top - border_bottom),
+        ("right", border_right, border_box_x + border_box_w - border_right, border_box_y + border_top, border_right, border_box_h - border_top - border_bottom),
+    ]:
+        border_style = style.get(f"border-{edge}-style", style.get("border-style", "solid"))
+        if b_w > 0 and border_style not in ("none", "hidden"):
+            color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
+            r, g, b = _parse_color(color_str)
+            
+            # Basic 3D effect for inset/outset
+            if border_style == "outset":
+                if edge in ("top", "left"):
+                    r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+                else:
+                    r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+            elif border_style == "inset":
+                if edge in ("top", "left"):
+                    r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+                else:
+                    r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+            
+            pdf.set_fill_color(r, g, b)
+            
+            page_idx = int(offset_y / PAGE_HEIGHT)
+            _ensure_page(pdf, page_idx)
+            local_y = offset_y - (page_idx * PAGE_HEIGHT)
+            if h > 0 and w > 0:
+                pdf.rect(x=offset_x, y=local_y, w=w, h=h, style="F")
+            pdf.set_fill_color(0, 0, 0)
+
+
+def _draw_text(pdf: fpdf.FPDF, box: TextBox, style: dict, border_box_x: float, border_box_y: float, border_top: float, border_left: float) -> None:
+    """Paints correctly formatted and styled inline text primitives."""
+    text_content = box.text_content
+    if not text_content:
+        return
+
+    content_x = border_box_x + border_left + box.padding_left
+    content_y = border_box_y + border_top + box.padding_top
+    
+    page_idx = int(content_y / PAGE_HEIGHT)
+    _ensure_page(pdf, page_idx)
+    
+    local_y = content_y - (page_idx * PAGE_HEIGHT)
+    pdf.set_xy(content_x, local_y)
+    
+    family, fpdf_style, size = parse_font(style)
+    
+    from pypdfpatra.engine.font_metrics import FontMetrics
+    FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
+    
+    color_str = style.get("color", "#000000")
+    r, g, b = _parse_color(color_str)
+    # Force FPDF to emit the non-stroking color by invalidating its cache
+    # because fill_color and text_color both use the same `rg` PDF operator.
+    dummy_r = 1 if r == 0 else r - 1
+    pdf.set_text_color(dummy_r, g, b)
+    pdf.set_text_color(r, g, b)
+    # Words are precisely positioned top-left by the IFC
+    
+    # Thanks to true TTF support via @font-face, Unicode renders natively!
+    pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
+
+
 def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
@@ -228,95 +325,14 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         border_box_h = border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
 
         # Paint Backgrounds spanning multiple pages
-        bg_color_str = style.get("background-color")
-        if bg_color_str:
-            r, g, b = _parse_color(bg_color_str)
-            pdf.set_fill_color(r, g, b)
+        _draw_background(pdf, style, border_box_x, border_box_y, border_box_w, border_box_h)
             
-            start_page = int(border_box_y / PAGE_HEIGHT)
-            end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
-            
-            for p in range(start_page, end_page + 1):
-                _ensure_page(pdf, p)
-                
-                local_y = border_box_y - (p * PAGE_HEIGHT)
-                local_h = border_box_h
-                
-                if local_y < 0:
-                    local_h += local_y
-                    local_y = 0
-                
-                if local_y + local_h > PAGE_HEIGHT:
-                    local_h = PAGE_HEIGHT - local_y
-                    
-                if local_h > 0:
-                    pdf.rect(x=border_box_x, y=local_y, w=border_box_w, h=local_h, style="F")
-            
-            pdf.set_fill_color(0, 0, 0)
-            
-        # Draw Borders (MVP: Solid rectangles on the first page of the box)
-        for edge, b_w, offset_x, offset_y, w, h in [
-            ("top", border_top, border_box_x, border_box_y, border_box_w, border_top),
-            ("bottom", border_bottom, border_box_x, border_box_y + border_box_h - border_bottom, border_box_w, border_bottom),
-            ("left", border_left, border_box_x, border_box_y + border_top, border_left, border_box_h - border_top - border_bottom),
-            ("right", border_right, border_box_x + border_box_w - border_right, border_box_y + border_top, border_right, border_box_h - border_top - border_bottom),
-        ]:
-            border_style = style.get(f"border-{edge}-style", style.get("border-style", "solid"))
-            if b_w > 0 and border_style not in ("none", "hidden"):
-                color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
-                r, g, b = _parse_color(color_str)
-                
-                # Basic 3D effect for inset/outset
-                if border_style == "outset":
-                    if edge in ("top", "left"):
-                        r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
-                    else:
-                        r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-                elif border_style == "inset":
-                    if edge in ("top", "left"):
-                        r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-                    else:
-                        r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
-                
-                pdf.set_fill_color(r, g, b)
-                
-                page_idx = int(offset_y / PAGE_HEIGHT)
-                _ensure_page(pdf, page_idx)
-                local_y = offset_y - (page_idx * PAGE_HEIGHT)
-                if h > 0 and w > 0:
-                    pdf.rect(x=offset_x, y=local_y, w=w, h=h, style="F")
-                pdf.set_fill_color(0, 0, 0)
+        # Draw Borders
+        _draw_borders(pdf, style, border_top, border_bottom, border_left, border_right, border_box_x, border_box_y, border_box_w, border_box_h)
 
-        # Paint Text Content on a specific page
+        # Paint Text Content
         if isinstance(box, TextBox):
-            text_content = box.text_content
-
-            if text_content:
-                content_x = border_box_x + border_left + box.padding_left
-                content_y = border_box_y + border_top + box.padding_top
-                
-                page_idx = int(content_y / PAGE_HEIGHT)
-                _ensure_page(pdf, page_idx)
-                
-                local_y = content_y - (page_idx * PAGE_HEIGHT)
-                pdf.set_xy(content_x, local_y)
-                
-                family, fpdf_style, size = parse_font(style)
-                
-                from pypdfpatra.engine.font_metrics import FontMetrics
-                FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
-                
-                color_str = style.get("color", "#000000")
-                r, g, b = _parse_color(color_str)
-                # Force FPDF to emit the non-stroking color by invalidating its cache
-                # because fill_color and text_color both use the same `rg` PDF operator.
-                dummy_r = 1 if r == 0 else r - 1
-                pdf.set_text_color(dummy_r, g, b)
-                pdf.set_text_color(r, g, b)
-                # Words are precisely positioned top-left by the IFC
-                
-                # Thanks to true TTF support via @font-face, Unicode renders natively!
-                pdf.cell(w=box.w, h=box.h, text=text_content, align="L")
+            _draw_text(pdf, box, style, border_box_x, border_box_y, border_top, border_left)
 
         # Paint children (Z-order: backgrounds, borders, then children)
         if box.children:

@@ -29,21 +29,8 @@ def _parse_length(value: str, parent_value: float) -> float:
         return 0.0
 
 
-def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> None:
-    """
-    Recursively calculates the CSS Box Model layout for a block element.
-    Coordinates (`box.x`, `box.y`) refer to the MARGIN BOX top-left edge.
-    Dimensions (`box.w`, `box.h`) refer to the CONTENT BOX.
-
-    Args:
-        box: The Box to layout.
-        cb_x: Absolute X position of the containing block's content box.
-        cb_y: Absolute Y position for the start of this block's margin box.
-        cb_w: Available width (width of containing block's content box).
-    """
-    style = getattr(box.node, "style", {}) if box.node else {}
-    aw = cb_w
-
+def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]:
+    """Resolves margin, padding, border, and width metrics."""
     # Parse spacing.
     margin_top = _parse_length(style.get("margin-top", "0px"), aw)
     margin_bottom = _parse_length(style.get("margin-bottom", "0px"), aw)
@@ -95,15 +82,11 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
         # width: auto
         box.w = max(0.0, aw - margin_left - margin_right - padding_left - padding_right)
 
-    # --- Absolute Positioning (Margin Box Origin) ---
-    box.x = cb_x
-    box.y = cb_y
+    return box_sizing, css_width
 
-    # --- Normal Flow Children Layout ---
-    content_x = box.x + margin_left + border_left + padding_left
-    current_border_box_bottom = box.y + margin_top + border_top + padding_top
 
-    # Pass 1: Wrap contiguous inline/text boxes into W3C anonymous block boxes
+def _wrap_inline_children(box: Box) -> None:
+    """Pass 1: Wrap contiguous inline/text boxes into W3C anonymous block boxes"""
     new_children = []
     current_anonymous_block = None
 
@@ -131,6 +114,10 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
 
     box.children = new_children
 
+
+def _layout_block_children(box: Box, content_x: float, content_y: float) -> float:
+    """Lays out all child boxes and returns the final content bottom Y."""
+    current_border_box_bottom = content_y
     prev_margin_bottom = 0.0
     first_child = True
 
@@ -180,17 +167,48 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
             )
             prev_margin_bottom = child_box.margin_bottom
 
+    return current_border_box_bottom
+
+
+def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> None:
+    """
+    Recursively calculates the CSS Box Model layout for a block element.
+    Coordinates (`box.x`, `box.y`) refer to the MARGIN BOX top-left edge.
+    Dimensions (`box.w`, `box.h`) refer to the CONTENT BOX.
+
+    Args:
+        box: The Box to layout.
+        cb_x: Absolute X position of the containing block's content box.
+        cb_y: Absolute Y position for the start of this block's margin box.
+        cb_w: Available width (width of containing block's content box).
+    """
+    style = getattr(box.node, "style", {}) if box.node else {}
+    
+    box_sizing, css_width = _resolve_box_geometry(box, cb_w, style)
+
+    # --- Absolute Positioning (Margin Box Origin) ---
+    box.x = cb_x
+    box.y = cb_y
+
+    # --- Normal Flow Children Layout ---
+    content_x = box.x + box.margin_left + box.border_left + box.padding_left
+    current_border_box_bottom = box.y + box.margin_top + box.border_top + box.padding_top
+
+    _wrap_inline_children(box)
+    
+    current_border_box_bottom = _layout_block_children(box, content_x, current_border_box_bottom)
+
     # --- W3C Height Calculation ---
-    css_height = _parse_length(style.get("height", "auto"), aw)
+    css_height = _parse_length(style.get("height", "auto"), cb_w)
     if css_height > 0:
         if box_sizing == "border-box":
-            box.h = max(0.0, css_height - padding_top - padding_bottom)
+            box.h = max(0.0, css_height - box.padding_top - box.padding_bottom)
         else:  # content-box
             box.h = css_height
     else:
         # height: auto -> Hugs the content
         content_bottom = current_border_box_bottom
-        content_y = box.y + margin_top + padding_top
+        content_y = box.y + box.margin_top + box.padding_top
         box.h = max(0.0, content_bottom - content_y)
 
         if isinstance(box, TextBox) and box.h == 0:
