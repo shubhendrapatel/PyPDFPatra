@@ -31,6 +31,21 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     content_x = box.x + box.margin_left + box.border_left + box.padding_left
     current_y = box.y + box.margin_top + box.border_top + box.padding_top
     
+    # Lay out the table caption if present
+    for child in box.children:
+        if getattr(child.node, "tag", "") == "caption":
+            # Treat as block context
+            layout_block_context(child, content_x, current_y, box.w)
+            current_y += (
+                child.margin_top
+                + child.border_top
+                + child.padding_top
+                + child.h
+                + child.padding_bottom
+                + child.border_bottom
+                + child.margin_bottom
+            )
+            
     # 1. Collect all rows and cells
     rows = []
     
@@ -50,16 +65,66 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         
     # Find max columns
     num_cols = 0
+    row_cells = []
     for row in rows:
         cells = [c for c in row.children if isinstance(c, TableCellBox)]
         num_cols = max(num_cols, len(cells))
+        row_cells.append(cells)
         
     if num_cols == 0:
         box.h = 0.0
         return
         
-    # 2. Distribute column widths evenly (MVP Table Layout Auto approximation)
-    col_w = box.w / num_cols
+    # 2. Distribute column widths dynamically (Shrink-to-fit)
+    col_widths = [0.0] * num_cols
+    
+    from pypdfpatra.engine.font_metrics import measure_text, parse_font
+    from pypdfpatra.engine.tree import TextBox
+
+    def _get_text_nodes(n: Box) -> list:
+        res = []
+        if isinstance(n, TextBox):
+            res.append(n)
+        for c in n.children:
+            if isinstance(c, Box):
+                res.extend(_get_text_nodes(c))
+        return res
+
+    for cells in row_cells:
+        for i, cell in enumerate(cells):
+            cell_style = getattr(cell.node, "style", {}) if getattr(cell, "node", None) else {}
+            _, css_w = _resolve_box_geometry(cell, cb_w, cell_style)
+            
+            cell_max_w = 20.0 # Min width
+            for tbox in _get_text_nodes(cell):
+                t_style = getattr(tbox.node, "style", {}) if getattr(tbox, "node", None) else {}
+                family, fpdf_style, size = parse_font(t_style)
+                w = measure_text(tbox.text_content.strip(), family, size, fpdf_style)
+                if w > cell_max_w:
+                    cell_max_w = w
+            
+            cell_padded_w = cell_max_w + cell.padding_left + cell.padding_right + cell.border_left + cell.border_right + 15.0 # Margin of safety
+            
+            if css_w > 0:
+                cell_padded_w = max(cell_padded_w, css_w)
+                
+            if cell_padded_w > col_widths[i]:
+                col_widths[i] = cell_padded_w
+                
+    total_table_w = sum(col_widths)
+    
+    # Scale width if exceeding bounds or explicitly forced
+    if css_width > 0:
+        if total_table_w < css_width:
+            extra = (css_width - total_table_w) / num_cols
+            col_widths = [cw + extra for cw in col_widths]
+            total_table_w = css_width
+    elif total_table_w > cb_w and cb_w > 0:
+        scale = cb_w / total_table_w
+        col_widths = [cw * scale for cw in col_widths]
+        total_table_w = cb_w
+        
+    box.w = total_table_w
     
     # 3. Layout cells and synchronize row heights
     for row in rows:
@@ -79,9 +144,9 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         for i, cell in enumerate(cells):
             # Layout the cell as a block container!
             # It gets its designated column width constraint
-            cell_x = row_content_x + (i * col_w)
+            cell_x = row_content_x + sum(col_widths[:i])
             # Layout the block context within the cell
-            layout_block_context(cell, cell_x, row.y, col_w)
+            layout_block_context(cell, cell_x, row.y, col_widths[i])
             
             # cell.w is set by layout_block_context usually to col_w minus its own margins
             max_cell_h = max(max_cell_h, cell.h + cell.padding_top + cell.padding_bottom + cell.border_top + cell.border_bottom)
