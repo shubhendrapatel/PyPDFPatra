@@ -14,17 +14,18 @@ from __future__ import annotations
 from pypdfpatra.engine.tree import Node, Box, BlockBox, InlineBox, TextBox
 
 
-def generate_box_tree(node: Node) -> Box | None:
+def generate_box_tree(node: Node, _list_index: int = None) -> Box | None:
     """
     Recursively walks the DOM tree and builds the Render Tree.
 
     Args:
         node: The root DOM Node.
+        _list_index: Internal counter passed down to `list-item` nodes.
 
     Returns:
         The root Box of the Render Tree, or None if `display: none`.
     """
-    style = node.style
+    style = getattr(node, "style", {})
     display = style.get("display", "inline").strip().lower()
 
     if display == "none":
@@ -35,8 +36,8 @@ def generate_box_tree(node: Node) -> Box | None:
     # Process form inputs (synthesize text children representing their values)
     if tag in ("input", "textarea") and display != "none":
         # Form inputs don't usually have children in the DOM, so synthesize one
-        value = node.props.get("value") or node.props.get("placeholder") or ""
-        if tag == "textarea" and not value and node.children:
+        value = getattr(node, "props", {}).get("value") or getattr(node, "props", {}).get("placeholder") or ""
+        if tag == "textarea" and not value and getattr(node, "children", []):
             # For textarea, content might actually be a DOM child
             pass
         elif value:
@@ -56,10 +57,28 @@ def generate_box_tree(node: Node) -> Box | None:
         # Defaults to inline for spans, anchors, strong, etc.
         box = InlineBox(node=node)
 
-    # Process children
+    # Process children, keeping track of list items if this node is an ordered/unordered list
+    child_li_counter = 1
+    if tag == "ol" or tag == "ul":
+        start_val = getattr(node, "props", {}).get("start")
+        if start_val is not None:
+            try:
+                child_li_counter = int(start_val)
+            except ValueError:
+                pass
+
     for child in getattr(node, "children", []):
         if isinstance(child, Node):
-            child_box = generate_box_tree(child)
+            child_style = getattr(child, "style", {})
+            child_display = child_style.get("display", "inline").strip().lower()
+            
+            # Pass counter down only if it's a list item
+            if child_display == "list-item" or getattr(child, "tag", "") == "li":
+                child_box = generate_box_tree(child, _list_index=child_li_counter)
+                child_li_counter += 1
+            else:
+                child_box = generate_box_tree(child)
+                
             if child_box is not None:
                 box.children.append(child_box)
 
@@ -74,7 +93,11 @@ def generate_box_tree(node: Node) -> Box | None:
         elif list_style_type == "square":
             marker_content = "__square__"
         elif list_style_type in ("decimal", "decimal-leading-zero"):
-            marker_content = "1." # MVP placeholder for numbers
+            val = _list_index if _list_index is not None else 1
+            if list_style_type == "decimal-leading-zero" and val < 10:
+                marker_content = f"0{val}."
+            else:
+                marker_content = f"{val}."
 
         marker_box = MarkerBox(text_content=marker_content, node=node)
         
