@@ -251,63 +251,82 @@ def _draw_borders(
     border_box_w: float,
     border_box_h: float,
 ) -> None:
-    """Paints element borders, adding basic 3D shadow effects for inset/outset rules."""
-    for edge, b_w, offset_x, offset_y, w, h in [
-        ("top", border_top, border_box_x, border_box_y, border_box_w, border_top),
-        (
-            "bottom",
-            border_bottom,
-            border_box_x,
-            border_box_y + border_box_h - border_bottom,
-            border_box_w,
-            border_bottom,
-        ),
-        (
-            "left",
-            border_left,
-            border_box_x,
-            border_box_y + border_top,
-            border_left,
-            border_box_h - border_top - border_bottom,
-        ),
-        (
-            "right",
-            border_right,
-            border_box_x + border_box_w - border_right,
-            border_box_y + border_top,
-            border_right,
-            border_box_h - border_top - border_bottom,
-        ),
+    """Paints element borders with correct styles: solid, dashed, dotted, double."""
+    half = lambda w: w / 2.0
+
+    for edge, b_w, line_x1, line_y1, line_x2, line_y2 in [
+        # Lines are centered on their coordinate, so offset by b_w/2 to hug the border-box edge
+        ("top",    border_top,
+             border_box_x,               border_box_y + half(border_top),
+             border_box_x + border_box_w, border_box_y + half(border_top)),
+        ("bottom", border_bottom,
+             border_box_x,               border_box_y + border_box_h - half(border_bottom),
+             border_box_x + border_box_w, border_box_y + border_box_h - half(border_bottom)),
+        ("left",   border_left,
+             border_box_x + half(border_left),   border_box_y,
+             border_box_x + half(border_left),   border_box_y + border_box_h),
+        ("right",  border_right,
+             border_box_x + border_box_w - half(border_right), border_box_y,
+             border_box_x + border_box_w - half(border_right), border_box_y + border_box_h),
     ]:
-        border_style = style.get(
-            f"border-{edge}-style", style.get("border-style", "solid")
-        )
-        if b_w > 0 and border_style not in ("none", "hidden"):
-            color_str = style.get(
-                f"border-{edge}-color", style.get("border-color", "#000000")
-            )
-            r, g, b = _parse_color(color_str)
+        border_style = style.get(f"border-{edge}-style", style.get("border-style", "solid"))
+        if b_w <= 0 or border_style in ("none", "hidden"):
+            continue
 
-            # Basic 3D effect for inset/outset
-            if border_style == "outset":
-                if edge in ("top", "left"):
-                    r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
-                else:
-                    r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-            elif border_style == "inset":
-                if edge in ("top", "left"):
-                    r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
-                else:
-                    r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+        color_str = style.get(f"border-{edge}-color", style.get("border-color", "#000000"))
+        r, g, b = _parse_color(color_str)
 
-            pdf.set_fill_color(r, g, b)
+        # Basic 3D effect for inset/outset
+        if border_style == "outset":
+            if edge in ("top", "left"):
+                r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
+            else:
+                r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+        elif border_style == "inset":
+            if edge in ("top", "left"):
+                r, g, b = max(0, r - 40), max(0, g - 40), max(0, b - 40)
+            else:
+                r, g, b = min(255, r + 40), min(255, g + 40), min(255, b + 40)
 
-            page_idx = int(offset_y / PAGE_HEIGHT)
-            _ensure_page(pdf, page_idx)
-            local_y = offset_y - (page_idx * PAGE_HEIGHT)
-            if h > 0 and w > 0:
-                pdf.rect(x=offset_x, y=local_y, w=w, h=h, style="F")
-            pdf.set_fill_color(0, 0, 0)
+        pdf.set_draw_color(r, g, b)
+        pdf.set_line_width(b_w)
+
+        page_idx = int(min(line_y1, line_y2) / PAGE_HEIGHT)
+        _ensure_page(pdf, page_idx)
+        local_y1 = line_y1 - (page_idx * PAGE_HEIGHT)
+        local_y2 = line_y2 - (page_idx * PAGE_HEIGHT)
+
+        if border_style == "dashed":
+            dash = b_w * 3
+            gap = b_w * 2
+            pdf.set_dash_pattern(dash=dash, gap=gap)
+            pdf.line(line_x1, local_y1, line_x2, local_y2)
+            pdf.set_dash_pattern()  # Reset
+        elif border_style == "dotted":
+            dash = b_w
+            gap = b_w
+            pdf.set_dash_pattern(dash=dash, gap=gap)
+            pdf.line(line_x1, local_y1, line_x2, local_y2)
+            pdf.set_dash_pattern()  # Reset
+        elif border_style == "double":
+            # Draw two thinner lines with a gap between them
+            inner_offset = b_w / 3.0
+            if edge in ("top", "bottom"):
+                sign = 1 if edge == "bottom" else -1
+                pdf.line(line_x1, local_y1, line_x2, local_y2)
+                pdf.set_line_width(b_w / 3.0)
+                pdf.line(line_x1, local_y1 + sign * inner_offset * 2, line_x2, local_y2 + sign * inner_offset * 2)
+            else:
+                sign = 1 if edge == "right" else -1
+                pdf.line(line_x1, local_y1, line_x2, local_y2)
+                pdf.set_line_width(b_w / 3.0)
+                pdf.line(line_x1 + sign * inner_offset * 2, local_y1, line_x2 + sign * inner_offset * 2, local_y2)
+        else:
+            # solid, groove, ridge, inset, outset all fall back to solid line
+            pdf.line(line_x1, local_y1, line_x2, local_y2)
+
+        pdf.set_line_width(0.2)
+        pdf.set_draw_color(0, 0, 0)
 
 
 def _draw_text(
