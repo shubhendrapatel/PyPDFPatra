@@ -51,7 +51,15 @@ USER_AGENT_STYLES = {
         "font-family": "monospace",
         "white-space": "pre",
     },
-    "hr": {"display": "block", "margin-top": "0.5em", "margin-bottom": "0.5em"},
+    "hr": {
+        "display": "block", 
+        "margin-top": "0.5em", 
+        "margin-bottom": "0.5em",
+        "border-top-width": "1px",
+        "border-top-style": "solid",
+        "border-top-color": "#808080",
+        "height": "0px",
+    },
     # Headings
     "h1": {
         "display": "block",
@@ -126,7 +134,13 @@ USER_AGENT_STYLES = {
     "dd": {"display": "block", "margin-left": "40px"},
     "li": {"display": "list-item"},
     # Tables
-    "table": {"display": "table", "margin-top": "0px", "margin-bottom": "0px"},
+    "table": {
+        "display": "table",
+        "margin-top": "0px",
+        "margin-bottom": "0px",
+        "border-collapse": "separate",
+        "border-spacing": "2px",
+    },
     "thead": {"display": "table-header-group"},
     "tbody": {"display": "table-row-group"},
     "tfoot": {"display": "table-footer-group"},
