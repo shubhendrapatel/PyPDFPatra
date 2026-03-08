@@ -123,6 +123,15 @@
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+        
+        /* 8. Pagination */
+        .avoid-break { 
+            page-break-inside: avoid; 
+            border: 2px solid #ff4d4f; 
+            padding: 10px; 
+            background: #fff2f0; 
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -262,6 +271,37 @@ using white-space: pre;</div>
             Named colors: <span style="color: papayawhip; background-color: darkblue;">PapayaWhip on DarkBlue</span>,
             <span style="color: limegreen;">LimeGreen Text</span>.
         </div>
+    </div>
+
+    <h2>8. Pagination & Fragmentation</h2>
+    <div class="section">
+        <p>This section tests how content behaves at page boundaries.</p>
+        
+        <!-- Large spacer to push content down -->
+        <div style="height: 300px; border: 1px dashed #ccc; background: #fafafa; padding: 10px; margin-bottom: 20px;">
+            Spacer Block (300px): Pushing content towards the bottom of the page to trigger fragmentation.
+        </div>
+
+        <p><b>Fragmentable Block:</b></p>
+        <div style="border: 2px solid #52c41a; padding: 10px; background: #f6ffed; margin-bottom: 10px;">
+            This block is allowed to fragment. If it crosses a page boundary, the layout engine will 
+            slice it line-by-line. In future updates, we will implement <code>box-decoration-break: slice</code>
+            to ensure side borders continue correctly across pages.
+            <br><br>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud 
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor 
+            in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+        </div>
+
+        <p><b>Atomic Block (page-break-inside: avoid):</b></p>
+        <div class="avoid-break">
+            This block uses <code>page-break-inside: avoid</code>. 
+            The engine detects it won't fit in the remaining space of the current page and 
+            shifts the <b>entire block</b> to the top of the next page.
+        </div>
+
+        <p><b>Atomic Image (Block-level):</b></p>
+        <img src="missing.png" alt="Atomic Image" style="display: block; width: 200px; height: 100px; border: 2px solid #1890ff; margin: 10px 0;">
     </div>
 
 </body>
