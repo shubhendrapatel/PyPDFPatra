@@ -64,13 +64,14 @@ def generate_box_tree(node: Node, base_url: str = "", _list_index: int = None) -
         from pypdfpatra.engine.image import get_image_info
         
         src = getattr(node, "props", {}).get("src", "")
+        alt_text = getattr(node, "props", {}).get("alt", "")
         
         info = get_image_info(src, base_url)
         
         img_w = info["width"] if info else 100.0  # Default fallback box
         img_h = info["height"] if info else 100.0
         
-        box = ImageBox(img_src=info["src"] if info else src, image_w=img_w, image_h=img_h, node=node)
+        box = ImageBox(img_src=info["src"] if info else src, image_w=img_w, image_h=img_h, alt_text=alt_text, node=node)
     elif display == "inline-block":
         from pypdfpatra.engine.tree import InlineBlockBox
         box = InlineBlockBox(node=node)

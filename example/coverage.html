@@ -143,6 +143,10 @@ line breaks and uses monospace.</pre>
         <p>This image should be 100x100 natively:</p>
         <img src="test_image1.png" />
         
+        <h3>Missing Image Fallback</h3>
+        <p>This image does not exist, so it should render a fallback box with the alt text.</p>
+        <img src="does_not_exist.png" alt="A missing fallback image" style="width: 120px; height: 60px;" />
+
         <h3>CSS Sized (Maintains Aspect Ratio)</h3>
         <p>This same image is forced to 50px width via CSS, preserving 50px height natively.</p>
         <img src="test_image1.png" style="width: 50px;" />

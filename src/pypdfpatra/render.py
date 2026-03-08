@@ -399,7 +399,25 @@ def _draw_image(
     try:
         pdf.image(name=img_src, x=content_x, y=local_y, w=box.w, h=box.h)
     except Exception as e:
-        print(f"pypdfpatra - ERROR - Failed to render image {img_src}: {e}")
+        print(f"pypdfpatra - WARNING - Failed to render image {img_src}: {e}")
+        # Draw fallback border
+        pdf.set_draw_color(200, 200, 200)
+        pdf.rect(x=content_x, y=local_y, w=box.w, h=box.h, style="D")
+        
+        # Draw alt text or filename inside
+        alt_text = getattr(box, "alt_text", "")
+        if not alt_text:
+            alt_text = img_src.split("/")[-1].split("\\")[-1]
+            
+        pdf.set_xy(content_x + 2, local_y + 2)
+        pdf.set_text_color(150, 150, 150)
+        pdf.set_font("Helvetica", size=8)
+        
+        # FPDF cell has a weird bug where if w > actual we can clip, but let's just do a simple cell
+        # truncate text if needed
+        pdf.cell(w=max(0, box.w - 4), h=10, text=alt_text, align="L")
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_text_color(0, 0, 0)
 
 
 def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
