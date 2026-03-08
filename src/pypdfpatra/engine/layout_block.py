@@ -16,6 +16,11 @@ from pypdfpatra.engine.tree import (
     AnonymousBlockBox,
     InlineBlockBox,
 )
+from pypdfpatra.defaults import (
+    PAGE_HEIGHT,
+    DEFAULT_MARGIN_TOP,
+    DEFAULT_MARGIN_BOTTOM,
+)
 
 
 def _parse_length(value: str, parent_value: float) -> float:
@@ -119,7 +124,7 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
     box.padding_left = padding_left
     box.padding_right = padding_right
 
-    return box_sizing, css_width
+    return box_sizing, css_width, margin_top, margin_bottom
 
 
 def _wrap_inline_children(box: Box) -> None:
@@ -161,7 +166,12 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
     prev_margin_bottom = 0.0
     first_child = True
 
+
     for child_box in box.children:
+        # Pagination: Determine if the child box overflows the current page area.
+        current_page_idx = int(current_border_box_bottom / PAGE_HEIGHT)
+        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+
         if isinstance(child_box, AnonymousBlockBox):
             # Establish Inline Formatting Context (IFC) for this block
             from pypdfpatra.engine.layout_inline import layout_inline_context
@@ -177,6 +187,8 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 child_box, content_x, current_border_box_bottom, box.w, text_align
             )
 
+            # After layout, if the anonymous block spanned pages, current_border_box_bottom
+            # is updated correctly by the return value of layout_inline_context implicitly.
             current_border_box_bottom = child_box.y + child_box.h
             prev_margin_bottom = 0.0
             first_child = False
@@ -198,9 +210,15 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
 
             child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
 
-            layout_block_context(child_box, content_x, child_margin_box_y, box.w)
+            # Fragmentation Check: If a block has an explicit height or a minimum threshold
+            # that exceeds the remaining page space, shift the block to the next page.
+            if child_margin_box_y + 20 > page_boundary:
+                current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
 
-            # Advance cursor past the child's entire border box (margin box edge + margin_top + padding + content_h)
+            layout_block_context(child_box, content_x, child_margin_box_y, box.w)
+            
+            # Update current cursor
             current_border_box_bottom = (
                 child_box.y
                 + child_box.margin_top
@@ -213,7 +231,6 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
         elif child_box.__class__.__name__ == "TableBox":
             from pypdfpatra.engine.layout_table import layout_table_context
 
-            # Setup margins for margin collapsing
             child_style = (
                 getattr(child_box.node, "style", {})
                 if getattr(child_box, "node", None)
@@ -228,6 +245,11 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 collapsed_margin = max(prev_margin_bottom, child_mt)
 
             child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+
+            # Tables are shifted to the next page if they start too close to the boundary.
+            if child_margin_box_y + 40 > page_boundary:
+                current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
 
             layout_table_context(child_box, content_x, child_margin_box_y, box.w)
 
@@ -244,23 +266,20 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             from pypdfpatra.engine.font_metrics import measure_text, get_line_height
             from pypdfpatra.engine.font_metrics import parse_font
 
-            # Use the list-item's style for the marker
             style = getattr(box.node, "style", {}) if box.node else {}
             family, fpdf_style, size = parse_font(style)
 
-            # Layout the marker, placed outside the principal box
             content = child_box.text_content
             if content in ("__disc__", "__circle__", "__square__"):
                 marker_w = size * 0.4
                 marker_h = size * 0.4
-                y_offset = (size * 0.8) - marker_h  # Align visually with text baseline
+                y_offset = (size * 0.8) - marker_h
             else:
                 marker_w = measure_text(content, family, size, fpdf_style)
                 marker_h = get_line_height(family, size, fpdf_style)
                 y_offset = 0.0
 
-            # Position to the left of content_x, vertically aligned with current Y
-            child_box.x = content_x - marker_w - 5.0  # 5pt gap
+            child_box.x = content_x - marker_w - 5.0
             child_box.y = current_border_box_bottom + y_offset
             child_box.w = marker_w
             child_box.h = marker_h
@@ -276,16 +295,26 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     Recursively calculates the CSS Box Model layout for a block element.
     Coordinates (`box.x`, `box.y`) refer to the MARGIN BOX top-left edge.
     Dimensions (`box.w`, `box.h`) refer to the CONTENT BOX.
-
-    Args:
-        box: The Box to layout.
-        cb_x: Absolute X position of the containing block's content box.
-        cb_y: Absolute Y position for the start of this block's margin box.
-        cb_w: Available width (width of containing block's content box).
     """
-    style = getattr(box.node, "style", {}) if box.node else {}
 
-    box_sizing, css_width = _resolve_box_geometry(box, cb_w, style)
+    style = getattr(box.node, "style", {}) if box.node else {}
+    box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
+
+    # Pagination Look-Ahead: Determine if the box fits on the current page 
+    # based on its explicit height.
+    css_height = _parse_length(style.get("height", "auto"), cb_w)
+    
+    if css_height > 0:
+        total_h = css_height
+        if box_sizing == "content-box":
+            total_h += box.padding_top + box.padding_bottom + box.border_top + box.border_bottom
+        
+        current_page_idx = int(cb_y / PAGE_HEIGHT)
+        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+
+        # If the block's border-box exceeds the boundary, jump to the next page top.
+        if cb_y + total_h > page_boundary and cb_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5:
+            cb_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
 
     # --- Absolute Positioning (Margin Box Origin) ---
     box.x = cb_x
@@ -304,16 +333,15 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     )
 
     # --- W3C Height Calculation ---
-    css_height = _parse_length(style.get("height", "auto"), cb_w)
     if css_height > 0:
         if box_sizing == "border-box":
-            box.h = max(0.0, css_height - box.padding_top - box.padding_bottom)
+            box.h = max(0.0, css_height - box.padding_top - box.padding_bottom - box.border_top - box.border_bottom)
         else:  # content-box
             box.h = css_height
     else:
         # height: auto -> Hugs the content
         content_bottom = current_border_box_bottom
-        content_y = box.y + box.margin_top + box.padding_top
+        content_y = box.y + box.margin_top + box.border_top + box.padding_top
         box.h = max(0.0, content_bottom - content_y)
 
         if isinstance(box, TextBox) and box.h == 0:

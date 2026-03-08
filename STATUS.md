@@ -16,9 +16,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Images**: Download and measure `<img>` elements for replaced layout and PDF rendering. (✅)
 - **Fonts**: Map `font-family` to `.ttf`/`.otf` files and embed them into the PDF engine. (✅)
 
-### Phase 6: Print Pagination & Page Breaks (🔄 In Progress)
-- **Pagination**: Implement CSS Paged Media logic for page boundaries. (⬜)
-- **Fragmentation**: Implement line-breaking and block-fragmentation across pages. (⬜)
+### Phase 6: Print Pagination & Page Breaks (✅ Done)
+- **Pagination**: Implement W3C Paged Media logic for page boundaries. (✅)
+- **Fragmentation**: Implement line-breaking and block-fragmentation across pages. (✅)
 
 ### Phase 7: Advanced PDF Features (⬜ Not Started)
 - **AcroForms**: Implement interactive fillable widgets. (⬜)
@@ -47,6 +47,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `engine/css_parser.py` | Parse `<style>` blocks and external `.css` files via `tinycss2` |
 | `engine/layout_table.py` | **Table Formatting Context** — dynamic column widths, cell alignment, border-spacing |
 | `engine/image.py` | Fetch and place `<img>` elements on the PDF canvas |
+| `src/pypdfpatra/defaults.py` | **Global Config** — A4 dimensions, standard margins, and content area constants |
 | `src/pypdfpatra/logger.py` | Centralized logging for the library |
 
 ### ⬜ Still Needs to be Created

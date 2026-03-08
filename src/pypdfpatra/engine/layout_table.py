@@ -32,7 +32,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     4. Row height synchronization.
     """
     style = getattr(box.node, "style", {}) if box.node else {}
-    box_sizing, css_width = _resolve_box_geometry(box, cb_w, style)
+    box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
 
     box.x = cb_x
     box.y = cb_y
@@ -92,7 +92,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             cell_style = (
                 getattr(cell.node, "style", {}) if getattr(cell, "node", None) else {}
             )
-            _, css_w = _resolve_box_geometry(cell, cb_w, cell_style)
+            _, css_w, _, _ = _resolve_box_geometry(cell, cb_w, cell_style)
 
             cell_max_w = 20.0  # Min width
             for tbox in _get_text_nodes(cell):
@@ -163,7 +163,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     for row in rows:
         # Resolve row geometry (mostly margins/borders, usually 0 for TR)
         row_style = getattr(row.node, "style", {}) if row.node else {}
-        _, row_css_w = _resolve_box_geometry(row, box.w, row_style)
+        _, row_css_w, _, _ = _resolve_box_geometry(row, box.w, row_style)
 
         row.x = content_x
         row.y = current_y

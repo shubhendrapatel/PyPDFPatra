@@ -1,5 +1,6 @@
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
 from pypdfpatra.engine.font_metrics import measure_text, get_line_height
+from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 
 
 def _flatten_inline(boxes: list[Box]) -> list[Box]:
@@ -41,7 +42,6 @@ def _commit_line(
     # Create the LineBox container
     line_box = LineBox(node=None)
     line_box.x = line_x
-    line_box.y = current_y
     line_box.w = cb_w
 
     # Determine line height (max height of outer box dimensions)
@@ -54,6 +54,14 @@ def _commit_line(
     if max_h == 0:
         max_h = 20.0
 
+    # Pagination: move lines to next page if they overflow current boundary.
+    current_page_idx = int(current_y / PAGE_HEIGHT)
+    page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+
+    if current_y + max_h > page_boundary:
+        current_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+
+    line_box.y = current_y
     line_box.h = max_h
 
     # Center horizontally if needed. Right now, W3C aligned left.

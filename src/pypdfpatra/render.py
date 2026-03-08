@@ -8,6 +8,7 @@ drawing commands to a lightweight PDF backend (fpdf2).
 import fpdf
 from pypdfpatra.engine.tree import Box, TextBox
 from pypdfpatra.engine.font_metrics import parse_font
+from pypdfpatra.defaults import PAGE_HEIGHT
 
 
 NAMED_COLORS = {
@@ -190,7 +191,7 @@ def _parse_color(color_str: str) -> tuple:
     return (0, 0, 0)
 
 
-PAGE_HEIGHT = 842.0
+
 
 
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
@@ -252,11 +253,8 @@ def _draw_borders(
     border_box_h: float,
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
-    # Ensure lines don't cross each other at the corners (the "math crossing" fix)
-    # Style 0 J = butt caps (ends exactly at coordinates)
-    # Style 2 J = projecting square (default, extends half-width past)
-    # Since set_line_cap_style isn't consistently available in all fpdf2 versions,
-    # we use the raw PDF operator via _out.
+    # Use butt caps (0 J) to ensure borders meet precisely at corners.
+    # We use raw PDF operators as 'set_line_cap_style' is not universally available.
     pdf._out("0 J")
 
     def half(w):

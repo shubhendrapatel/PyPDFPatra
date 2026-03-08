@@ -80,13 +80,24 @@ class HTML:
         root_box = generate_box_tree(root_node, self.base_url)
 
         # 4. W3C Block Formatting Context Layout
+        from pypdfpatra.defaults import (
+            DEFAULT_MARGIN_LEFT,
+            DEFAULT_MARGIN_TOP,
+            CONTENT_WIDTH,
+        )
+
         logger.info("[4/5] Calculating Layout Geometry...")
         if root_box is not None:
-            layout_block_context(root_box, 0.0, 0.0, 595.0)
+            # Shift everything by the top-left margin
+            layout_block_context(
+                root_box, DEFAULT_MARGIN_LEFT, DEFAULT_MARGIN_TOP, CONTENT_WIDTH
+            )
 
         # 5. Rendering Phase
         logger.info("[5/5] Rendering Graphics Context...")
-        pdf = fpdf.FPDF(unit="pt", format="A4")
+        from pypdfpatra.defaults import PAGE_WIDTH, PAGE_HEIGHT
+
+        pdf = fpdf.FPDF(unit="pt", format=(PAGE_WIDTH, PAGE_HEIGHT))
         pdf.set_auto_page_break(False)
         pdf.add_page()
 
