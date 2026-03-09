@@ -20,6 +20,7 @@ from pypdfpatra.engine.layout_block import (
     _resolve_box_geometry,
     _parse_length,
 )
+from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 from pypdfpatra.engine.font_metrics import measure_text, parse_font
 
 
@@ -48,15 +49,19 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
 
     # 1. Collect all rows and cells
     rows = []
+    thead_rows = []
 
     def _scan_for_rows(parent_box: Box):
         for child in parent_box.children:
             if isinstance(child, TableRowBox):
+                if isinstance(parent_box, TableRowGroupBox) and getattr(parent_box.node, "tag", "") == "thead":
+                    thead_rows.append(child)
                 rows.append(child)
             elif isinstance(child, TableRowGroupBox):
                 _scan_for_rows(child)
 
     _scan_for_rows(box)
+    box.thead_rows = thead_rows
 
     if not rows:
         box.w = css_width if css_width > 0 else cb_w
@@ -164,6 +169,8 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             )
 
     current_y += v_spacing
+    thead_h = 0.0
+    thead_resolved = False
 
     # 3. Layout cells and synchronize row heights
     for row in rows:
@@ -207,13 +214,46 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             )
 
         row.h = max_cell_h
-        current_y += (
-            row.h
-            + row.border_top
-            + row.border_bottom
-            + row.margin_top
-            + row.margin_bottom
-            + v_spacing
-        )
+        
+        # Track thead height if this row is part of the header
+        if row in thead_rows:
+            thead_h += row.h + v_spacing
+        else:
+            thead_resolved = True
+
+        # Check for page break if we are not in the header itself
+        if thead_resolved and thead_rows:
+            current_page = int(current_y / PAGE_HEIGHT)
+            page_boundary = (current_page + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            row_total_h = row.h + v_spacing
+            
+            if current_y + row_total_h > page_boundary:
+                # Page break! Move to top of next page + account for repeating header
+                current_y = (current_page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
+                row.y = current_y
+                
+                # Re-layout EVERYTHING in this row on the new page
+                max_cell_h = 0.0
+                for i, cell in enumerate(cells):
+                    cell.children.clear()
+                    # Also clear boxes from the node to avoid duplicates in the render tree
+                    if cell.node:
+                        cell.node.boxes = [b for b in cell.node.boxes if b is not cell]
+                    
+                    # Re-layout at the new row Y
+                    c_x = row_content_x + h_spacing + sum(col_widths[:i]) + (i * h_spacing)
+                    layout_block_context(cell, c_x, row.y, col_widths[i])
+                    
+                    max_cell_h = max(max_cell_h, 
+                        cell.h + cell.padding_top + cell.padding_bottom + 
+                        cell.border_top + cell.border_bottom
+                    )
+                
+                # Resync row height if it changed (e.g. wrapping differences)
+                row.h = max_cell_h
+                for cell in cells:
+                    cell.h = max_cell_h - cell.padding_top - cell.padding_bottom - cell.border_top - cell.border_bottom
+
+        current_y += row.h + v_spacing
 
     box.h = current_y - box.y - box.margin_top - box.border_top - box.padding_top

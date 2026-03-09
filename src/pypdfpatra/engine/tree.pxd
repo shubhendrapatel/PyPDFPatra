@@ -60,7 +60,7 @@ cdef class MarkerBox(Box):
     cdef public str text_content
 
 cdef class TableBox(Box):
-    pass
+    cdef public list thead_rows
 
 cdef class TableRowGroupBox(Box):
     pass

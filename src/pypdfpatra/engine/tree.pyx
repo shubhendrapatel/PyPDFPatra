@@ -69,6 +69,7 @@ cdef class MarkerBox(Box):
 cdef class TableBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)
+        self.thead_rows = []
 
 cdef class TableRowGroupBox(Box):
     def __init__(self, object node=None):

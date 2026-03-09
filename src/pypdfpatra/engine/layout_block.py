@@ -216,7 +216,11 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             # Predictive height for atomic shifting
             if is_atomic:
                 # For tables and block images, we can resolve geometry before layout
-                _, predicted_h, _, _ = _resolve_box_geometry(child_box, box.w, child_style)
+                _, predicted_w, _, _ = _resolve_box_geometry(child_box, box.w, child_style)
+                # Tables/Blocks with auto height don't have predictable heights until layout.
+                # Use a small sentinel or explicit height.
+                css_h = _parse_length(child_style.get("height", "0px"), box.w)
+                predicted_h = css_h if css_h > 0 else 0.0 
                 total_h = predicted_h + child_box.padding_top + child_box.padding_bottom + \
                           child_box.border_top + child_box.border_bottom
                 

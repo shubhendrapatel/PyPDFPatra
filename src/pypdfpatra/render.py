@@ -494,7 +494,7 @@ def _draw_image(
         pdf.set_text_color(0, 0, 0)
 
 
-def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
+def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
     and paints the boxes onto the PDF, slicing background shapes across
@@ -517,7 +517,7 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
         border_bottom = getattr(box, "border_bottom", 0)
 
         border_box_x = box.x + box.margin_left
-        border_box_y = box.y + box.margin_top
+        border_box_y = (box.y + dy) + box.margin_top
         border_box_w = (
             border_left + box.padding_left + box.w + box.padding_right + border_right
         )
@@ -590,4 +590,22 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box]):
 
         # Paint children (Z-order: backgrounds, borders, then children)
         if box.children:
-            draw_boxes(pdf, box.children)
+            draw_boxes(pdf, box.children, dy=dy)
+
+        # Repeating Header Logic for Tables
+        # If this is a TableBox and it spans multiple pages, repeat thead_rows at page starts.
+        # We only do this in the main pass (dy=0) to avoid infinite recursion.
+        if dy == 0.0 and box.__class__.__name__ == "TableBox":
+            thead_rows = getattr(box, "thead_rows", [])
+            if thead_rows:
+                start_page = int(border_box_y / PAGE_HEIGHT)
+                end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
+
+                if end_page > start_page:
+                    # Capture original header start Y
+                    header_original_y = thead_rows[0].y
+                    for p in range(start_page + 1, end_page + 1):
+                        # Calculate shift required to place header at top of page p
+                        header_target_y = (p * PAGE_HEIGHT) + DEFAULT_MARGIN_TOP
+                        repeat_dy = header_target_y - header_original_y
+                        draw_boxes(pdf, thead_rows, dy=repeat_dy)
