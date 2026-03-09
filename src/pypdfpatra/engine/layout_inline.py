@@ -41,7 +41,7 @@ def _commit_line(
 ) -> float:
     """
     Constructs a LineBox from the accumulated inline boxes and appends it to the parent.
-    Returns the vertical height consumed by the new line.
+    Returns (consumed_max_h, new_y_bottom).
     """
     if not current_line_boxes:
         return 0.0
@@ -106,7 +106,7 @@ def _commit_line(
         line_box.children.append(child)
 
     parent_box.children.append(line_box)
-    return max_h
+    return max_h, current_y + max_h
 
 
 def _process_text_box(
@@ -136,10 +136,9 @@ def _process_text_box(
         lines = content.split("\n")
         for i, line in enumerate(lines):
             if i > 0:
-                consumed_h = _commit_line(
+                consumed_h, current_y = _commit_line(
                     current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
-                current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
                 current_line_ends_with_space = False
@@ -149,10 +148,9 @@ def _process_text_box(
 
             word_w = measure_text(line, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h = _commit_line(
+                consumed_h, current_y = _commit_line(
                     current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
-                current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
                 current_line_ends_with_space = False
@@ -179,10 +177,9 @@ def _process_text_box(
 
             word_w = measure_text(token, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h = _commit_line(
+                consumed_h, current_y = _commit_line(
                     current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
                 )
-                current_y += consumed_h
                 current_line_boxes.clear()
                 current_line_width = 0.0
                 current_line_ends_with_space = False
@@ -287,10 +284,9 @@ def _process_inline_box(
     )
 
     if current_line_width + child_total_w > cb_w and current_line_width > 0:
-        consumed_h = _commit_line(
+        consumed_h, current_y = _commit_line(
             current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
         )
-        current_y += consumed_h
         current_line_boxes.clear()
         current_line_width = 0.0
 
@@ -371,10 +367,9 @@ def layout_inline_context(
                 )
             )
 
-    consumed_h = _commit_line(
+    consumed_h, current_y = _commit_line(
         current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
     )
-    current_y += consumed_h
 
     # The parent block box height expands to fit all the line boxes
     parent_box.h = max(0.0, current_y - cb_y)
