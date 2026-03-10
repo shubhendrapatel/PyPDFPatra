@@ -11,21 +11,23 @@ Elements with `display: none` are dropped. Nodes are converted into:
 """
 
 from __future__ import annotations
-from pypdfpatra.engine.tree import (
-    Node, 
-    Box, 
-    BlockBox, 
-    InlineBox, 
-    TextBox, 
-    ImageBox, 
-    InlineBlockBox, 
-    TableBox, 
-    TableRowGroupBox, 
-    TableRowBox, 
-    TableCellBox, 
-    MarkerBox
-)
+
 from pypdfpatra.engine.image import get_image_info
+from pypdfpatra.engine.tree import (
+    BlockBox,
+    Box,
+    ImageBox,
+    InlineBlockBox,
+    InlineBox,
+    MarkerBox,
+    Node,
+    TableBox,
+    TableCellBox,
+    TableRowBox,
+    TableRowGroupBox,
+    TextBox,
+)
+
 
 def generate_box_tree(
     node: Node, base_url: str = "", _list_index: int = None

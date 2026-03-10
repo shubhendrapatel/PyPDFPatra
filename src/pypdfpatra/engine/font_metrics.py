@@ -1,10 +1,12 @@
 import fpdf
+
 from pypdfpatra.defaults import (
-    DEFAULT_FONT_FAMILY, 
-    DEFAULT_FONT_SIZE, 
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE,
+    DEFAULT_LINE_HEIGHT_RATIO,
     DEFAULT_MONOSPACE_FONT,
-    DEFAULT_LINE_HEIGHT_RATIO
 )
+
 
 def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
     """Parses CSS dictionary into (family, style_str, size_float) for FPDF."""
@@ -116,9 +118,13 @@ class FontMetrics:
         return font_size * DEFAULT_LINE_HEIGHT_RATIO
 
 
-def measure_text(text: str, font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style="") -> float:
+def measure_text(
+    text: str, font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style=""
+) -> float:
     return FontMetrics.get_instance().get_text_width(text, font_family, size, style)
 
 
-def get_line_height(font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style="") -> float:
+def get_line_height(
+    font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style=""
+) -> float:
     return FontMetrics.get_instance().get_line_height(font_family, size, style)

@@ -6,7 +6,9 @@ This module handles the CSS 'Cascade'. It matches CSS selectors
 """
 
 from typing import List
+
 import tinycss2
+
 from pypdfpatra.engine.tree import Node
 
 __all__ = ["apply_styles"]

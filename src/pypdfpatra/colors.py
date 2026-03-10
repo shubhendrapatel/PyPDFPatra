@@ -186,9 +186,9 @@ def parse_color(color_str: str) -> tuple[int, int, int]:
                 )
         except ValueError:
             pass
-    
+
     # Standard W3C default for unrecognized colors
     if DEFAULT_COLOR.startswith("#"):
         return parse_color(DEFAULT_COLOR)
-        
+
     return (0, 0, 0)

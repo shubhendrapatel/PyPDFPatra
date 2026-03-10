@@ -4,12 +4,14 @@ pypdfpatra.engine.styling.css_parser
 Parses <style> blocks from the DOM into a list of tinycss2 AST rules.
 """
 
-import os
 import logging
+import os
 from typing import List
+
 import tinycss2
-from pypdfpatra.engine.tree import Node
+
 from pypdfpatra.engine.font_metrics import FontMetrics
+from pypdfpatra.engine.tree import Node
 
 __all__ = ["parse_stylesheets"]
 
@@ -44,7 +46,7 @@ def _find_css_sources(node: Node, css_sources: List[str], base_url: str) -> None
 
             try:
                 if os.path.exists(asset_path):
-                    with open(asset_path, "r", encoding="utf-8") as f:
+                    with open(asset_path, encoding="utf-8") as f:
                         css_sources.append(f.read())
             except Exception as e:
                 logging.warning(f"Failed to load stylesheet {asset_path}: {e}")

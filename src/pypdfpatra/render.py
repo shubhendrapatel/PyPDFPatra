@@ -6,16 +6,17 @@ drawing commands to a lightweight PDF backend (fpdf2).
 """
 
 import fpdf
-from pypdfpatra.engine.tree import Box, TextBox
-from pypdfpatra.engine.font_metrics import parse_font
-from pypdfpatra.defaults import (
-    PAGE_HEIGHT, 
-    DEFAULT_MARGIN_TOP, 
-    DEFAULT_MARGIN_BOTTOM,
-    DEFAULT_FONT_FAMILY,
-    DEFAULT_COLOR,
-)
+
 from pypdfpatra.colors import parse_color
+from pypdfpatra.defaults import (
+    DEFAULT_COLOR,
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_MARGIN_BOTTOM,
+    DEFAULT_MARGIN_TOP,
+    PAGE_HEIGHT,
+)
+from pypdfpatra.engine.font_metrics import parse_font
+from pypdfpatra.engine.tree import Box, TextBox
 
 
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
@@ -24,10 +25,10 @@ def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
     if len(pdf.pages) < target_page:
         while len(pdf.pages) < target_page:
             pdf.add_page()
-    
+
     if pdf.page != target_page:
         pdf.page = target_page
-        # FPDF 2 caches font/color per page-insertion but often misses manual 
+        # FPDF 2 caches font/color per page-insertion but often misses manual
         # page switching. Invalidate internal trackers to force re-emission.
         pdf.font_family = None
         pdf.draw_color = None
@@ -65,7 +66,7 @@ def _draw_background(
 
             # Clip against page boundaries (top/bottom margins)
             if local_y < DEFAULT_MARGIN_TOP:
-                local_h -= (DEFAULT_MARGIN_TOP - local_y)
+                local_h -= DEFAULT_MARGIN_TOP - local_y
                 local_y = DEFAULT_MARGIN_TOP
 
             if local_y + local_h > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
@@ -156,11 +157,11 @@ def _draw_borders(
             _ensure_page(pdf, p)
             pdf.set_draw_color(r, g, b)
             pdf.set_line_width(b_w)
-            
+
             # Line coordinates relative to this page
             p_y1 = line_y1 - (p * PAGE_HEIGHT)
             p_y2 = line_y2 - (p * PAGE_HEIGHT)
-            
+
             # Clipping vertical fragments
             if p_y1 < DEFAULT_MARGIN_TOP:
                 p_y1 = DEFAULT_MARGIN_TOP
@@ -170,9 +171,9 @@ def _draw_borders(
                 p_y1 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
             if p_y2 > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
                 p_y2 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
-            
+
             if p_y1 == p_y2 and edge in ("left", "right"):
-                continue # Whole fragment clipped out
+                continue  # Whole fragment clipped out
 
             # Only draw horizontal borders on their respective first/last pages
             if edge == "top" and p != start_page:
@@ -253,6 +254,7 @@ def _draw_text(
     # Font and color settings MUST follow _ensure_page to avoid state desync on new pages
     pdf.set_text_color(r, g, b)
     from pypdfpatra.engine.font_metrics import FontMetrics
+
     FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
 
     pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
@@ -261,7 +263,7 @@ def _draw_text(
     decoration = style.get("text-decoration", "none").strip().lower()
     if decoration not in ("none", ""):
         line_w = box.w
-        line_weight = max(0.4, size * 0.05) 
+        line_weight = max(0.4, size * 0.05)
 
         pdf.set_draw_color(r, g, b)
         pdf.set_line_width(line_weight)
@@ -382,7 +384,9 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
         if href:
             page_idx = int(border_box_y / PAGE_HEIGHT)
             local_y = border_box_y - (page_idx * PAGE_HEIGHT)
-            pdf.link(x=border_box_x, y=local_y, w=border_box_w, h=border_box_h, link=href)
+            pdf.link(
+                x=border_box_x, y=local_y, w=border_box_w, h=border_box_h, link=href
+            )
 
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
             _draw_text(

@@ -6,9 +6,11 @@ Supports local file paths and HTTP/HTTPS URLs.
 """
 
 from __future__ import annotations
-import os
+
 import io
+import os
 from urllib.request import urlopen
+
 from PIL import Image
 
 # Simple cache so we don't fetch/parse the same image multiple times during layout & render

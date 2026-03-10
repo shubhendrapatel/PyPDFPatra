@@ -5,26 +5,27 @@ The public WeasyPrint-style API for PyPDFPatra.
 """
 
 import os
+
 import fpdf
 
 from pypdfpatra.api import build_tree
+from pypdfpatra.defaults import (
+    CONTENT_WIDTH,
+    DEFAULT_MARGIN_LEFT,
+    DEFAULT_MARGIN_TOP,
+    PAGE_HEIGHT,
+    PAGE_WIDTH,
+)
 from pypdfpatra.engine import (
-    resolve_styles,
+    apply_styles,
     generate_box_tree,
     layout_block_context,
     parse_stylesheets,
-    apply_styles,
-)
-from pypdfpatra.render import draw_boxes
-from pypdfpatra.logger import logger
-from pypdfpatra.defaults import (
-    PAGE_WIDTH,
-    PAGE_HEIGHT,
-    DEFAULT_MARGIN_LEFT,
-    DEFAULT_MARGIN_TOP,
-    CONTENT_WIDTH,
+    resolve_styles,
 )
 from pypdfpatra.engine.font_metrics import FontMetrics
+from pypdfpatra.logger import logger
+from pypdfpatra.render import draw_boxes
 
 
 class HTML:
@@ -50,7 +51,7 @@ class HTML:
         if filename is not None:
             if not self.base_url:
                 self.base_url = os.path.dirname(os.path.abspath(filename))
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(filename, encoding="utf-8") as f:
                 self.html_string = f.read()
         elif string is not None:
             self.html_string = string
@@ -95,7 +96,7 @@ class HTML:
         # Load custom fonts
         fm = FontMetrics.get_instance()
         if hasattr(fm, "_registered_fonts_data"):
-            for font_key, font_args in fm._registered_fonts_data.items():
+            for _font_key, font_args in fm._registered_fonts_data.items():
                 try:
                     pdf.add_font(
                         font_args["family"],

@@ -8,19 +8,20 @@ Accepts a Box (part of the Render Tree) and calculates geometry.
 """
 
 from __future__ import annotations
+
+from pypdfpatra.defaults import (
+    DEFAULT_MARGIN_BOTTOM,
+    DEFAULT_MARGIN_TOP,
+    PAGE_HEIGHT,
+)
 from pypdfpatra.engine.tree import (
-    Box,
+    AnonymousBlockBox,
     BlockBox,
+    Box,
+    ImageBox,
+    InlineBlockBox,
     InlineBox,
     TextBox,
-    AnonymousBlockBox,
-    InlineBlockBox,
-    ImageBox,
-)
-from pypdfpatra.defaults import (
-    PAGE_HEIGHT,
-    DEFAULT_MARGIN_TOP,
-    DEFAULT_MARGIN_BOTTOM,
 )
 
 
@@ -193,12 +194,15 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             prev_margin_bottom = 0.0
             first_child = False
 
-        elif isinstance(child_box, (BlockBox, ImageBox)) or child_box.__class__.__name__ == "TableBox":
+        elif (
+            isinstance(child_box, (BlockBox, ImageBox))
+            or child_box.__class__.__name__ == "TableBox"
+        ):
             from .table import layout_table_context
-            
+
             child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
             child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
-            
+
             if first_child:
                 collapsed_margin = child_mt
                 first_child = False
@@ -206,24 +210,46 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 collapsed_margin = max(prev_margin_bottom, child_mt)
 
             child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
-            
-            is_atomic = child_box.__class__.__name__ in ("ImageBox", "TableBox") or \
-                        child_style.get("page-break-inside") == "avoid"
-            
+
+            is_atomic = (
+                child_box.__class__.__name__ in ("ImageBox", "TableBox")
+                or child_style.get("page-break-inside") == "avoid"
+            )
+
             if is_atomic:
-                _, predicted_w, _, _ = _resolve_box_geometry(child_box, box.w, child_style)
-                css_h = _parse_length(child_style.get("height", "auto"), box.w, default_auto=None)
-                predicted_h = css_h if css_h is not None else 0.0 
-                total_h = predicted_h + child_box.padding_top + child_box.padding_bottom + \
-                          child_box.border_top + child_box.border_bottom
-                
-                if child_margin_box_y + total_h > page_boundary and child_margin_box_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5:
-                    current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
-                    child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+                _, predicted_w, _, _ = _resolve_box_geometry(
+                    child_box, box.w, child_style
+                )
+                css_h = _parse_length(
+                    child_style.get("height", "auto"), box.w, default_auto=None
+                )
+                predicted_h = css_h if css_h is not None else 0.0
+                total_h = (
+                    predicted_h
+                    + child_box.padding_top
+                    + child_box.padding_bottom
+                    + child_box.border_top
+                    + child_box.border_bottom
+                )
+
+                if (
+                    child_margin_box_y + total_h > page_boundary
+                    and child_margin_box_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5
+                ):
+                    current_border_box_bottom = (
+                        current_page_idx + 1
+                    ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                    child_margin_box_y = (
+                        current_border_box_bottom + collapsed_margin - child_mt
+                    )
             else:
                 if child_margin_box_y + 15 > page_boundary:
-                     current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
-                     child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
+                    current_border_box_bottom = (
+                        current_page_idx + 1
+                    ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                    child_margin_box_y = (
+                        current_border_box_bottom + collapsed_margin - child_mt
+                    )
 
             if child_box.__class__.__name__ == "TableBox":
                 layout_table_context(child_box, content_x, child_margin_box_y, box.w)
@@ -245,7 +271,11 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             prev_margin_bottom = child_box.margin_bottom
 
         elif child_box.__class__.__name__ == "MarkerBox":
-            from pypdfpatra.engine.font_metrics import measure_text, get_line_height, parse_font
+            from pypdfpatra.engine.font_metrics import (
+                get_line_height,
+                measure_text,
+                parse_font,
+            )
 
             style = getattr(box.node, "style", {}) if box.node else {}
             family, fpdf_style, size = parse_font(style)

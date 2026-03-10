@@ -1,5 +1,5 @@
-from .box_generator import generate_box_tree
 from .block import layout_block_context
+from .box_generator import generate_box_tree
 from .inline import layout_inline_context, shift_box
 from .table import layout_table_context
 

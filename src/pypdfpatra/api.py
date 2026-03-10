@@ -5,9 +5,9 @@ The high-level Python API for PyPDFPatra.
 This module handles HTML parsing and bridges it to the Cython Engine.
 """
 
+import re
 from html.parser import HTMLParser
 from typing import Dict, List, Optional, Tuple
-import re
 
 from pypdfpatra.engine.tree import Node
 

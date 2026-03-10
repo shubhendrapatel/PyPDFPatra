@@ -4,9 +4,9 @@ pypdfpatra.engine.layout.inline
 Implements the W3C Inline Formatting Context (IFC).
 """
 
+from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
+from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
-from pypdfpatra.engine.font_metrics import measure_text, get_line_height, parse_font
-from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 
 
 def _flatten_inline(boxes: list[Box]) -> list[Box]:
@@ -212,11 +212,13 @@ def _process_inline_box(
     text_align: str = "left",
 ) -> tuple[float, float, bool]:
     child_style = getattr(child.node, "style", {})
-    
-    if child.__class__.__name__ == "InlineBlockBox":
-        from .block import layout_block_context, _parse_length
 
-        css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
+    if child.__class__.__name__ == "InlineBlockBox":
+        from .block import _parse_length, layout_block_context
+
+        css_width = _parse_length(
+            child_style.get("width", "auto"), cb_w, default_auto=None
+        )
         if css_width is None:
             css_width = 150.0
 
@@ -225,8 +227,12 @@ def _process_inline_box(
     elif child.__class__.__name__ == "ImageBox":
         from .block import _parse_length
 
-        css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
-        css_height = _parse_length(child_style.get("height", "auto"), cb_w, default_auto=None)
+        css_width = _parse_length(
+            child_style.get("width", "auto"), cb_w, default_auto=None
+        )
+        css_height = _parse_length(
+            child_style.get("height", "auto"), cb_w, default_auto=None
+        )
 
         # Fallback to HTML attributes if no CSS width/height is present
         if css_width is None:

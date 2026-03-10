@@ -11,9 +11,11 @@ final CSS property dictionary for every node. It handles:
 """
 
 from __future__ import annotations
+
 from pypdfpatra.engine.tree import Node
-from .user_agent import USER_AGENT_STYLES
+
 from .shorthand import expand_shorthand_properties
+from .user_agent import USER_AGENT_STYLES
 
 # W3C Specification: Properties that automatically inherit to descendants
 # if they are not explicitly overridden by the child.

@@ -5,23 +5,24 @@ Implementation of the W3C Table Formatting Context.
 """
 
 from __future__ import annotations
+
+from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
+from pypdfpatra.engine.font_metrics import measure_text, parse_font
 from pypdfpatra.engine.tree import (
     Box,
     TableBox,
-    TableRowGroupBox,
-    TableRowBox,
     TableCellBox,
+    TableRowBox,
+    TableRowGroupBox,
     TextBox,
 )
-from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
-from pypdfpatra.engine.font_metrics import measure_text, parse_font
 
 
 def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -> None:
     """
     Executes the Table Formatting Context (TFC) algorithm.
     """
-    from .block import layout_block_context, _resolve_box_geometry, _parse_length
+    from .block import _parse_length, _resolve_box_geometry, layout_block_context
 
     style = getattr(box.node, "style", {}) if box.node else {}
     box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
@@ -43,7 +44,10 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     def _scan_for_rows(parent_box: Box):
         for child in parent_box.children:
             if isinstance(child, TableRowBox):
-                if isinstance(parent_box, TableRowGroupBox) and getattr(parent_box.node, "tag", "") == "thead":
+                if (
+                    isinstance(parent_box, TableRowGroupBox)
+                    and getattr(parent_box.node, "tag", "") == "thead"
+                ):
                     thead_rows.append(child)
                 rows.append(child)
             elif isinstance(child, TableRowGroupBox):
@@ -202,7 +206,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             )
 
         row.h = max_cell_h
-        
+
         # Track thead height if this row is part of the header
         if row in thead_rows:
             thead_h += row.h + v_spacing
@@ -214,15 +218,16 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             current_page = int(current_y / PAGE_HEIGHT)
             page_boundary = (current_page + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
             row_total_h = row.h + v_spacing
-            
+
             if current_y + row_total_h > page_boundary:
                 # Page break! Move to top of next page + account for repeating header
                 new_y = (current_page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
                 dy = new_y - current_y
                 current_y = new_y
-                
+
                 # Shift the row and all its pre-laid-out children to the new page
                 from .inline import shift_box
+
                 shift_box(row, 0, dy)
 
         current_y += row.h + v_spacing
