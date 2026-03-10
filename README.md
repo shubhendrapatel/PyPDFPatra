@@ -25,7 +25,14 @@ PyPDFPatra uses a separation of concerns between its Python interface and its Cy
 4.  **Layout:** Geometry (x, y, width, height) is calculated.
 5.  **Rendering:** Drawing commands are sent to the PDF backend.
 
-For a detailed breakdown of the library structure and module responsibilities, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For a detailed breakdown of the library structure and development status, see the documents in the `docs/` directory:
+
+- [**Architecture Overview**](docs/ARCHITECTURE.md) - Deep dive into the engine design.
+- [**Development Status**](docs/STATUS.md) - What features are currently implemented.
+- [**Design Decisions**](docs/DECISIONS.md) - Historical context on technical choices.
+- [**Supported CSS**](docs/SUPPORTED_CSS.md) - Detailed list of supported properties.
+- [**Contributing Guide**](docs/CONTRIBUTING.md) - How to help build the engine.
+- [**Extending Guide**](docs/EXTENDING.md) - How to add new CSS or Box types.
 
 ---
 
