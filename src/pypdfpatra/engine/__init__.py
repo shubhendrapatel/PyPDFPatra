@@ -2,15 +2,13 @@
 pypdfpatra.engine
 ~~~~~~~~~~~~~~~~~
 The core Cython engine for PyPDFPatra.
-This module exposes the high-performance C-extension classes.
+This module exposes the high-performance C-extension classes
+and sub-packages for styling and layout.
 """
 
-from .tree import Box, Node, BlockBox, InlineBox, TextBox, AnonymousBlockBox, LineBox
-from .style import resolve_styles
-from .box_generator import generate_box_tree
-from .layout_block import layout_block_context
-from .layout_inline import layout_inline_context
-from .css_parser import parse_stylesheets
+from .tree import Box, Node, BlockBox, InlineBox, TextBox, AnonymousBlockBox, LineBox, TableBox, TableRowBox, TableRowGroupBox, TableCellBox
+from .styling import resolve_styles, apply_styles, parse_stylesheets, expand_shorthand_properties
+from .layout import generate_box_tree, layout_block_context, layout_inline_context, shift_box, layout_table_context
 
 __all__ = [
     "Box",
@@ -20,9 +18,17 @@ __all__ = [
     "TextBox",
     "AnonymousBlockBox",
     "LineBox",
+    "TableBox",
+    "TableRowBox",
+    "TableRowGroupBox",
+    "TableCellBox",
     "resolve_styles",
+    "apply_styles",
+    "parse_stylesheets",
+    "expand_shorthand_properties",
     "generate_box_tree",
     "layout_block_context",
     "layout_inline_context",
-    "parse_stylesheets",
+    "shift_box",
+    "layout_table_context",
 ]

@@ -1,6 +1,6 @@
 """
-pypdfpatra.engine.box_generator
-~~~~~~~~~~~~~~~~~~~~~~~~AAAA~~~
+pypdfpatra.engine.layout.box_generator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Converts the parsed DOM Tree (Nodes) into a W3C Render Tree (Boxes).
 
 The Box tree is the actual structure used for layout and painting.
@@ -11,8 +11,21 @@ Elements with `display: none` are dropped. Nodes are converted into:
 """
 
 from __future__ import annotations
-from pypdfpatra.engine.tree import Node, Box, BlockBox, InlineBox, TextBox
-
+from pypdfpatra.engine.tree import (
+    Node, 
+    Box, 
+    BlockBox, 
+    InlineBox, 
+    TextBox, 
+    ImageBox, 
+    InlineBlockBox, 
+    TableBox, 
+    TableRowGroupBox, 
+    TableRowBox, 
+    TableCellBox, 
+    MarkerBox
+)
+from pypdfpatra.engine.image import get_image_info
 
 def generate_box_tree(
     node: Node, base_url: str = "", _list_index: int = None
@@ -20,15 +33,6 @@ def generate_box_tree(
     """
     Recursively processes an HTML DOM Node and generates the appropriate W3C
     Formatting Context Box geometries based on the computed CSS `display` style.
-
-    Args:
-        node (Node): The root or current DOM Node.
-        base_url (str): The base directory for parsing relative image/resource paths.
-        _list_index (int, optional): Internal counter for list-item numbering.
-
-    Returns:
-        Box | None: The generated Cython Box hierarchy, or None if the element
-                    is `display: none` or otherwise not rendered.
     """
     if not isinstance(node, Node):
         return None
@@ -62,9 +66,6 @@ def generate_box_tree(
     elif display in ("block", "list-item"):
         box = BlockBox(node=node)
     elif tag == "img":
-        from pypdfpatra.engine.tree import ImageBox
-        from pypdfpatra.engine.image import get_image_info
-
         src = getattr(node, "props", {}).get("src", "")
         alt_text = getattr(node, "props", {}).get("alt", "")
 
@@ -81,24 +82,14 @@ def generate_box_tree(
             node=node,
         )
     elif display == "inline-block":
-        from pypdfpatra.engine.tree import InlineBlockBox
-
         box = InlineBlockBox(node=node)
     elif display == "table":
-        from pypdfpatra.engine.tree import TableBox
-
         box = TableBox(node=node)
     elif display in ("table-row-group", "table-header-group", "table-footer-group"):
-        from pypdfpatra.engine.tree import TableRowGroupBox
-
         box = TableRowGroupBox(node=node)
     elif display == "table-row":
-        from pypdfpatra.engine.tree import TableRowBox
-
         box = TableRowBox(node=node)
     elif display == "table-cell":
-        from pypdfpatra.engine.tree import TableCellBox
-
         box = TableCellBox(node=node)
     else:
         # Defaults to inline for spans, anchors, strong, etc.
@@ -133,8 +124,6 @@ def generate_box_tree(
 
     # Generate MarkerBox for list-items
     if display == "list-item":
-        from pypdfpatra.engine.tree import MarkerBox
-
         list_style_type = style.get("list-style-type", "disc").strip().lower()
 
         marker_content = "__disc__"

@@ -1,6 +1,6 @@
 """
 pypdfpatra.render
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 The rendering orchestrator that traverses the Cython layout tree and issues
 drawing commands to a lightweight PDF backend (fpdf2).
 """
@@ -8,187 +8,14 @@ drawing commands to a lightweight PDF backend (fpdf2).
 import fpdf
 from pypdfpatra.engine.tree import Box, TextBox
 from pypdfpatra.engine.font_metrics import parse_font
-from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
-
-
-NAMED_COLORS = {
-    "aliceblue": (240, 248, 255),
-    "antiquewhite": (250, 235, 215),
-    "aqua": (0, 255, 255),
-    "aquamarine": (127, 255, 212),
-    "azure": (240, 255, 255),
-    "beige": (245, 245, 220),
-    "bisque": (255, 228, 196),
-    "black": (0, 0, 0),
-    "blanchedalmond": (255, 235, 205),
-    "blue": (0, 0, 255),
-    "blueviolet": (138, 43, 226),
-    "brown": (165, 42, 42),
-    "burlywood": (222, 184, 135),
-    "cadetblue": (95, 158, 160),
-    "chartreuse": (127, 255, 0),
-    "chocolate": (210, 105, 30),
-    "coral": (255, 127, 80),
-    "cornflowerblue": (100, 149, 237),
-    "cornsilk": (255, 248, 220),
-    "crimson": (220, 20, 60),
-    "cyan": (0, 255, 255),
-    "darkblue": (0, 0, 139),
-    "darkcyan": (0, 139, 139),
-    "darkgoldenrod": (184, 134, 11),
-    "darkgray": (169, 169, 169),
-    "darkgreen": (0, 100, 0),
-    "darkgrey": (169, 169, 169),
-    "darkkhaki": (189, 183, 107),
-    "darkmagenta": (139, 0, 139),
-    "darkolivegreen": (85, 107, 47),
-    "darkorange": (255, 140, 0),
-    "darkorchid": (153, 50, 204),
-    "darkred": (139, 0, 0),
-    "darksalmon": (233, 150, 122),
-    "darkseagreen": (143, 188, 143),
-    "darkslateblue": (72, 61, 139),
-    "darkslategray": (47, 79, 79),
-    "darkslategrey": (47, 79, 79),
-    "darkturquoise": (0, 206, 209),
-    "darkviolet": (148, 0, 211),
-    "deeppink": (255, 20, 147),
-    "deepskyblue": (0, 191, 255),
-    "dimgray": (105, 105, 105),
-    "dimgrey": (105, 105, 105),
-    "dodgerblue": (30, 144, 255),
-    "firebrick": (178, 34, 34),
-    "floralwhite": (255, 250, 240),
-    "forestgreen": (34, 139, 34),
-    "fuchsia": (255, 0, 255),
-    "gainsboro": (220, 220, 220),
-    "ghostwhite": (248, 248, 255),
-    "goldenrod": (218, 165, 32),
-    "gold": (255, 215, 0),
-    "gray": (128, 128, 128),
-    "green": (0, 128, 0),
-    "greenyellow": (173, 255, 47),
-    "grey": (128, 128, 128),
-    "honeydew": (240, 255, 240),
-    "hotpink": (255, 105, 180),
-    "indianred": (205, 92, 92),
-    "indigo": (75, 0, 130),
-    "ivory": (255, 255, 240),
-    "khaki": (240, 230, 140),
-    "lavenderblush": (255, 240, 245),
-    "lavender": (230, 230, 250),
-    "lawngreen": (124, 252, 0),
-    "lemonchiffon": (255, 250, 205),
-    "lightblue": (173, 216, 230),
-    "lightcoral": (240, 128, 128),
-    "lightcyan": (224, 255, 255),
-    "lightgoldenrodyellow": (250, 250, 210),
-    "lightgray": (211, 211, 211),
-    "lightgreen": (144, 238, 144),
-    "lightgrey": (211, 211, 211),
-    "lightpink": (255, 182, 193),
-    "lightsalmon": (255, 160, 122),
-    "lightseagreen": (32, 178, 170),
-    "lightskyblue": (135, 206, 250),
-    "lightslategray": (119, 136, 153),
-    "lightslategrey": (119, 136, 153),
-    "lightsteelblue": (176, 196, 222),
-    "lightyellow": (255, 255, 224),
-    "lime": (0, 255, 0),
-    "limegreen": (50, 205, 50),
-    "linen": (250, 240, 230),
-    "magenta": (255, 0, 255),
-    "maroon": (128, 0, 0),
-    "mediumaquamarine": (102, 205, 170),
-    "mediumblue": (0, 0, 205),
-    "mediumorchid": (186, 85, 211),
-    "mediumpurple": (147, 112, 219),
-    "mediumseagreen": (60, 179, 113),
-    "mediumslateblue": (123, 104, 238),
-    "mediumspringgreen": (0, 250, 154),
-    "mediumturquoise": (72, 209, 204),
-    "mediumvioletred": (199, 21, 133),
-    "midnightblue": (25, 25, 112),
-    "mintcream": (245, 255, 250),
-    "mistyrose": (255, 228, 225),
-    "moccasin": (255, 228, 181),
-    "navajowhite": (255, 222, 173),
-    "navy": (0, 0, 128),
-    "oldlace": (253, 245, 230),
-    "olive": (128, 128, 0),
-    "olivedrab": (107, 142, 35),
-    "orange": (255, 165, 0),
-    "orangered": (255, 69, 0),
-    "orchid": (218, 112, 214),
-    "palegoldenrod": (238, 232, 170),
-    "palegreen": (152, 251, 152),
-    "paleturquoise": (175, 238, 238),
-    "palevioletred": (219, 112, 147),
-    "papayawhip": (255, 239, 213),
-    "peachpuff": (255, 218, 185),
-    "peru": (205, 133, 63),
-    "pink": (255, 192, 203),
-    "plum": (221, 160, 221),
-    "powderblue": (176, 224, 230),
-    "purple": (128, 0, 128),
-    "rebeccapurple": (102, 51, 153),
-    "red": (255, 0, 0),
-    "rosybrown": (188, 143, 143),
-    "royalblue": (65, 105, 225),
-    "saddlebrown": (139, 69, 19),
-    "salmon": (250, 128, 114),
-    "sandybrown": (244, 164, 96),
-    "seagreen": (46, 139, 87),
-    "seashell": (255, 245, 238),
-    "sienna": (160, 82, 45),
-    "silver": (192, 192, 192),
-    "skyblue": (135, 206, 235),
-    "slateblue": (106, 90, 205),
-    "slategray": (112, 128, 144),
-    "slategrey": (112, 128, 144),
-    "snow": (255, 250, 250),
-    "springgreen": (0, 255, 127),
-    "steelblue": (70, 130, 180),
-    "tan": (210, 180, 140),
-    "teal": (0, 128, 128),
-    "thistle": (216, 191, 216),
-    "tomato": (255, 99, 71),
-    "turquoise": (64, 224, 208),
-    "violet": (238, 130, 238),
-    "wheat": (245, 222, 179),
-    "white": (255, 255, 255),
-    "whitesmoke": (245, 245, 245),
-    "yellow": (255, 255, 0),
-    "yellowgreen": (154, 205, 50),
-}
-
-
-def _parse_color(color_str: str) -> tuple:
-    """Parses a hex color string or common named color to an RGB tuple."""
-    if not color_str:
-        return (0, 0, 0)
-    color_str = color_str.strip().lower()
-
-    if color_str in NAMED_COLORS:
-        return NAMED_COLORS[color_str]
-
-    if color_str.startswith("#"):
-        try:
-            if len(color_str) == 7:
-                return (
-                    int(color_str[1:3], 16),
-                    int(color_str[3:5], 16),
-                    int(color_str[5:7], 16),
-                )
-            elif len(color_str) == 4:
-                return (
-                    int(color_str[1] * 2, 16),
-                    int(color_str[2] * 2, 16),
-                    int(color_str[3] * 2, 16),
-                )
-        except ValueError:
-            pass
-    return (0, 0, 0)
+from pypdfpatra.defaults import (
+    PAGE_HEIGHT, 
+    DEFAULT_MARGIN_TOP, 
+    DEFAULT_MARGIN_BOTTOM,
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_COLOR,
+)
+from pypdfpatra.colors import parse_color
 
 
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
@@ -219,8 +46,11 @@ def _draw_background(
 ) -> None:
     """Paints background colors across potentially multiple pages."""
     bg_color_str = style.get("background-color")
-    if bg_color_str:
-        r, g, b = _parse_color(bg_color_str)
+    if bg_color_str and bg_color_str != "transparent":
+        rgb = parse_color(bg_color_str)
+        if rgb is None:
+            return
+        r, g, b = rgb
 
         start_page = int(border_box_y / PAGE_HEIGHT)
         end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
@@ -263,17 +93,13 @@ def _draw_borders(
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
     # Use butt caps (0 J) to ensure borders meet precisely at corners.
-    # We use raw PDF operators as 'set_line_cap_style' is not universally available.
     pdf._out("0 J")
 
     def half(w):
         return w / 2.0
 
     # Draw order: Top, Bottom, Left, Right
-    # To avoid "crossing", we adjust the start/end of vertical lines
-    # so they sit perfectly between the top and bottom lines.
     edges = [
-        # edge, b_w, x1, y1, x2, y2
         (
             "top",
             border_top,
@@ -316,9 +142,12 @@ def _draw_borders(
             continue
 
         color_str = style.get(
-            f"border-{edge}-color", style.get("border-color", "#000000")
+            f"border-{edge}-color", style.get("border-color", DEFAULT_COLOR)
         )
-        r, g, b = _parse_color(color_str)
+        rgb = parse_color(color_str)
+        if rgb is None:
+            continue
+        r, g, b = rgb
 
         start_page = int(line_y1 / PAGE_HEIGHT)
         end_page = int(line_y2 / PAGE_HEIGHT)
@@ -360,13 +189,10 @@ def _draw_borders(
                 pdf.line(line_x1, p_y1, line_x2, p_y2)
                 pdf.set_dash_pattern()
             else:
-                # solid, groove, ridge, inset, outset, double fall back to solid line
                 pdf.line(line_x1, p_y1, line_x2, p_y2)
 
     pdf.set_line_width(0.2)
     pdf.set_draw_color(0, 0, 0)
-
-    # Restore default line cap (2 J = projecting square)
     pdf._out("2 J")
 
 
@@ -392,8 +218,9 @@ def _draw_text(
 
     local_y = content_y - (page_idx * PAGE_HEIGHT)
 
-    color_str = style.get("color", "#000000")
-    r, g, b = _parse_color(color_str)
+    color_str = style.get("color", DEFAULT_COLOR)
+    rgb = parse_color(color_str)
+    r, g, b = rgb if rgb else (0, 0, 0)
 
     if box.__class__.__name__ == "MarkerBox" and text_content in (
         "__disc__",
@@ -428,14 +255,13 @@ def _draw_text(
     from pypdfpatra.engine.font_metrics import FontMetrics
     FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
 
-    # Thanks to true TTF support via @font-face, Unicode renders natively!
     pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
 
     # Draw text decoration lines (underline and line-through)
     decoration = style.get("text-decoration", "none").strip().lower()
     if decoration not in ("none", ""):
         line_w = box.w
-        line_weight = max(0.4, size * 0.05)  # Scale line weight with font size
+        line_weight = max(0.4, size * 0.05) 
 
         pdf.set_draw_color(r, g, b)
         pdf.set_line_width(line_weight)
@@ -448,7 +274,7 @@ def _draw_text(
             strikethrough_y = local_y + box.h * 0.55
             pdf.line(content_x, strikethrough_y, content_x + line_w, strikethrough_y)
 
-        pdf.set_line_width(0.2)  # Reset to default
+        pdf.set_line_width(0.2)
         pdf.set_draw_color(0, 0, 0)
 
 
@@ -478,21 +304,16 @@ def _draw_image(
         pdf.image(name=img_src, x=content_x, y=local_y, w=box.w, h=box.h)
     except Exception as e:
         print(f"pypdfpatra - WARNING - Failed to render image {img_src}: {e}")
-        # Draw fallback border
         pdf.set_draw_color(200, 200, 200)
         pdf.rect(x=content_x, y=local_y, w=box.w, h=box.h, style="D")
 
-        # Draw alt text or filename inside
         alt_text = getattr(box, "alt_text", "")
         if not alt_text:
             alt_text = img_src.split("/")[-1].split("\\")[-1]
 
         pdf.set_xy(content_x + 2, local_y + 2)
         pdf.set_text_color(150, 150, 150)
-        pdf.set_font("Helvetica", size=8)
-
-        # FPDF cell has a weird bug where if w > actual we can clip, but let's just do a simple cell
-        # truncate text if needed
+        pdf.set_font(DEFAULT_FONT_FAMILY, size=8)
         pdf.cell(w=max(0, box.w - 4), h=10, text=alt_text, align="L")
         pdf.set_draw_color(0, 0, 0)
         pdf.set_text_color(0, 0, 0)
@@ -501,12 +322,7 @@ def _draw_image(
 def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
-    and paints the boxes onto the PDF, slicing background shapes across
-    multi-page boundaries mathematically.
-
-    Args:
-        pdf: The fpdf.FPDF context.
-        boxes: List of Cython Box geometry models.
+    and paints the boxes onto the PDF.
     """
     for box in boxes:
         if box is None:
@@ -514,7 +330,6 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
 
         style = getattr(box.node, "style", {})
 
-        # Using W3C model: box.x/y is margin origin, box.w/h is content box dimensions
         border_left = getattr(box, "border_left", 0)
         border_right = getattr(box, "border_right", 0)
         border_top = getattr(box, "border_top", 0)
@@ -529,7 +344,6 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
             border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
         )
 
-        # Skip drawing borders/backgrounds for captions wrapping the table
         if box.__class__.__name__ == "TableBox":
             caption_h = 0.0
             for child in box.children:
@@ -547,12 +361,10 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
             border_box_y += caption_h
             border_box_h -= caption_h
 
-        # Paint Backgrounds spanning multiple pages
         _draw_background(
             pdf, style, border_box_x, border_box_y, border_box_w, border_box_h
         )
 
-        # Draw Borders
         _draw_borders(
             pdf,
             style,
@@ -566,39 +378,25 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
             border_box_h,
         )
 
-        # Hyperlinks (Phase 7: Advanced PDF Features)
         href = getattr(box.node, "props", {}).get("href")
         if href:
             page_idx = int(border_box_y / PAGE_HEIGHT)
             local_y = border_box_y - (page_idx * PAGE_HEIGHT)
-            # Create a clickable annotation over the entire border-box area.
-            # We add a 2pt vertical buffer to ensure the click area is robust.
-            click_h = border_box_h
-            if box.__class__.__name__ == "TextBox":
-                # For inline text, often the height is slightly different
-                # from the line-height; we want a tight but clickable area.
-                pass
-            pdf.link(x=border_box_x, y=local_y, w=border_box_w, h=click_h, link=href)
+            pdf.link(x=border_box_x, y=local_y, w=border_box_w, h=border_box_h, link=href)
 
-        # Paint Text Content
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
             _draw_text(
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
 
-        # Paint Image Content
         if box.__class__.__name__ == "ImageBox":
             _draw_image(
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
 
-        # Paint children (Z-order: backgrounds, borders, then children)
         if box.children:
             draw_boxes(pdf, box.children, dy=dy)
 
-        # Repeating Header Logic for Tables
-        # If this is a TableBox and it spans multiple pages, repeat thead_rows at page starts.
-        # We only do this in the main pass (dy=0) to avoid infinite recursion.
         if dy == 0.0 and box.__class__.__name__ == "TableBox":
             thead_rows = getattr(box, "thead_rows", [])
             if thead_rows:
@@ -606,10 +404,8 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
                 end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
 
                 if end_page > start_page:
-                    # Capture original header start Y
                     header_original_y = thead_rows[0].y
                     for p in range(start_page + 1, end_page + 1):
-                        # Calculate shift required to place header at top of page p
                         header_target_y = (p * PAGE_HEIGHT) + DEFAULT_MARGIN_TOP
                         repeat_dy = header_target_y - header_original_y
                         draw_boxes(pdf, thead_rows, dy=repeat_dy)

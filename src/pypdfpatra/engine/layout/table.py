@@ -1,9 +1,7 @@
 """
-pypdfpatra.engine.layout_table
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pypdfpatra.engine.layout.table
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Implementation of the W3C Table Formatting Context.
-
-Handles grid calculation, fluid column widths ("table-layout: auto"), and row height synchronization.
 """
 
 from __future__ import annotations
@@ -15,11 +13,6 @@ from pypdfpatra.engine.tree import (
     TableCellBox,
     TextBox,
 )
-from pypdfpatra.engine.layout_block import (
-    layout_block_context,
-    _resolve_box_geometry,
-    _parse_length,
-)
 from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 from pypdfpatra.engine.font_metrics import measure_text, parse_font
 
@@ -27,18 +20,14 @@ from pypdfpatra.engine.font_metrics import measure_text, parse_font
 def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -> None:
     """
     Executes the Table Formatting Context (TFC) algorithm.
-    1. Grid construction (rows and columns).
-    2. Column width distribution (table-layout: auto).
-    3. Cell block layout generation.
-    4. Row height synchronization.
     """
+    from .block import layout_block_context, _resolve_box_geometry, _parse_length
+
     style = getattr(box.node, "style", {}) if box.node else {}
-    # print(f"DEBUG: layout_table_context cb_w={cb_w} for tag={getattr(box.node, 'tag', 'unknown')}")
     box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
 
     box.x = cb_x
     box.y = cb_y
-    # We will determine box.w dynamically
 
     spacing_val = str(style.get("border-spacing", "0px"))
     parts = spacing_val.split()
@@ -193,7 +182,6 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             # Layout the block context within the cell
             layout_block_context(cell, cell_x, row.y, col_widths[i])
 
-            # cell.w is set by layout_block_context usually to col_w minus its own margins
             max_cell_h = max(
                 max_cell_h,
                 cell.h
@@ -234,7 +222,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
                 current_y = new_y
                 
                 # Shift the row and all its pre-laid-out children to the new page
-                from pypdfpatra.engine.layout_inline import shift_box
+                from .inline import shift_box
                 shift_box(row, 0, dy)
 
         current_y += row.h + v_spacing

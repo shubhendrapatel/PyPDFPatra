@@ -9,19 +9,23 @@ Heavily inspired by the excellent [WeasyPrint](https://weasyprint.org/) project,
 ## 🚀 Key Features
 
 *   **Speed:** A compiled Cython engine that handles millions of layout calculations at the hardware level.
-*   **Memory Efficient:** Uses low-level C-structs to process 1,000+ page documents with a minimal RAM footprint.
-*   **Modern CSS:** Built-in support for Flexbox, CSS Grid, and Paged Media (Headers, Footers, Page Numbering).
+*   **W3C Standards:** Implements Block, Inline, and Table Formatting Contexts correctly.
+*   **Memory Efficient:** Uses low-level C-structs to process large documents with a minimal RAM footprint.
+*   **Modern CSS:** Support for complex selectors, cascading styles, and expanding shorthands.
 
 ---
 
-## 🛠️ Architecture: The Double-Tree System
+## 🛠️ Architecture
 
-PyPDFPatra uses a unique dual-layered architecture to separate content from geometry:
+PyPDFPatra uses a separation of concerns between its Python interface and its Cython layout engine. It follows a 5-step pipeline:
 
-1.  **The Node Tree (DOM):** A Python-accessible structure representing your HTML.
-2.  **The Box Tree (The Engine):** A hidden, compiled Cython layer where coordinates ($x, y, w, h$) are calculated using raw C-math.
+1.  **Parsing:** HTML is turned into a DOM Node Tree.
+2.  **Styling:** CSS is matched and resolved (CSSOM).
+3.  **Box Generation:** Nodes are converted into a Render Tree of Boxes.
+4.  **Layout:** Geometry (x, y, width, height) is calculated.
+5.  **Rendering:** Drawing commands are sent to the PDF backend.
 
-This allows you to manipulate document structure in Python while the **"Yantra" (Machine)** handles the heavy lifting in the background.
+For a detailed breakdown of the library structure and module responsibilities, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 

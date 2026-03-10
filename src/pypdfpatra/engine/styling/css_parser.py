@@ -1,18 +1,17 @@
 """
-pypdfpatra.engine.css_parser
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pypdfpatra.engine.styling.css_parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Parses <style> blocks from the DOM into a list of tinycss2 AST rules.
 """
 
+import os
+import logging
 from typing import List
 import tinycss2
 from pypdfpatra.engine.tree import Node
+from pypdfpatra.engine.font_metrics import FontMetrics
 
 __all__ = ["parse_stylesheets"]
-
-
-import os
-from pypdfpatra.engine.font_metrics import FontMetrics
 
 
 def _extract_css_from_style_node(node: Node) -> str:
@@ -48,8 +47,6 @@ def _find_css_sources(node: Node, css_sources: List[str], base_url: str) -> None
                     with open(asset_path, "r", encoding="utf-8") as f:
                         css_sources.append(f.read())
             except Exception as e:
-                import logging
-
                 logging.warning(f"Failed to load stylesheet {asset_path}: {e}")
 
     for child in node.children:
@@ -110,8 +107,6 @@ def _register_font_face(rule: tinycss2.ast.AtRule, base_url: str):
                     font_family.lower(), fpdf_style, font_path
                 )
             except Exception as e:
-                import logging
-
                 logging.warning(
                     f"Failed to load custom font {font_family} from {font_path}: {e}"
                 )
@@ -121,13 +116,6 @@ def parse_stylesheets(root_node: Node, base_url: str = "") -> List[tinycss2.ast.
     """
     Finds CSS sources in the DOM, extracts text, handles @font-face loading,
     and parses them into tinycss2 AST rules for cascading.
-
-    Args:
-        root_node (Node): The root of the DOM tree.
-        base_url (str): Absolute disk path for resolving external files.
-
-    Returns:
-        List[tinycss2.ast.Node]: Concatenated CSS rules list.
     """
     css_sources: List[str] = []
     _find_css_sources(root_node, css_sources, base_url)

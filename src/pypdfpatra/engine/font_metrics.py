@@ -1,10 +1,15 @@
 import fpdf
+from pypdfpatra.defaults import (
+    DEFAULT_FONT_FAMILY, 
+    DEFAULT_FONT_SIZE, 
+    DEFAULT_MONOSPACE_FONT,
+    DEFAULT_LINE_HEIGHT_RATIO
+)
 
-
-def parse_font(style: dict, base_size: float = 16.0) -> tuple:
+def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
     """Parses CSS dictionary into (family, style_str, size_float) for FPDF."""
     family = (
-        style.get("font-family", "helvetica")
+        style.get("font-family", DEFAULT_FONT_FAMILY)
         .split(",")[0]
         .strip()
         .strip("'\"")
@@ -12,7 +17,7 @@ def parse_font(style: dict, base_size: float = 16.0) -> tuple:
         .replace(" ", "")
     )
     if family == "monospace":
-        family = "courier"
+        family = DEFAULT_MONOSPACE_FONT
 
     size_str = style.get("font-size", "1em").strip().lower()
     size = base_size
@@ -84,13 +89,13 @@ class FontMetrics:
             try:
                 pdf_instance.set_font(font_family, style="", size=font_size)
             except fpdf.errors.FPDFException:
-                pdf_instance.set_font("helvetica", style="", size=font_size)
+                pdf_instance.set_font(DEFAULT_FONT_FAMILY, style="", size=font_size)
 
     def get_text_width(
         self,
         text: str,
-        font_family: str = "helvetica",
-        font_size: float = 16.0,
+        font_family: str = DEFAULT_FONT_FAMILY,
+        font_size: float = DEFAULT_FONT_SIZE,
         font_style: str = "",
     ) -> float:
         """
@@ -101,19 +106,19 @@ class FontMetrics:
 
     def get_line_height(
         self,
-        font_family: str = "helvetica",
-        font_size: float = 16.0,
+        font_family: str = DEFAULT_FONT_FAMILY,
+        font_size: float = DEFAULT_FONT_SIZE,
         font_style: str = "",
     ) -> float:
         """
         Returns standard line height (currently just 1.2 * font_size).
         """
-        return font_size * 1.2
+        return font_size * DEFAULT_LINE_HEIGHT_RATIO
 
 
-def measure_text(text: str, font_family="helvetica", size=16.0, style="") -> float:
+def measure_text(text: str, font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style="") -> float:
     return FontMetrics.get_instance().get_text_width(text, font_family, size, style)
 
 
-def get_line_height(font_family="helvetica", size=16.0, style="") -> float:
+def get_line_height(font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style="") -> float:
     return FontMetrics.get_instance().get_line_height(font_family, size, style)

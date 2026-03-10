@@ -1,12 +1,11 @@
 """
-pypdfpatra.matcher
-~~~~~~~~~~~~~~~~~~
+pypdfpatra.engine.styling.matcher
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This module handles the CSS 'Cascade'. It matches CSS selectors
 (like .class or #id) to the Cython Nodes in the tree.
 """
 
 from typing import List
-
 import tinycss2
 from pypdfpatra.engine.tree import Node
 
@@ -16,14 +15,6 @@ __all__ = ["apply_styles"]
 def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
     """
     Recursively matches CSS rules to a Node and its children.
-
-    This function traverses the DOM tree and applies styles from the parsed CSS
-    rules to each `Node` where the selector matches. Currently, it implements
-    a basic tag-name matching strategy.
-
-    Args:
-        node (Node): The Cython Node to evaluate and style.
-        rules (List[tinycss2.ast.Node]): A list of parsed CSS rules from tinycss2.
     """
     # 1. Match Rules to this specific Node
     for rule in rules:
@@ -69,8 +60,6 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
         inline_declarations = tinycss2.parse_declaration_list(
             inline_style_str, skip_comments=True, skip_whitespace=True
         )
-        # We can bypass _inject_declarations logic slightly, or just pass the parsed nodes
-        # wait, tinycss2.parse_declaration_list takes a string or tokens. If string, it returns Declaration objects directly.
         for decl in inline_declarations:
             if isinstance(decl, tinycss2.ast.Declaration):
                 node.style[decl.name] = "".join(
@@ -92,13 +81,6 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
 def _inject_declarations(node: Node, content: List[tinycss2.ast.Node]) -> None:
     """
     Parses CSS declarations and stores them in the Node's Cython style dictionary.
-
-    Example: 'color: red' -> node.style['color'] = 'red'
-
-    Args:
-        node (Node): The node whose style dictionary should be updated.
-        content (List[tinycss2.ast.Node]): The token list forming the declaration
-            block to parse.
     """
     declarations = tinycss2.parse_declaration_list(content)
     for decl in declarations:

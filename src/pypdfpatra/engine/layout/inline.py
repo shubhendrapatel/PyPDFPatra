@@ -1,5 +1,11 @@
+"""
+pypdfpatra.engine.layout.inline
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Implements the W3C Inline Formatting Context (IFC).
+"""
+
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
-from pypdfpatra.engine.font_metrics import measure_text, get_line_height
+from pypdfpatra.engine.font_metrics import measure_text, get_line_height, parse_font
 from pypdfpatra.defaults import PAGE_HEIGHT, DEFAULT_MARGIN_TOP, DEFAULT_MARGIN_BOTTOM
 
 
@@ -127,8 +133,6 @@ def _process_text_box(
     style = getattr(child.node, "style", {}) if child.node else {}
     white_space = style.get("white-space", "normal")
 
-    from pypdfpatra.engine.font_metrics import parse_font
-
     family, fpdf_style, size = parse_font(style)
     space_width = measure_text(" ", family, size, fpdf_style)
 
@@ -207,12 +211,10 @@ def _process_inline_box(
     parent_box: Box,
     text_align: str = "left",
 ) -> tuple[float, float, bool]:
+    child_style = getattr(child.node, "style", {})
+    
     if child.__class__.__name__ == "InlineBlockBox":
-        from pypdfpatra.engine.layout_block import layout_block_context
-
-        child_style = getattr(child.node, "style", {})
-
-        from pypdfpatra.engine.layout_block import _parse_length
+        from .block import layout_block_context, _parse_length
 
         css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
         if css_width is None:
@@ -221,8 +223,7 @@ def _process_inline_box(
         layout_block_context(child, 0.0, 0.0, css_width)
 
     elif child.__class__.__name__ == "ImageBox":
-        child_style = getattr(child.node, "style", {})
-        from pypdfpatra.engine.layout_block import _parse_length
+        from .block import _parse_length
 
         css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
         css_height = _parse_length(child_style.get("height", "auto"), cb_w, default_auto=None)
@@ -312,15 +313,6 @@ def layout_inline_context(
 ) -> None:
     """
     Implements a basic W3C Inline Formatting Context (IFC).
-    Takes a parent block box that contains inline-level children, and flows
-    them horizontally into one or more Line Boxes.
-
-    Args:
-        parent_box: The BlockBox establishing the IFC. Its children will be wrapped in LineBoxes.
-        cb_x: X coordinate of the content area.
-        cb_y: Y coordinate of the content area starting point.
-        cb_w: Available width for lines.
-        text_align: Horizontal alignment for the generated line boxes.
     """
     inline_children = parent_box.children
     if not inline_children:

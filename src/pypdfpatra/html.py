@@ -1,24 +1,30 @@
 """
-pypdfpatra.main
+pypdfpatra.html
 ~~~~~~~~~~~~~~~
 The public WeasyPrint-style API for PyPDFPatra.
 """
 
+import os
 import fpdf
 
 from pypdfpatra.api import build_tree
-from pypdfpatra.matcher import apply_styles
 from pypdfpatra.engine import (
     resolve_styles,
     generate_box_tree,
     layout_block_context,
     parse_stylesheets,
+    apply_styles,
 )
 from pypdfpatra.render import draw_boxes
 from pypdfpatra.logger import logger
-
-
-import os
+from pypdfpatra.defaults import (
+    PAGE_WIDTH,
+    PAGE_HEIGHT,
+    DEFAULT_MARGIN_LEFT,
+    DEFAULT_MARGIN_TOP,
+    CONTENT_WIDTH,
+)
+from pypdfpatra.engine.font_metrics import FontMetrics
 
 
 class HTML:
@@ -32,14 +38,6 @@ class HTML:
     ):
         """
         Initializes the document configuration.
-
-        Args:
-            string (str, optional): A string containing HTML code.
-            filename (str, optional): A path or URL to an HTML file.
-            base_url (str, optional): The base URL used to resolve relative URLs
-                (e.g., in <link href="..."> or @font-face src). If not provided,
-                it is inferred from the filename or the current working directory.
-            **kwargs: Additional WeasyPrint-compatible arguments (ignored for now).
         """
         self.base_url = base_url or ""
         # Maintain WeasyPrint API compatability
@@ -80,12 +78,6 @@ class HTML:
         root_box = generate_box_tree(root_node, self.base_url)
 
         # 4. W3C Block Formatting Context Layout
-        from pypdfpatra.defaults import (
-            DEFAULT_MARGIN_LEFT,
-            DEFAULT_MARGIN_TOP,
-            CONTENT_WIDTH,
-        )
-
         logger.info("[4/5] Calculating Layout Geometry...")
         if root_box is not None:
             # Shift everything by the top-left margin
@@ -95,15 +87,12 @@ class HTML:
 
         # 5. Rendering Phase
         logger.info("[5/5] Rendering Graphics Context...")
-        from pypdfpatra.defaults import PAGE_WIDTH, PAGE_HEIGHT
 
         pdf = fpdf.FPDF(unit="pt", format=(PAGE_WIDTH, PAGE_HEIGHT))
         pdf.set_auto_page_break(False)
         pdf.add_page()
 
         # Load custom fonts
-        from pypdfpatra.engine.font_metrics import FontMetrics
-
         fm = FontMetrics.get_instance()
         if hasattr(fm, "_registered_fonts_data"):
             for font_key, font_args in fm._registered_fonts_data.items():

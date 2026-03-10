@@ -1,6 +1,6 @@
 """
-pypdfpatra.engine.layout_block
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pypdfpatra.engine.layout.block
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 W3C Block Formatting Context (BFC) implementation.
 
 Lays out boxes vertically according to the CSS2.1 Section 9.4.1 specification.
@@ -15,7 +15,7 @@ from pypdfpatra.engine.tree import (
     TextBox,
     AnonymousBlockBox,
     InlineBlockBox,
-    ImageBox, # Added ImageBox
+    ImageBox,
 )
 from pypdfpatra.defaults import (
     PAGE_HEIGHT,
@@ -176,7 +176,7 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
 
         if isinstance(child_box, AnonymousBlockBox):
             # Establish Inline Formatting Context (IFC) for this block
-            from pypdfpatra.engine.layout_inline import layout_inline_context
+            from .inline import layout_inline_context
 
             child_box.x = content_x
             child_box.y = current_border_box_bottom
@@ -189,14 +189,12 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 child_box, content_x, current_border_box_bottom, box.w, text_align
             )
 
-            # After layout, if the anonymous block spanned pages, current_border_box_bottom
-            # is updated correctly by the return value of layout_inline_context implicitly.
             current_border_box_bottom = child_box.y + child_box.h
             prev_margin_bottom = 0.0
             first_child = False
 
         elif isinstance(child_box, (BlockBox, ImageBox)) or child_box.__class__.__name__ == "TableBox":
-            from pypdfpatra.engine.layout_table import layout_table_context
+            from .table import layout_table_context
             
             child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
             child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
@@ -209,18 +207,11 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
 
             child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
             
-            # Pagination Policy: Atomic vs Fragmentable
-            # Atomic elements (images, tables, avoid-break blocks) shift to the next page
-            # if their total height exceeds the remaining space.
             is_atomic = child_box.__class__.__name__ in ("ImageBox", "TableBox") or \
                         child_style.get("page-break-inside") == "avoid"
             
-            # Predictive height for atomic shifting
             if is_atomic:
-                # For tables and block images, we can resolve geometry before layout
                 _, predicted_w, _, _ = _resolve_box_geometry(child_box, box.w, child_style)
-                # Tables/Blocks with auto height don't have predictable heights until layout.
-                # Use a small sentinel or explicit height.
                 css_h = _parse_length(child_style.get("height", "auto"), box.w, default_auto=None)
                 predicted_h = css_h if css_h is not None else 0.0 
                 total_h = predicted_h + child_box.padding_top + child_box.padding_bottom + \
@@ -230,24 +221,20 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                     current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
                     child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
             else:
-                # Fragmentable: Only shift if we have virtually NO space left (threshold)
                 if child_margin_box_y + 15 > page_boundary:
                      current_border_box_bottom = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
                      child_margin_box_y = current_border_box_bottom + collapsed_margin - child_mt
 
-            # Layout based on type
             if child_box.__class__.__name__ == "TableBox":
                 layout_table_context(child_box, content_x, child_margin_box_y, box.w)
             elif child_box.__class__.__name__ == "ImageBox":
-                # Special box model for block-level images
                 _resolve_box_geometry(child_box, box.w, child_style)
                 child_box.x = content_x
                 child_box.y = child_margin_box_y
-                child_box.h = child_box.image_h * (child_box.w / child_box.image_w) # Preserving aspect ratio
+                child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
             else:
                 layout_block_context(child_box, content_x, child_margin_box_y, box.w)
 
-            # Update current cursor
             current_border_box_bottom = (
                 child_box.y
                 + child_box.margin_top
@@ -258,8 +245,7 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             prev_margin_bottom = child_box.margin_bottom
 
         elif child_box.__class__.__name__ == "MarkerBox":
-            from pypdfpatra.engine.font_metrics import measure_text, get_line_height
-            from pypdfpatra.engine.font_metrics import parse_font
+            from pypdfpatra.engine.font_metrics import measure_text, get_line_height, parse_font
 
             style = getattr(box.node, "style", {}) if box.node else {}
             family, fpdf_style, size = parse_font(style)
@@ -279,24 +265,16 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
             child_box.w = marker_w
             child_box.h = marker_h
 
-            # Do NOT advance `current_border_box_bottom`, because the marker floats out of flow
-            # relative to the first line of the principal block.
-
     return current_border_box_bottom
 
 
 def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> None:
     """
     Recursively calculates the CSS Box Model layout for a block element.
-    Coordinates (`box.x`, `box.y`) refer to the MARGIN BOX top-left edge.
-    Dimensions (`box.w`, `box.h`) refer to the CONTENT BOX.
     """
-
     style = getattr(box.node, "style", {}) if box.node else {}
     box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
 
-    # Pagination Look-Ahead: Determine if the box fits on the current page
-    # based on its explicit height.
     css_height = _parse_length(style.get("height", "auto"), cb_w, default_auto=None)
 
     if css_height is not None:
@@ -312,18 +290,15 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
         current_page_idx = int(cb_y / PAGE_HEIGHT)
         page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
 
-        # If the block's border-box exceeds the boundary, jump to the next page top.
         if (
             cb_y + total_h > page_boundary
             and cb_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5
         ):
             cb_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
 
-    # --- Absolute Positioning (Margin Box Origin) ---
     box.x = cb_x
     box.y = cb_y
 
-    # --- Normal Flow Children Layout ---
     content_x = box.x + box.margin_left + box.border_left + box.padding_left
     current_border_box_bottom = (
         box.y + box.margin_top + box.border_top + box.padding_top
@@ -335,7 +310,6 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
         box, content_x, current_border_box_bottom
     )
 
-    # --- W3C Height Calculation ---
     if css_height is not None:
         if box_sizing == "border-box":
             box.h = max(
@@ -346,13 +320,12 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
                 - box.border_top
                 - box.border_bottom,
             )
-        else:  # content-box
+        else:
             box.h = css_height
     else:
-        # height: auto -> Hugs the content
         content_bottom = current_border_box_bottom
         content_y = box.y + box.margin_top + box.border_top + box.padding_top
         box.h = max(0.0, content_bottom - content_y)
 
         if isinstance(box, TextBox) and box.h == 0:
-            box.h = 20.0  # MVP line-height fallback
+            box.h = 20.0
