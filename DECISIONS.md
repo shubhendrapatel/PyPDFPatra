@@ -22,6 +22,7 @@ This document tracks important implementation decisions, design choices, and CSS
 ### Strict W3C CSS Box Model
 **Context**: Handling margins, borders, paddings, and widths.
 **Decision**: We explicitly mirror the W3C CSS2.1 / CSS3 Formatting Contexts (Block, Inline, Table). The `box_generator.py` maps elements strictly by their `display` CSS property (not HTML tag semantics) to route them into `layout_block`, `layout_inline`, or `layout_table`. This guarantees that users familiar with browser CSS can predict how their PDFs will generate.
+**Height Calculation**: We modified `_parse_length` to distinguish between `auto` (returns `None`) and `0px` (returns `0.0`). This ensures that boxes with explicit zero height are respected and not treated as content-hugging containers.
 
 ### FPDF2 Graphics Backend
 **Context**: Choosing a PDF generation backend dependency.
@@ -30,6 +31,15 @@ This document tracks important implementation decisions, design choices, and CSS
 ### Multi-page Splitting (Backgrounds & Borders)
 **Context**: Elements like `<div>` traversing across page breaks.
 **Decision**: We do *not* split the Cython layout tree into "page fragments" during the layout phase. The layout phase computes a single infinite vertical scrolling canvas. During `render.py`, as we draw borders and backgrounds, we mathematically slice the rendering instructions using `PAGE_HEIGHT`, skipping down to a new page programmatically if the absolute `Y` coordination crosses a multiple of the page height.
+
+### FPDF Graphics State Management (Invisible Text Bug)
+**Context**: When content (like a paragraph or background) spans multiple pages, switching back and forth between pages in FPDF caused subsequent text to become invisible or lose its color.
+**Decision**: FPDF 2 internally caches the "current" font and color. Our manual page-switching mechanism (`pdf.page = X`) does not always trigger a cache invalidate. 
+**Implementation**: We modified `_ensure_page` to explicitly reset `pdf.font_family`, `pdf.text_color`, and other state trackers to `None`. This forces FPDF to re-emit the necessary PDF operators (like `Tf` for fonts and `rg` for colors) on every new page fragment, ensuring visual consistency.
+
+### Non-Destructive Table Fragmentation
+**Context**: When a table row is pushed to a new page to accommodate a repeating header, the content of the first row on the new page was originally being cleared and re-laid out, leading to data loss.
+**Decision**: We implemented a recursive `shift_box` utility. Instead of destroying and re-creating the render tree fragments, we calculate the vertical displacement (`dy`) required to clear the header and page margin, and recursively apply that shift to the existing row and all its nested children (LineBoxes, TextBoxes). This preserves the integrity of the layout while moving it to the correct coordinate space.
 
 ## Implementation Details
 

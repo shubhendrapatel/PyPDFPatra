@@ -19,6 +19,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 ### Phase 6: Print Pagination & Page Breaks (✅ Done)
 - **Pagination**: Implement W3C Paged Media logic for page boundaries. (✅)
 - **Fragmentation**: Implement line-breaking and block-fragmentation across pages. (✅)
+- **Table Fragmentation**: Improved non-destructive row shifting and repeating `<thead>` support. (✅)
 
 ### Phase 7: Advanced PDF Features (🔄 In Progress)
 - **AcroForms**: Implement interactive fillable widgets. (⬜)
