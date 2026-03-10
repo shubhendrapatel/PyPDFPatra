@@ -24,13 +24,15 @@ from pypdfpatra.defaults import (
 )
 
 
-def _parse_length(value: str, parent_value: float) -> float:
+def _parse_length(
+    value: str, parent_value: float, default_auto: float | None = 0.0
+) -> float | None:
     """Parse a CSS length string (e.g. '10px', '50%') to a float (points)."""
     if not value:
-        return 0.0
+        return default_auto
     value = value.strip().lower()
     if value == "auto":
-        return 0.0
+        return default_auto
     try:
         if value.endswith("px"):
             return float(value[:-2])
@@ -80,9 +82,9 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
     # --- W3C Width Calculation ---
     box_sizing = style.get("box-sizing", "content-box").strip().lower()
     css_width_str = style.get("width", "auto").strip().lower()
-    css_width = _parse_length(css_width_str, aw)
+    css_width = _parse_length(css_width_str, aw, default_auto=None)
 
-    if css_width_str != "auto":
+    if css_width is not None:
         if box_sizing == "border-box":
             box.w = max(
                 0.0,
@@ -219,8 +221,8 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                 _, predicted_w, _, _ = _resolve_box_geometry(child_box, box.w, child_style)
                 # Tables/Blocks with auto height don't have predictable heights until layout.
                 # Use a small sentinel or explicit height.
-                css_h = _parse_length(child_style.get("height", "0px"), box.w)
-                predicted_h = css_h if css_h > 0 else 0.0 
+                css_h = _parse_length(child_style.get("height", "auto"), box.w, default_auto=None)
+                predicted_h = css_h if css_h is not None else 0.0 
                 total_h = predicted_h + child_box.padding_top + child_box.padding_bottom + \
                           child_box.border_top + child_box.border_bottom
                 
@@ -295,9 +297,9 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
 
     # Pagination Look-Ahead: Determine if the box fits on the current page
     # based on its explicit height.
-    css_height = _parse_length(style.get("height", "auto"), cb_w)
+    css_height = _parse_length(style.get("height", "auto"), cb_w, default_auto=None)
 
-    if css_height > 0:
+    if css_height is not None:
         total_h = css_height
         if box_sizing == "content-box":
             total_h += (
@@ -334,7 +336,7 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
     )
 
     # --- W3C Height Calculation ---
-    if css_height > 0:
+    if css_height is not None:
         if box_sizing == "border-box":
             box.h = max(
                 0.0,

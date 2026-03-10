@@ -192,11 +192,21 @@ def _parse_color(color_str: str) -> tuple:
 
 
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
-    """Ensures the PDF has enough pages to draw at the given 0-indexed page."""
+    """Ensures the PDF has enough pages and resets state cache for new pages."""
     target_page = page_idx + 1
-    while len(pdf.pages) < target_page:
-        pdf.add_page()
-    pdf.page = target_page
+    if len(pdf.pages) < target_page:
+        while len(pdf.pages) < target_page:
+            pdf.add_page()
+    
+    if pdf.page != target_page:
+        pdf.page = target_page
+        # FPDF 2 caches font/color per page-insertion but often misses manual 
+        # page switching. Invalidate internal trackers to force re-emission.
+        pdf.font_family = None
+        pdf.draw_color = None
+        pdf.fill_color = None
+        pdf.text_color = None
+        pdf.line_width = -1.0
 
 
 def _draw_background(
@@ -211,13 +221,13 @@ def _draw_background(
     bg_color_str = style.get("background-color")
     if bg_color_str:
         r, g, b = _parse_color(bg_color_str)
-        pdf.set_fill_color(r, g, b)
 
         start_page = int(border_box_y / PAGE_HEIGHT)
         end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
 
         for p in range(start_page, end_page + 1):
             _ensure_page(pdf, p)
+            pdf.set_fill_color(r, g, b)
 
             # Local coordinates for this specific page fragment
             local_y = border_box_y - (p * PAGE_HEIGHT)
@@ -310,14 +320,13 @@ def _draw_borders(
         )
         r, g, b = _parse_color(color_str)
 
-        pdf.set_draw_color(r, g, b)
-        pdf.set_line_width(b_w)
-
         start_page = int(line_y1 / PAGE_HEIGHT)
         end_page = int(line_y2 / PAGE_HEIGHT)
 
         for p in range(start_page, end_page + 1):
             _ensure_page(pdf, p)
+            pdf.set_draw_color(r, g, b)
+            pdf.set_line_width(b_w)
             
             # Line coordinates relative to this page
             p_y1 = line_y1 - (p * PAGE_HEIGHT)
@@ -410,19 +419,14 @@ def _draw_text(
     pdf.set_xy(content_x, local_y)
     family, fpdf_style, size = parse_font(style)
 
-    from pypdfpatra.engine.font_metrics import FontMetrics
-
-    FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
-
-    # Force FPDF to emit the non-stroking color by invalidating its cache
-    # because fill_color and text_color both use the same `rg` PDF operator.
-    dummy_r = 1 if r == 0 else r - 1
-    pdf.set_text_color(dummy_r, g, b)
-    pdf.set_text_color(r, g, b)
-
     # Map CSS text-align to FPDF align code
     align_map = {"left": "L", "center": "C", "right": "R", "justify": "J"}
     fpdf_align = align_map.get(style.get("text-align", "left"), "L")
+
+    # Font and color settings MUST follow _ensure_page to avoid state desync on new pages
+    pdf.set_text_color(r, g, b)
+    from pypdfpatra.engine.font_metrics import FontMetrics
+    FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
 
     # Thanks to true TTF support via @font-face, Unicode renders natively!
     pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)

@@ -64,7 +64,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     box.thead_rows = thead_rows
 
     if not rows:
-        box.w = css_width if css_width > 0 else cb_w
+        box.w = css_width if css_width is not None else cb_w
         box.h = 0.0
         return
 
@@ -77,7 +77,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         row_cells.append(cells)
 
     if num_cols == 0:
-        box.w = css_width if css_width > 0 else cb_w
+        box.w = css_width if css_width is not None else cb_w
         box.h = 0.0
         return
 
@@ -121,7 +121,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
                 + 15.0
             )  # Margin of safety
 
-            if css_w > 0:
+            if css_w is not None:
                 cell_padded_w = max(cell_padded_w, css_w)
 
             if cell_padded_w > col_widths[i]:
@@ -130,7 +130,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     total_table_w = sum(col_widths) + (num_cols + 1) * h_spacing
 
     # Scale width if exceeding bounds or explicitly forced
-    if css_width > 0:
+    if css_width is not None:
         if total_table_w < css_width:
             extra = (css_width - total_table_w) / num_cols
             col_widths = [cw + extra for cw in col_widths]
@@ -229,30 +229,13 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             
             if current_y + row_total_h > page_boundary:
                 # Page break! Move to top of next page + account for repeating header
-                current_y = (current_page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
-                row.y = current_y
+                new_y = (current_page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
+                dy = new_y - current_y
+                current_y = new_y
                 
-                # Re-layout EVERYTHING in this row on the new page
-                max_cell_h = 0.0
-                for i, cell in enumerate(cells):
-                    cell.children.clear()
-                    # Also clear boxes from the node to avoid duplicates in the render tree
-                    if cell.node:
-                        cell.node.boxes = [b for b in cell.node.boxes if b is not cell]
-                    
-                    # Re-layout at the new row Y
-                    c_x = row_content_x + h_spacing + sum(col_widths[:i]) + (i * h_spacing)
-                    layout_block_context(cell, c_x, row.y, col_widths[i])
-                    
-                    max_cell_h = max(max_cell_h, 
-                        cell.h + cell.padding_top + cell.padding_bottom + 
-                        cell.border_top + cell.border_bottom
-                    )
-                
-                # Resync row height if it changed (e.g. wrapping differences)
-                row.h = max_cell_h
-                for cell in cells:
-                    cell.h = max_cell_h - cell.padding_top - cell.padding_bottom - cell.border_top - cell.border_bottom
+                # Shift the row and all its pre-laid-out children to the new page
+                from pypdfpatra.engine.layout_inline import shift_box
+                shift_box(row, 0, dy)
 
         current_y += row.h + v_spacing
 

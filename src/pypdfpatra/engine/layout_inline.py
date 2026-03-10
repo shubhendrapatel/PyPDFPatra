@@ -23,12 +23,12 @@ def _flatten_inline(boxes: list[Box]) -> list[Box]:
     return flat
 
 
-def _shift_box(b: Box, dx: float, dy: float) -> None:
+def shift_box(b: Box, dx: float, dy: float) -> None:
     """Recursively shifts a box and its children."""
     b.x += dx
     b.y += dy
     for c in getattr(b, "children", []):
-        _shift_box(c, dx, dy)
+        shift_box(c, dx, dy)
 
 
 def _commit_line(
@@ -44,7 +44,7 @@ def _commit_line(
     Returns (consumed_max_h, new_y_bottom).
     """
     if not current_line_boxes:
-        return 0.0
+        return 0.0, current_y
 
     # Create the LineBox container
     line_box = LineBox(node=None)
@@ -101,7 +101,7 @@ def _commit_line(
         )
 
         dy = target_content_y - child.y
-        _shift_box(child, dx, dy)
+        shift_box(child, dx, dy)
 
         line_box.children.append(child)
 
@@ -214,8 +214,8 @@ def _process_inline_box(
 
         from pypdfpatra.engine.layout_block import _parse_length
 
-        css_width = _parse_length(child_style.get("width", "auto"), cb_w)
-        if css_width <= 0:
+        css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
+        if css_width is None:
             css_width = 150.0
 
         layout_block_context(child, 0.0, 0.0, css_width)
@@ -224,34 +224,34 @@ def _process_inline_box(
         child_style = getattr(child.node, "style", {})
         from pypdfpatra.engine.layout_block import _parse_length
 
-        css_width = _parse_length(child_style.get("width", "auto"), cb_w)
-        css_height = _parse_length(child_style.get("height", "auto"), cb_w)
+        css_width = _parse_length(child_style.get("width", "auto"), cb_w, default_auto=None)
+        css_height = _parse_length(child_style.get("height", "auto"), cb_w, default_auto=None)
 
         # Fallback to HTML attributes if no CSS width/height is present
-        if css_width <= 0:
+        if css_width is None:
             attr_w = getattr(child.node, "props", {}).get("width")
             if attr_w:
-                css_width = float(attr_w.replace("px", ""))
-        if css_height <= 0:
+                css_width = float(str(attr_w).replace("px", ""))
+        if css_height is None:
             attr_h = getattr(child.node, "props", {}).get("height")
             if attr_h:
-                css_height = float(attr_h.replace("px", ""))
+                css_height = float(str(attr_h).replace("px", ""))
 
-        if css_width > 0 and css_height <= 0:
+        if css_width is not None and css_height is None:
             child.w = css_width
             child.h = (
                 (child.image_h / child.image_w * css_width)
                 if child.image_w > 0
                 else css_width
             )
-        elif css_height > 0 and css_width <= 0:
+        elif css_height is not None and css_width is None:
             child.h = css_height
             child.w = (
                 (child.image_w / child.image_h * css_height)
                 if child.image_h > 0
                 else css_height
             )
-        elif css_width > 0 and css_height > 0:
+        elif css_width is not None and css_height is not None:
             child.w = css_width
             child.h = css_height
         else:
@@ -299,7 +299,7 @@ def _process_inline_box(
     )
     dx = target_content_x - child.x
 
-    _shift_box(child, dx, 0)
+    shift_box(child, dx, 0)
 
     current_line_width += child_total_w
     current_line_boxes.append((child, child_total_w, child_total_h))
