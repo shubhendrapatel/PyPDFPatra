@@ -117,6 +117,15 @@ def expand_shorthand_properties(style_dict: dict) -> dict:
             _expand_quad_shorthand(prop, val, expanded)
         elif prop == "border":
             _expand_border_shorthand(val, expanded)
+        elif prop in ("border-top", "border-right", "border-bottom", "border-left"):
+            # Expands e.g. 'border-left: 1px solid black' into 'border-left-width', etc.
+            temp = {}
+            _expand_border_shorthand(val, temp)
+            # Re-map from generic 'border-width' to specific 'border-left-width'
+            edge = prop[7:]  # top, right, bottom, or left
+            expanded[f"border-{edge}-width"] = temp.get("border-width")
+            expanded[f"border-{edge}-style"] = temp.get("border-style")
+            expanded[f"border-{edge}-color"] = temp.get("border-color")
         else:
             # We preserve existing fundamental properties
             # If the user explicitly defined `margin-top: 10px; margin: 0px`,

@@ -206,6 +206,10 @@
         .stripe-table tr:nth-child(odd) { background-color: #f0f5ff; }
         .type-test span:nth-of-type(2) { color: red; font-size: 1.2em; }
         
+        /* 9.3 Sibling Combinators */
+        .sibling-test h3 + p { color: #006400; font-weight: bold; }
+        .sibling-test h3 ~ .sib-div { border-left: 3px solid #1890ff; padding-left: 10px; margin-top: 5px; }
+        
         /* 10. Links (Phase 7) */
         .link-test a {
             color: #1890ff;
@@ -555,6 +559,15 @@
         </table>
         <div class="type-test" style="margin-top: 5px;">
             <span>Span 1</span> | <span>Span 2 (Red via nth-of-type)</span> | <span>Span 3</span>
+        </div>
+
+        <p><b>Sibling Combinators:</b></p>
+        <div class="sibling-test">
+            <h3>Heading Fragment</h3>
+            <p>Adjacent sibling paragraph (<code>h3 + p</code>). Should be dark green/bold.</p>
+            <p>NOT adjacent anymore.</p>
+            <div class="sib-div">General sibling (<code>h3 ~ div</code>). Should have blue left border.</div>
+            <div class="sib-div">Another general sibling.</div>
         </div>
     </div>
 

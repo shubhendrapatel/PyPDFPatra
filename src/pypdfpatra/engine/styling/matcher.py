@@ -88,6 +88,7 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
 def _matches_selector(node: Node, selector: str, ancestors: List[Node]) -> bool:
     """
     Supports: #id, .class, tag, descendant (a b), child (a > b),
+              adjacent sibling (a + b), general sibling (a ~ b),
               :first-of-type, :last-of-type
     """
     # Split by commas for multiple selectors (e.g. h1, h2)
@@ -111,6 +112,34 @@ def _matches_single_selector(node: Node, selector: str, ancestors: List[Node]) -
                 ancestors[0], parent_sel, ancestors[1:]
             ):
                 return True
+        return False
+
+    # Handle Adjacent Sibling Combinator (a + b)
+    if "+" in selector:
+        parts = [p.strip() for p in selector.split("+")]
+        target = parts[-1]
+        prec_sel = "+".join(parts[:-1])
+        if _matches_simple_selector(node, target):
+            if node.parent:
+                idx = node.parent.children.index(node)
+                if idx > 0:
+                    prev_sib = node.parent.children[idx - 1]
+                    if _matches_single_selector(prev_sib, prec_sel, ancestors):
+                        return True
+        return False
+
+    # Handle General Sibling Combinator (a ~ b)
+    if "~" in selector:
+        parts = [p.strip() for p in selector.split("~")]
+        target = parts[-1]
+        prec_sel = "~".join(parts[:-1])
+        if _matches_simple_selector(node, target):
+            if node.parent:
+                idx = node.parent.children.index(node)
+                # Check all preceding siblings
+                for sib in node.parent.children[:idx]:
+                    if _matches_single_selector(sib, prec_sel, ancestors):
+                        return True
         return False
 
     # Handle Descendant Combinator (a b)

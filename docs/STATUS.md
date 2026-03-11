@@ -26,9 +26,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **PDF Outlines**: Table of Contents / Bookmarks for Headings. (✅)
 
 ### Phase 8: Advanced Selectors & Pseudo-Elements (✅ Done)
-- **Complex Selectors**: Descendant ( `div p`), Child (`div > p`), and Attribute selectors. (✅)
+- **Complex Selectors**: Descendant ( `div p`), Child (`div > p`), Sibling (`+`, `~`), and Attribute selectors. (✅)
 - **Pseudo-Elements**: `::before` and `::after` with `content` support. (✅)
-- **Pseudo-Classes**: `:first-of-type`, `:last-of-type`, `:nth-child`. (✅)
+- **Pseudo-Classes**: `:first-of-type`, `:last-of-type`, `:nth-child`, `:nth-of-type`. (✅)
 
 ### Phase 9: Positioning & Stacking (⬜ Not Started)
 - **Relative Positioning**: Offset boxes without affecting flow.

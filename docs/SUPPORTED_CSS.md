@@ -8,8 +8,10 @@ The mapping engine (powered by parsed ASTs from `tinycss2`) fully applies the ca
 * **Type/Tag (CSS 1)**: `div`, `p`, `h1`, `span`, etc.
 * **Class (CSS 1)**: `.classname`
 * **ID (CSS 1)**: `#idname`
-
-*Note: Pseudo-classes (like `:first-of-type`), pseudo-elements (like `::after`), and complex combinators (like `div > p`) are planned for **Phase 8**. See [STATUS.md](STATUS.md) for the full roadmap.*
+* **Combinators**: Descendant (` `), Child (`>`), Adjacent Sibling (`+`), General Sibling (`~`)
+* **Attribute Selectors**: `[attr]`, `[attr="value"]`
+* **Pseudo-classes**: `:first-child`, `:last-child`, `:first-of-type`, `:last-of-type`, `:nth-child()`, `:nth-of-type()`
+* **Pseudo-elements**: `::before`, `::after` (with `content` support)
 
 ## Display & Box Model (CSS 2.1)
 The block formatting context and inline formatting context support W3C-standard flow layout.
