@@ -9,6 +9,7 @@ from typing import List
 
 import tinycss2
 
+from pypdfpatra.defaults import SUPPORTED_PSEUDO_ELEMENTS
 from pypdfpatra.engine.tree import Node
 
 __all__ = ["apply_styles"]
@@ -40,22 +41,25 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
                 ]
             ).strip()
 
-            # Check for pseudo-elements
-            pseudo_el = None
-            if "::before" in selector_str:
-                pseudo_el = "before"
-                selector_str = selector_str.replace("::before", "").strip()
-            elif "::after" in selector_str:
-                pseudo_el = "after"
-                selector_str = selector_str.replace("::after", "").strip()
+            # CSS Pseudo-elements (::...)
+            pseudo_target = "style"
+            for p_name in SUPPORTED_PSEUDO_ELEMENTS:
+                p_str = f"::{p_name}"
+                if p_str in selector_str:
+                    pseudo_target = p_name
+                    selector_str = selector_str.replace(p_str, "").strip()
+                    break
 
             if _matches_selector(node, selector_str, ancestors):
-                if pseudo_el == "before":
-                    _inject_declarations(node, rule.content, node.pseudo_before)
-                elif pseudo_el == "after":
-                    _inject_declarations(node, rule.content, node.pseudo_after)
-                else:
+                if pseudo_target == "style":
                     _inject_declarations(node, rule.content, node.style)
+                else:
+                    # Initialize pseudo-storage on demand
+                    if pseudo_target not in node.pseudos:
+                        node.pseudos[pseudo_target] = {}
+                    _inject_declarations(
+                        node, rule.content, node.pseudos[pseudo_target]
+                    )
 
     # 1.5. Apply Inline Styles (e.g. <div style="...">)
     inline_style_str = node.props.get("style")

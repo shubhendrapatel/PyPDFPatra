@@ -87,6 +87,5 @@ cdef class Node:
     cdef public list children
     cdef public dict style
     cdef public list boxes   # A Node can map to multiple Box objects.
-    cdef public dict pseudo_before
-    cdef public dict pseudo_after
+    cdef public dict pseudos # Maps pseudo-names (e.g. 'before') to style dicts
     cdef public object parent

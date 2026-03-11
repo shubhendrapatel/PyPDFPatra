@@ -27,3 +27,6 @@ DEFAULT_MONOSPACE_FONT = "courier"
 # Color Defaults
 DEFAULT_COLOR = "#000000"
 DEFAULT_BACKGROUND_COLOR = "transparent"
+
+# W3C Selectors
+SUPPORTED_PSEUDO_ELEMENTS = ("before", "after", "marker", "placeholder")

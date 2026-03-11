@@ -124,50 +124,62 @@ def generate_box_tree(
             if child_box is not None:
                 box.children.append(child_box)
 
-    # Generate MarkerBox for list-items
+    # 3. Generate MarkerBox for list-items
     if display == "list-item":
-        list_style_type = style.get("list-style-type", "disc").strip().lower()
+        _inject_list_marker(box, style, _list_index)
 
-        marker_content = "__disc__"
-        if list_style_type == "circle":
-            marker_content = "__circle__"
-        elif list_style_type == "square":
-            marker_content = "__square__"
-        elif list_style_type in ("decimal", "decimal-leading-zero"):
-            val = _list_index if _list_index is not None else 1
-            if list_style_type == "decimal-leading-zero" and val < 10:
-                marker_content = f"0{val}."
-            else:
-                marker_content = f"{val}."
+    # 4. Generate Pseudo-Elements (Phase 8 - Refactored)
+    _process_pseudo_elements(node, box, base_url)
 
-        marker_box = MarkerBox(text_content=marker_content, node=node)
+    return box
 
-        # Insert at the beginning of the children list
-        box.children.insert(0, marker_box)
 
-    # --- Generate Pseudo-Elements (Phase 8) ---
+def _process_pseudo_elements(node: Node, box: Box, base_url: str):
+    """
+    Synthesizes virtual nodes for ::before and ::after pseudo-elements.
+    """
     # Handle ::before
-    if "content" in node.pseudo_before:
-        content_val = node.pseudo_before["content"].strip("'\"")
+    before_style = node.pseudos.get("before")
+    if before_style and "content" in before_style:
+        content_val = before_style["content"].strip("'\"")
         if content_val and content_val != "none":
             pseudo_node = Node(tag="#text", props={})
             pseudo_node.parent = node
-            pseudo_node.style = node.pseudo_before.copy()
+            pseudo_node.style = before_style.copy()
             pseudo_node.style["content"] = content_val
             pseudo_box = generate_box_tree(pseudo_node, base_url)
             if pseudo_box:
                 box.children.insert(0, pseudo_box)
 
     # Handle ::after
-    if "content" in node.pseudo_after:
-        content_val = node.pseudo_after["content"].strip("'\"")
+    after_style = node.pseudos.get("after")
+    if after_style and "content" in after_style:
+        content_val = after_style["content"].strip("'\"")
         if content_val and content_val != "none":
             pseudo_node = Node(tag="#text", props={})
             pseudo_node.parent = node
-            pseudo_node.style = node.pseudo_after.copy()
+            pseudo_node.style = after_style.copy()
             pseudo_node.style["content"] = content_val
             pseudo_box = generate_box_tree(pseudo_node, base_url)
             if pseudo_box:
                 box.children.append(pseudo_box)
 
-    return box
+
+def _inject_list_marker(box: Box, style: dict, _list_index: int):
+    """Generates the bullet/number marker for a list item."""
+    list_style_type = style.get("list-style-type", "disc").strip().lower()
+
+    marker_content = "__disc__"
+    if list_style_type == "circle":
+        marker_content = "__circle__"
+    elif list_style_type == "square":
+        marker_content = "__square__"
+    elif list_style_type in ("decimal", "decimal-leading-zero"):
+        val = _list_index if _list_index is not None else 1
+        if list_style_type == "decimal-leading-zero" and val < 10:
+            marker_content = f"0{val}."
+        else:
+            marker_content = f"{val}."
+
+    marker_box = MarkerBox(text_content=marker_content, node=box.node)
+    box.children.insert(0, marker_box)
