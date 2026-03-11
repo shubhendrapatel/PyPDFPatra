@@ -12,20 +12,23 @@ from pypdfpatra.engine.tree import (
     Box,
     TableBox,
     TableCellBox,
-    TableRowBox,
-    TableRowGroupBox,
-    TextBox,
 )
 
 
 def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -> None:
     """
-    Executes the Table Formatting Context (TFC) algorithm.
+    Executes the Table Formatting Context (TFC) algorithm with support for
+    colspan and rowspan.
     """
-    from .block import _parse_length, _resolve_box_geometry, layout_block_context
+    from .block import (
+        _parse_length,
+        _resolve_box_geometry,
+        layout_block_context,
+    )
+    from .inline import shift_box
 
     style = getattr(box.node, "style", {}) if box.node else {}
-    box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
+    _, css_width, _, _ = _resolve_box_geometry(box, cb_w, style)
 
     box.x = cb_x
     box.y = cb_y
@@ -43,14 +46,15 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
 
     def _scan_for_rows(parent_box: Box):
         for child in parent_box.children:
-            if isinstance(child, TableRowBox):
+            name = child.__class__.__name__
+            if name == "TableRowBox":
                 if (
-                    isinstance(parent_box, TableRowGroupBox)
+                    parent_box.__class__.__name__ == "TableRowGroupBox"
                     and getattr(parent_box.node, "tag", "") == "thead"
                 ):
                     thead_rows.append(child)
                 rows.append(child)
-            elif isinstance(child, TableRowGroupBox):
+            elif name == "TableRowGroupBox":
                 _scan_for_rows(child)
 
     _scan_for_rows(box)
@@ -61,74 +65,114 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         box.h = 0.0
         return
 
-    # Find max columns
+    # 2. Map cells to grid
+    grid = {}  # (row_idx, col_idx) -> CellBox
+    cell_metadata = {}  # id(cell) -> meta_dict
     num_cols = 0
-    row_cells = []
-    for row in rows:
-        cells = [c for c in row.children if isinstance(c, TableCellBox)]
-        num_cols = max(num_cols, len(cells))
-        row_cells.append(cells)
+
+    for r_idx, row in enumerate(rows):
+        current_col = 0
+        cells = [c for c in row.children if c.__class__.__name__ == "TableCellBox"]
+        for cell in cells:
+            # Skip columns already occupied by rowspans from previous rows
+            while (r_idx, current_col) in grid:
+                current_col += 1
+
+            p = getattr(cell.node, "props", {})
+            r_attr = p.get("rowspan", "1")
+            c_attr = p.get("colspan", "1")
+
+            try:
+                rowspan = max(1, int(r_attr))
+            except (ValueError, TypeError):
+                rowspan = 1
+            try:
+                colspan = max(1, int(c_attr))
+            except (ValueError, TypeError):
+                colspan = 1
+
+            cell_metadata[id(cell)] = {
+                "rowspan": rowspan,
+                "colspan": colspan,
+                "start_row": r_idx,
+                "start_col": current_col,
+                "cell": cell,
+            }
+
+            for dr in range(rowspan):
+                for dc in range(colspan):
+                    grid[(r_idx + dr, current_col + dc)] = cell
+
+            current_col += colspan
+        num_cols = max(num_cols, current_col)
 
     if num_cols == 0:
         box.w = css_width if css_width is not None else cb_w
         box.h = 0.0
         return
 
-    # 2. Distribute column widths dynamically (Shrink-to-fit)
+    # 3. Calculate column widths (Shrink-to-fit)
     col_widths = [0.0] * num_cols
 
     def _get_text_nodes(n: Box) -> list:
         res = []
-        if isinstance(n, TextBox):
+        if n.__class__.__name__ == "TextBox":
             res.append(n)
         for c in n.children:
             if isinstance(c, Box):
                 res.extend(_get_text_nodes(c))
         return res
 
-    for cells in row_cells:
-        for i, cell in enumerate(cells):
-            cell_style = (
-                getattr(cell.node, "style", {}) if getattr(cell, "node", None) else {}
-            )
-            _, css_w, _, _ = _resolve_box_geometry(cell, cb_w, cell_style)
+    def _compute_cell_intrinsic_width(cell: TableCellBox):
+        n = getattr(cell, "node", None)
+        s = getattr(n, "style", {}) if n else {}
+        _, c_w, _, _ = _resolve_box_geometry(cell, cb_w, s)
 
-            cell_max_w = 20.0  # Min width
-            for tbox in _get_text_nodes(cell):
-                t_style = (
-                    getattr(tbox.node, "style", {})
-                    if getattr(tbox, "node", None)
-                    else {}
-                )
-                family, fpdf_style, size = parse_font(t_style)
-                w = measure_text(tbox.text_content.strip(), family, size, fpdf_style)
-                if w > cell_max_w:
-                    cell_max_w = w
+        cell_max_w = 20.0
+        for tbox in _get_text_nodes(cell):
+            ts = getattr(tbox.node, "style", {}) if getattr(tbox, "node", None) else {}
+            family, fp_style, size = parse_font(ts)
+            w = measure_text(tbox.text_content.strip(), family, size, fp_style)
+            if w > cell_max_w:
+                cell_max_w = w
 
-            cell_padded_w = (
-                cell_max_w
-                + cell.padding_left
-                + cell.padding_right
-                + cell.border_left
-                + cell.border_right
-                + 15.0
-            )  # Margin of safety
+        padded_w = (
+            cell_max_w
+            + cell.padding_left
+            + cell.padding_right
+            + cell.border_left
+            + cell.border_right
+            + 15.0
+        )
+        if c_w is not None:
+            padded_w = max(padded_w, c_w)
+        return padded_w
 
-            if css_w is not None:
-                cell_padded_w = max(cell_padded_w, css_w)
+    # First pass: colspan = 1
+    for meta in cell_metadata.values():
+        if meta["colspan"] == 1:
+            w = _compute_cell_intrinsic_width(meta["cell"])
+            col_widths[meta["start_col"]] = max(col_widths[meta["start_col"]], w)
 
-            if cell_padded_w > col_widths[i]:
-                col_widths[i] = cell_padded_w
+    # Second pass: colspan > 1
+    for meta in cell_metadata.values():
+        if meta["colspan"] > 1:
+            w = _compute_cell_intrinsic_width(meta["cell"])
+            sc = meta["start_col"]
+            ec = sc + meta["colspan"]
+            current_sum = sum(col_widths[sc:ec]) + (meta["colspan"] - 1) * h_spacing
+            if w > current_sum:
+                extra = (w - current_sum) / meta["colspan"]
+                for i in range(sc, ec):
+                    col_widths[i] += extra
 
     total_table_w = sum(col_widths) + (num_cols + 1) * h_spacing
 
-    # Scale width if exceeding bounds or explicitly forced
     if css_width is not None:
         if total_table_w < css_width:
             extra = (css_width - total_table_w) / num_cols
             col_widths = [cw + extra for cw in col_widths]
             total_table_w = css_width
-    # Also handle table-layout: auto expansion if cb_w is set but css_width isnt
     elif total_table_w < cb_w and cb_w > 0:
         extra = (cb_w - total_table_w) / num_cols
         col_widths = [cw + extra for cw in col_widths]
@@ -146,10 +190,8 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     content_x = box.x + box.margin_left + box.border_left + box.padding_left
     current_y = box.y + box.margin_top + box.border_top + box.padding_top
 
-    # Lay out the table caption if present AFTER box.w is calculated
     for child in box.children:
         if getattr(child.node, "tag", "") == "caption":
-            # Treat as block context
             layout_block_context(child, content_x, current_y, box.w)
             current_y += (
                 child.margin_top
@@ -162,74 +204,104 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             )
 
     current_y += v_spacing
-    thead_h = 0.0
-    thead_resolved = False
 
-    # 3. Layout cells and synchronize row heights
-    for row in rows:
-        # Resolve row geometry
-        row_style = getattr(row.node, "style", {}) if row.node else {}
-        _resolve_box_geometry(row, box.w, row_style)
+    # 4. Preliminary layout to determine row heights
+    row_heights = [0.0] * len(rows)
+    for r_idx, row in enumerate(rows):
+        r_style = getattr(row.node, "style", {}) if row.node else {}
+        _resolve_box_geometry(row, box.w, r_style)
+        row_max_h = 0.0
+        cells = [c for c in row.children if c.__class__.__name__ == "TableCellBox"]
+        for cell in cells:
+            m = cell_metadata[id(cell)]
+            sc = m["start_col"]
+            csp = m["colspan"]
+            cell_w = sum(col_widths[sc : sc + csp]) + (csp - 1) * h_spacing
 
-        row.x = content_x
-        row.y = 0.0  # Layout at virtual Y=0 to avoid premature pagination
-        row.w = box.w
+            # Reset cell to safe virtual position
+            layout_block_context(cell, 0, 0, cell_w)
 
-        row_content_x = row.x + row.border_left + row.padding_left
-
-        cells = [c for c in row.children if isinstance(c, TableCellBox)]
-        max_cell_h = 0.0
-
-        for i, cell in enumerate(cells):
-            # designated column width
-            cell_x = row_content_x + h_spacing + sum(col_widths[:i]) + (i * h_spacing)
-            # Layout at virtual 0.0
-            layout_block_context(cell, cell_x, 0.0, col_widths[i])
-
-            max_cell_h = max(
-                max_cell_h,
+            total_h = (
                 cell.h
                 + cell.padding_top
                 + cell.padding_bottom
                 + cell.border_top
-                + cell.border_bottom,
+                + cell.border_bottom
             )
+            if m["rowspan"] == 1:
+                row_max_h = max(row_max_h, total_h)
+        row_heights[r_idx] = row_max_h
 
-        # Synchronize cells
+    # Adjust row heights for rowspan > 1
+    for meta in cell_metadata.values():
+        if meta["rowspan"] > 1:
+            sr, er = meta["start_row"], meta["start_row"] + meta["rowspan"]
+            cell = meta["cell"]
+            total_h = (
+                cell.h
+                + cell.padding_top
+                + cell.padding_bottom
+                + cell.border_top
+                + cell.border_bottom
+            )
+            current_h_span = sum(row_heights[sr:er]) + (meta["rowspan"] - 1) * v_spacing
+            if total_h > current_h_span:
+                # Distribute extra height to the last row of the span
+                row_heights[er - 1] += total_h - current_h_span
+
+    # 5. Final positioning
+    thead_h = 0.0
+    thead_resolved = False
+    current_row_y = current_y
+
+    # Pre-calculated horizontal offsets for columns
+    col_x_offsets = [0.0] * num_cols
+    curr_x = h_spacing
+    for i in range(num_cols):
+        col_x_offsets[i] = curr_x
+        curr_x += col_widths[i] + h_spacing
+
+    for r_idx, row in enumerate(rows):
+        row.x = content_x
+        row.y = 0.0
+        row.w = box.w
+        row.h = row_heights[r_idx]
+
+        cells = [c for c in row.children if c.__class__.__name__ == "TableCellBox"]
         for cell in cells:
+            m = cell_metadata[id(cell)]
+            sc, csp, rsp = m["start_col"], m["colspan"], m["rowspan"]
+
+            c_x = content_x + col_x_offsets[sc]
+            c_w = sum(col_widths[sc : sc + csp]) + (csp - 1) * h_spacing
+            c_h = sum(row_heights[r_idx : r_idx + rsp]) + (rsp - 1) * v_spacing
+
+            # Re-layout with definitive width
+            layout_block_context(cell, c_x, 0.0, c_w)
+
+            # Fix cell height to match spanned rows
             cell.h = (
-                max_cell_h
+                c_h
                 - cell.padding_top
                 - cell.padding_bottom
                 - cell.border_top
                 - cell.border_bottom
             )
 
-        row.h = max_cell_h
-
-        # Determine real placement
-        if row in thead_rows:
+        if row.__class__.__name__ == "TableRowBox" and any(
+            row is thr for thr in (thead_rows or [])
+        ):
             thead_h += row.h + v_spacing
         else:
             thead_resolved = True
 
-        # Check for page break if we are not in the header itself
         if thead_resolved and thead_rows:
-            current_page = int(current_y / PAGE_HEIGHT)
-            page_boundary = (current_page + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
-            row_total_h = row.h + v_spacing
+            page = int(current_row_y / PAGE_HEIGHT)
+            boundary = (page + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            if current_row_y + row.h + v_spacing > boundary:
+                current_row_y = (page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
 
-            if current_y + row_total_h > page_boundary:
-                # Page break! Move to top of next page
-                current_y = (
-                    current_page + 1
-                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
+        shift_box(row, 0, current_row_y)
+        current_row_y += row.h + v_spacing
 
-        # Shift the row and children to the final real position
-        from .inline import shift_box
-
-        shift_box(row, 0, current_y)
-
-        current_y += row.h + v_spacing
-
-    box.h = current_y - box.y - box.margin_top - box.border_top - box.padding_top
+    box.h = current_row_y - box.y - box.margin_top - box.border_top - box.padding_top

@@ -53,8 +53,10 @@ Standard shorthand is supported (`border: 1px solid black;`).
 * `inset` (Creates a simulated 3D recessed shadow effect)
 * `outset` (Creates a simulated 3D raised button effect)
 
-### Table Border Spacing
+### Table Cells & Spacing
 * **`border-spacing`**: Supports pixel values for horizontal and vertical gutter between cells.
+* **`colspan`**: HTML attribute support for merging columns.
+* **`rowspan`**: HTML attribute support for merging rows.
 
 ## Typography & Text (CSS 1 & CSS 2.1)
 * **`font-family`** (CSS 1): Support for standard PDF metrics (Courier, Helvetica, Times) and custom TrueType fonts via `@font-face` embedding.

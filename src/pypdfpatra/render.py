@@ -455,7 +455,7 @@ def draw_boxes(
                 local_y = border_box_y - (page_idx * PAGE_HEIGHT)
                 # Ensure we are on the right page for the bookmark
                 _ensure_page(pdf, page_idx)
-                pdf.bookmark(heading_text, level=level, y=local_y)
+                # pdf.bookmark(heading_text, level=level, y=local_y)
 
         if box.__class__.__name__ == "ImageBox":
             _draw_image(

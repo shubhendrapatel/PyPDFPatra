@@ -52,7 +52,7 @@ class PatraParser(HTMLParser):
         Triggered when a new HTML tag (e.g. <div>) is found.
         """
         # Convert list of tuples [('class', 'main')] -> {'class': 'main'}
-        attr_dict: Dict[str, str] = {k: v for k, v in attrs if v is not None}
+        attr_dict: Dict[str, str] = {k.lower(): v for k, v in attrs if v is not None}
 
         # Parse and inline `style` attribute into the node's style dict
         style_str: str = attr_dict.pop("style", "")
@@ -106,7 +106,7 @@ class PatraParser(HTMLParser):
         if in_pre:
             cleaned = data
         else:
-            # Collapse multiple whitespaces into a single space, but KEEP leading/trailing
+            # Collapse multiple whitespaces into space, but KEEP leading/trailing
             cleaned = re.sub(r"\s+", " ", data)
 
         text_node = Node("#text")

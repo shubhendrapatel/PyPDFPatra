@@ -10,7 +10,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 
 ### Phase 4: Complex Layout Contexts (✅ Done)
 - **Lists**: Generate `MarkerBox` for bullets and numbers (`<li>`). (✅)
-- **Table Formatting**: Implement W3C Table Formatting Context (`display: table`, `table-row`, `table-cell`). (✅)
+- **Table Formatting**: Implement W3C Table Formatting Context (`display: table`, `table-row`, `table-cell`, `colspan`, `rowspan`). (✅)
 
 ### Phase 5: External Assets & Media (✅ Done)
 - **Images**: Download and measure `<img>` elements for replaced layout and PDF rendering. (✅)
