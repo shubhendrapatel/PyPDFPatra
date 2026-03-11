@@ -5,7 +5,7 @@ This module handles the CSS 'Cascade'. It matches CSS selectors
 (like .class or #id) to the Cython Nodes in the tree.
 """
 
-from typing import List
+from typing import List, Tuple
 
 import tinycss2
 
@@ -15,9 +15,10 @@ from pypdfpatra.engine.tree import Node
 __all__ = ["apply_styles"]
 
 
-def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
+def apply_styles(node: Node, rules: List[tinycss2.ast.QualifiedRule]) -> None:
     """
-    Recursively matches CSS rules to a Node and its children.
+    Recursively matches CSS rules to a Node and its children, applying them
+    according to W3C Specificity and !important rules.
     """
     # Build ancestor list for descendant matching
     ancestors = []
@@ -26,11 +27,15 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
         ancestors.append(curr)
         curr = curr.parent
 
-    # 1. Match Rules to this specific Node
+    # 1. Collect all matching declarations from Rules
+    # List of (specificity_tuple, declaration_name, value, is_important)
+    matched_declarations = []
+
     for rule in rules:
         if isinstance(rule, tinycss2.ast.QualifiedRule):
-            # Parse selector into parts (handling basic combinators)
-            selector_str = "".join(
+            # A rule can have multiple comma-separated selectors (e.g. h1, .title)
+            # Each selector has its own specificity.
+            selector_prelude = "".join(
                 [
                     t.serialize()
                     if hasattr(t, "serialize")
@@ -41,48 +46,124 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
                 ]
             ).strip()
 
-            # CSS Pseudo-elements (::...)
-            pseudo_target = "style"
-            for p_name in SUPPORTED_PSEUDO_ELEMENTS:
-                p_str = f"::{p_name}"
-                if p_str in selector_str:
-                    pseudo_target = p_name
-                    selector_str = selector_str.replace(p_str, "").strip()
-                    break
+            for selector_str in [s.strip() for s in selector_prelude.split(",")]:
+                # CSS Pseudo-elements (::...) affect specificity как теги
+                clean_selector = selector_str
+                pseudo_target = "style"
+                for p_name in SUPPORTED_PSEUDO_ELEMENTS:
+                    p_str = f"::{p_name}"
+                    if p_str in clean_selector:
+                        pseudo_target = p_name
+                        clean_selector = clean_selector.replace(p_str, "").strip()
+                        break
 
-            if _matches_selector(node, selector_str, ancestors):
-                if pseudo_target == "style":
-                    _inject_declarations(node, rule.content, node.style)
-                else:
-                    # Initialize pseudo-storage on demand
-                    if pseudo_target not in node.pseudos:
-                        node.pseudos[pseudo_target] = {}
-                    _inject_declarations(
-                        node, rule.content, node.pseudos[pseudo_target]
-                    )
+                if _matches_selector(node, clean_selector, ancestors):
+                    spec = _calculate_specificity(selector_str)
 
-    # 1.5. Apply Inline Styles (e.g. <div style="...">)
+                    # Parse declarations in this rule
+                    decls = tinycss2.parse_declaration_list(rule.content)
+                    for decl in decls:
+                        if isinstance(decl, tinycss2.ast.Declaration):
+                            val_str, important = _serialize_declaration_value(decl)
+                            matched_declarations.append(
+                                {
+                                    "spec": spec,
+                                    "name": decl.name,
+                                    "value": val_str,
+                                    "important": important,
+                                    "target": pseudo_target,
+                                }
+                            )
+    # 2. Apply Normal Author declarations first
+    # Sort by specificity so higher specificity overwrites lower
+    normal_authors = [d for d in matched_declarations if not d["important"]]
+    normal_authors.sort(key=lambda d: d["spec"])
+
+    for d in normal_authors:
+        target_dict = (
+            node.style if d["target"] == "style" else node.pseudos.get(d["target"])
+        )
+        if d["target"] != "style" and target_dict is None:
+            node.pseudos[d["target"]] = {}
+            target_dict = node.pseudos[d["target"]]
+        target_dict[d["name"]] = d["value"]
+
+    # 3. Apply Inline Styles (Normal)
+    inline_important_props = []
     inline_style_str = node.props.get("style")
     if inline_style_str:
-        inline_declarations = tinycss2.parse_declaration_list(
+        inline_decls = tinycss2.parse_declaration_list(
             inline_style_str, skip_comments=True, skip_whitespace=True
         )
-        for decl in inline_declarations:
+        for decl in inline_decls:
             if isinstance(decl, tinycss2.ast.Declaration):
-                node.style[decl.name] = "".join(
-                    [
-                        t.serialize()
-                        if hasattr(t, "serialize")
-                        else str(t.value)
-                        if hasattr(t, "value")
-                        else str(t)
-                        for t in decl.value
-                    ]
-                )
+                val_str, important = _serialize_declaration_value(decl)
+                if not important:
+                    node.style[decl.name] = val_str
+                else:
+                    inline_important_props.append((decl.name, val_str))
 
-    # 2. Recursively apply to all children
+    # 4. Apply Author !important declarations (These override normal inline)
+    important_authors = [d for d in matched_declarations if d["important"]]
+    important_authors.sort(key=lambda d: d["spec"])
+    for d in important_authors:
+        target_dict = (
+            node.style if d["target"] == "style" else node.pseudos.get(d["target"])
+        )
+        if target_dict is not None:
+            target_dict[d["name"]] = d["value"]
+
+    # 5. Apply Inline !important (Wins everything)
+    for name, val in inline_important_props:
+        node.style[name] = val
+
+    # 6. Recursively apply to children
     for child in node.children:
         apply_styles(child, rules)
+
+
+def _serialize_declaration_value(
+    declaration: tinycss2.ast.Declaration,
+) -> Tuple[str, bool]:
+    """Helper to extract value string and !important flag."""
+    val = "".join(
+        [
+            t.serialize()
+            if hasattr(t, "serialize")
+            else str(t.value)
+            if hasattr(t, "value")
+            else str(t)
+            for t in declaration.value
+        ]
+    ).strip()
+    return val, declaration.important
+
+
+def _calculate_specificity(selector: str) -> Tuple[int, int, int]:
+    """
+    Calculates (ids, classes/pseudos/attrs, tags/pseudo-elements)
+    Following W3C Spec.
+    """
+    ids = selector.count("#")
+    classes = selector.count(".")
+    attrs = selector.count("[")
+    # Count normal clones (:) and subtract pseudo-elements (::)
+    pseudos = selector.count(":") - (selector.count("::") * 2)
+
+    # Type Selectors (Tags)
+    # Split by combinators and then inspect the start of each segment
+    segments = selector.replace(">", " ").replace("+", " ").replace("~", " ").split()
+    tags = selector.count("::")  # Pseudo-elements count as tags
+
+    for seg in segments:
+        if seg == "*":
+            continue
+        # A tag exists if the segment starts with an identifier
+        # We check if it doesn't start with # . [ :
+        if not seg.startswith(("#", ".", "[", ":")):
+            tags += 1
+
+    return (ids, classes + attrs + pseudos, tags)
 
 
 def _matches_selector(node: Node, selector: str, ancestors: List[Node]) -> bool:

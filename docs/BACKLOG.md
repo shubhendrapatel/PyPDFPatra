@@ -33,8 +33,19 @@
 
 ## Phase 7: Advanced PDF Features (🔄 In Progress)
 - [ ] Implement PDF AcroForms for interactive fillable widgets.
-- [ ] Implement PDF Outlines (Bookmarks) for navigation.
+- [x] Implement PDF Outlines (Bookmarks) for navigation.
 - [x] Implement Hyperlink Annotations.
 
-## Phase 8: Refinement & Specialized Features (⬜ Not Started)
-- [ ] Implement `overflow: hidden` via PDF clipping (Deferred — will decide on later date).
+## Phase 8: Advanced Selectors & Pseudo-Elements (✅ Done)
+- [x] Implement Descendant, Child, and Sibling combinators in `matcher.py`.
+- [x] Implement Pseudo-classes (`:nth-child`, `:first-of-type`, etc.).
+- [x] Implement Pseudo-elements (`::before`, `::after`) with `content` support.
+- [x] Implement W3C Specificity algorithm and `!important` cascade logic.
+
+## Phase 9: Positioning & Stacking (⬜ Not Started)
+- [ ] Implement `position: relative`, `absolute`, `fixed`.
+- [ ] Implement `z-index` paint order.
+
+## Phase 10+: Future Refinement
+- [ ] Implement `overflow: hidden` via PDF clipping.
+- [ ] Implement CSS Flexbox Formatting Context.

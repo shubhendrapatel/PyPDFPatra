@@ -9,9 +9,12 @@ This document tracks important implementation decisions, design choices, and CSS
 **Decision**: In standard W3C HTML specifications, `<table>`, `<th>`, and `<td>` elements **do not** have borders by default. Users must explicitly define table borders using CSS (e.g., `border: 1px solid black`) or inline styles.
 **Implementation**: Our User-Agent stylesheet (`engine/style.py`) explicitly defaults them to `display: table` and `table-cell` without border rules to strictly comply with browsers.
 
-### CSS Selectors Support (MVP)
-**Context**: A CSS rule like `.test-table th, .test-table td` didn't apply to the table cells.
-**Decision**: The MVP CSS Matcher (`matcher.py`) currently only supports very basic tags, class, and ID queries (`div`, `.class`, `#id`), evaluating them linearly. It does not yet implement complex parsing for descendant selectors (`.class child`) or comma-separated composite rules. Inline styles (`style="..."`) are the most robust override mechanism in the MVP.
+### CSS Selectors & Cascading
+**Context**: Moving from basic tag/class selectors to a full CSS engine.
+**Decision**: We implemented a W3C-compliant CSS selector and cascading engine.
+- **Selectors**: Support for Descendant, Child, Adjacent Sibling, and General Sibling combinators, as well as Attribute selectors and nth-child/nth-of-type pseudo-classes.
+- **Cascading & Specificity**: We implemented the W3C specificity algorithm (IDs, Classes/Pseudo-classes, Tags) and support for `!important` declarations.
+- **Cascade Resolution**: Author `!important` rules correctly override inline `style=` normal rules, and inline `!important` takes absolute precedence. This ensures that the engine behaves identically to modern browser layout engines.
 
 ## Architecture & Layout Engine
 

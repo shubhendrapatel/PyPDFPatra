@@ -13,6 +13,13 @@ The mapping engine (powered by parsed ASTs from `tinycss2`) fully applies the ca
 * **Pseudo-classes**: `:first-child`, `:last-child`, `:first-of-type`, `:last-of-type`, `:nth-child()`, `:nth-of-type()`
 * **Pseudo-elements**: `::before`, `::after` (with `content` support)
 
+## The Cascade & Specificity (CSS 2.1 §6)
+The engine strictly follows the W3C cascading order:
+1. **`!important` Declarations**: Correctly prioritized.
+2. **Specificity Calculation**: Weights are applied by (IDs, Classes/Attributes/Pseudo-classes, Tags/Pseudo-elements).
+3. **Source Order**: Later rules override earlier ones of equal specificity.
+4. **`!important` vs Inline**: Author `!important` rules correctly override normal inline `style=""` declarations.
+
 ## Display & Box Model (CSS 2.1)
 The block formatting context and inline formatting context support W3C-standard flow layout.
 * **`display`**: `block`, `inline`, `inline-block`, `none`, `list-item`, `table`, `table-row`, `table-cell`.

@@ -167,12 +167,12 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
 
     # 3. Layout cells and synchronize row heights
     for row in rows:
-        # Resolve row geometry (mostly margins/borders, usually 0 for TR)
+        # Resolve row geometry
         row_style = getattr(row.node, "style", {}) if row.node else {}
-        _, row_css_w, _, _ = _resolve_box_geometry(row, box.w, row_style)
+        _resolve_box_geometry(row, box.w, row_style)
 
         row.x = content_x
-        row.y = current_y
+        row.y = 0.0  # Layout at virtual Y=0 to avoid premature pagination
         row.w = box.w
 
         row_content_x = row.x + row.border_left + row.padding_left
@@ -181,10 +181,10 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
         max_cell_h = 0.0
 
         for i, cell in enumerate(cells):
-            # It gets its designated column width constraint + spacing offsets
+            # designated column width
             cell_x = row_content_x + h_spacing + sum(col_widths[:i]) + (i * h_spacing)
-            # Layout the block context within the cell
-            layout_block_context(cell, cell_x, row.y, col_widths[i])
+            # Layout at virtual 0.0
+            layout_block_context(cell, cell_x, 0.0, col_widths[i])
 
             max_cell_h = max(
                 max_cell_h,
@@ -195,7 +195,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
                 + cell.border_bottom,
             )
 
-        # Synchronize all cells in this row to exactly max_cell_h
+        # Synchronize cells
         for cell in cells:
             cell.h = (
                 max_cell_h
@@ -207,7 +207,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
 
         row.h = max_cell_h
 
-        # Track thead height if this row is part of the header
+        # Determine real placement
         if row in thead_rows:
             thead_h += row.h + v_spacing
         else:
@@ -220,15 +220,15 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             row_total_h = row.h + v_spacing
 
             if current_y + row_total_h > page_boundary:
-                # Page break! Move to top of next page + account for repeating header
-                new_y = (current_page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
-                dy = new_y - current_y
-                current_y = new_y
+                # Page break! Move to top of next page
+                current_y = (
+                    current_page + 1
+                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
 
-                # Shift the row and all its pre-laid-out children to the new page
-                from .inline import shift_box
+        # Shift the row and children to the final real position
+        from .inline import shift_box
 
-                shift_box(row, 0, dy)
+        shift_box(row, 0, current_y)
 
         current_y += row.h + v_spacing
 

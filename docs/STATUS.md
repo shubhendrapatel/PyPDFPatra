@@ -29,6 +29,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Complex Selectors**: Descendant ( `div p`), Child (`div > p`), Sibling (`+`, `~`), and Attribute selectors. (✅)
 - **Pseudo-Elements**: `::before` and `::after` with `content` support. (✅)
 - **Pseudo-Classes**: `:first-of-type`, `:last-of-type`, `:nth-child`, `:nth-of-type`. (✅)
+- **Cascade & Specificity**: Full implementation of W3C specificity algorithm and `!important` support. (✅)
 
 ### Phase 9: Positioning & Stacking (⬜ Not Started)
 - **Relative Positioning**: Offset boxes without affecting flow.

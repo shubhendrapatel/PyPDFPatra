@@ -2,11 +2,12 @@
 
 This plan outlines the steps required to achieve 1:1 visual parity with WeasyPrint for the `invoice.html` sample.
 
-## 🛠️ Step 1: Advanced Selector Engine (Phase 8)
+## 🛠️ Step 1: Advanced Selector Engine (Phase 8) (✅ Done)
 *   **Goal:** Allow the CSS matcher to handle the specialized selectors in `invoice.css`.
-*   [ ] **Descendant Selectors:** Support `aside address` and `dt dd`.
-*   [ ] **Pseudo-Classes:** Implement `:first-of-type` and `:last-of-type` for table column alignment.
-*   [ ] **Pseudo-Elements:** Implement `::before` and `::after` with `content` support (needed for the colon `:` after labels).
+*   [x] **Descendant Selectors:** Support `aside address` and `dt dd`.
+*   [x] **Pseudo-Classes:** Implement `:first-of-type` and `:last-of-type` for table column alignment.
+*   [x] **Pseudo-Elements:** Implement `::before` and `::after` with `content` support (needed for the colon `:` after labels).
+*   [x] **Cascade & Specificity:** Implement W3C specificity weights and `!important` support.
 
 ## 🛠️ Step 2: Positioning & Stacking (Phase 9)
 *   **Goal:** Enable absolute layout for the header info and the fixed footer.

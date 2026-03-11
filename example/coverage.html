@@ -215,6 +215,14 @@
             color: #1890ff;
             text-decoration: underline;
         }
+
+        /* 11. Specificity & !important */
+        #spec-green { color: green; }
+        .spec-red { color: red; }
+        div.spec-blue { color: blue; }
+
+        .imp-blue { color: blue !important; }
+        .imp-red { color: red; }
     </style>
 </head>
 
@@ -236,6 +244,7 @@
             <li><a href="#section-paged">8. Pagination & Fragmentation</a></li>
             <li><a href="#section-selectors">9. Advanced Selectors & Pseudo-Elements</a></li>
             <li><a href="#section-links">10. Links & Navigation</a></li>
+            <li><a href="#section-spec">11. Specificity & !important</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level TOCs.</i></p>
     </div>
@@ -581,6 +590,30 @@
             This ensures that <code>&lt;a&gt;</code> tags generate PDF annotations
             correctly at the resolved coordinates.
         </p>
+        <p>
+            Internal link test: <a href="#section-box">Back to Section 1</a>.
+        </p>
+    </div>
+
+    <h2 id="section-spec">11. Specificity & !important</h2>
+    <div class="section">
+        <p><b>A. Specificity (ID > Class > Tag):</b></p>
+        <div id="spec-green" class="spec-red spec-blue" style="padding: 10px; border: 1px solid #ccc; background: #f0f0f0;">
+            This text should be <b>Green</b>.
+            (Matches: #id, .class, div.tag)
+        </div>
+
+        <p style="margin-top: 15px;"><b>B. !important vs Inline:</b></p>
+        <div class="imp-blue" style="color: purple; padding: 10px; border: 1px solid #ccc;">
+            This text should be <b>Blue</b>.
+            (Author block has <code>!important</code>, which wins over <code>style="color: purple"</code>)
+        </div>
+
+        <p style="margin-top: 15px;"><b>C. Normal Inline wins over Tag:</b></p>
+        <div class="spec-blue" style="color: orange; padding: 10px; border: 1px solid #ccc;">
+            This text should be <b>Orange</b>.
+            (Inline style wins over <code>div.spec-blue</code>)
+        </div>
     </div>
 </body>
 
