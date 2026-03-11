@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>PyPDFPatra - Comprehensive W3C Feature Coverage</title>
@@ -32,12 +33,30 @@
         }
 
         /* 1. Box Model & Borders */
-        .border-solid { border: 2px solid black; }
-        .border-dashed { border: 2px dashed green; }
-        .border-dotted { border: 2px dotted blue; }
-        .border-double { border: 6px double red; }
-        .border-inset { border: 4px inset #ccc; }
-        .border-outset { border: 4px outset #ccc; }
+        .border-solid {
+            border: 2px solid black;
+        }
+
+        .border-dashed {
+            border: 2px dashed green;
+        }
+
+        .border-dotted {
+            border: 2px dotted blue;
+        }
+
+        .border-double {
+            border: 6px double red;
+        }
+
+        .border-inset {
+            border: 4px inset #ccc;
+        }
+
+        .border-outset {
+            border: 4px outset #ccc;
+        }
+
         .border-mixed {
             border-top: 4px solid red;
             border-right: 4px dashed blue;
@@ -85,15 +104,18 @@
             width: 100%;
             margin-bottom: 10px;
         }
+
         .table-separate {
             border-collapse: separate;
             border-spacing: 10px;
             width: 100%;
         }
+
         .table-cell {
             border: 1px solid #888;
             padding: 8px;
         }
+
         .table-header {
             background-color: #eee;
             font-weight: bold;
@@ -106,6 +128,7 @@
             border: 2px solid currentColor;
             padding: 10px;
         }
+
         .child-inherit {
             color: inherit;
             border: 1px solid #ccc;
@@ -121,32 +144,108 @@
             border: 1px solid #ddd;
             font-family: monospace;
         }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
         /* 8. Pagination */
-        .avoid-break { 
-            page-break-inside: avoid; 
-            border: 2px solid #ff4d4f; 
-            padding: 10px; 
-            background: #fff2f0; 
+        .avoid-break {
+            page-break-inside: avoid;
+            border: 2px solid #ff4d4f;
+            padding: 10px;
+            background: #fff2f0;
             margin-bottom: 10px;
+        }
+        
+        /* 9. Advanced Selectors & Pseudo-Elements */
+        .selector-test .descendant {
+            background-color: #fafad2;
+            padding: 5px;
+            border-bottom: 2px solid gold;
+        }
+        
+        .selector-test > .direct-child {
+            border: 2px dashed #722ed1;
+            padding: 5px;
+        }
+
+        .list-stripes li:first-of-type {
+            color: #1890ff;
+            font-weight: bold;
+        }
+
+        .list-stripes li:last-of-type {
+            color: #f5222d;
+            font-style: italic;
+        }
+
+        .pseudo-box::before {
+            content: " [START] ";
+            color: #52c41a;
+            font-weight: bold;
+        }
+
+        .pseudo-box::after {
+            content: " [END] ";
+            color: #eb2f96;
+            font-weight: bold;
+        }
+
+        /* 9.1 Attribute Selectors */
+        [data-status="success"] { color: #52c41a; font-weight: bold; }
+        [data-status="warning"] { color: #faad14; }
+        [type="text"] { border: 2px solid #1890ff; padding: 2px; }
+
+        /* 9.2 nth-child & nth-of-type */
+        .stripe-table tr:nth-child(even) { background-color: #fafafa; }
+        .stripe-table tr:nth-child(odd) { background-color: #f0f5ff; }
+        .type-test span:nth-of-type(2) { color: red; font-size: 1.2em; }
+        
+        /* 10. Links (Phase 7) */
+        .link-test a {
+            color: #1890ff;
+            text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
 
     <h1>PyPDFPatra Coverage Showcase</h1>
     <p>This document demonstrates the full range of supported W3C CSS features in the current engine.</p>
 
-    <h2>1. Visual Box Model & Borders</h2>
+    <div class="section" style="background-color: #f9f9f9; padding: 20px; border: 2px solid #004d99;">
+        <h2 style="margin-top: 0;">Table of Contents (Internal Links)</h2>
+        <ul style="line-height: 1.8;">
+            <li><a href="#section-box">1. Visual Box Model & Borders</a></li>
+            <li><a href="#section-layout">2. Layout & Positioning</a></li>
+            <li><a href="#section-tables">3. Table Formatting Context</a></li>
+            <li><a href="#section-lists">4. Lists & Markers</a></li>
+            <li><a href="#section-typo">5. Typography & Text Decor</a></li>
+            <li><a href="#section-media">6. Replaced Elements (Images & Forms)</a></li>
+            <li><a href="#section-advanced">7. Inheritance & Advanced CSS</a></li>
+            <li><a href="#section-paged">8. Pagination & Fragmentation</a></li>
+            <li><a href="#section-selectors">9. Advanced Selectors & Pseudo-Elements</a></li>
+            <li><a href="#section-links">10. Links & Navigation</a></li>
+        </ul>
+        <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level TOCs.</i></p>
+    </div>
+
+    <h2 id="section-box">1. Visual Box Model & Borders</h2>
     <div class="section">
         <div class="border-solid" style="padding: 10px; margin-bottom: 10px;">Solid Border</div>
         <div class="border-dashed" style="padding: 10px; margin-bottom: 10px;">Dashed Border</div>
         <div class="border-dotted" style="padding: 10px; margin-bottom: 10px;">Dotted Border</div>
         <div class="border-double" style="padding: 10px; margin-bottom: 10px;">Double Border</div>
-        <div class="border-inset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Inset Border (3D Effect)</div>
-        <div class="border-outset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Outset Border (3D Effect)</div>
+        <div class="border-inset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Inset Border (3D
+            Effect)</div>
+        <div class="border-outset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Outset Border (3D
+            Effect)</div>
         <div class="border-mixed" style="padding: 10px;">Per-Edge Mixed Styles</div>
     </div>
 
@@ -155,13 +254,13 @@
         <div class="box-margin">Box with 20px external margin</div>
     </div>
 
-    <h2>2. Layout & Positioning</h2>
+    <h2 id="section-layout">2. Layout & Positioning</h2>
     <div class="section">
         <div class="centered-block">
             <b>Centered Block</b><br>
             Using <code>margin: auto</code>
         </div>
-        
+
         <div style="background-color: #f0f0f0; padding: 10px;">
             <b>Inline Blocks:</b><br>
             <div class="inline-block-box">Box 1</div>
@@ -170,7 +269,7 @@
         </div>
     </div>
 
-    <h2>3. Table Formatting Context (TFC)</h2>
+    <h2 id="section-tables">3. Table Formatting Context (TFC)</h2>
     <div class="section">
         <b>Border-Collapse: Collapse</b>
         <table class="table-collapse">
@@ -189,6 +288,56 @@
                     <td class="table-cell">Memory</td>
                     <td class="table-cell">256MB</td>
                 </tr>
+                <tr><td class="table-cell">Row 1</td><td class="table-cell">Value 1</td></tr>
+                <tr><td class="table-cell">Row 2</td><td class="table-cell">Value 2</td></tr>
+                <tr><td class="table-cell">Row 3</td><td class="table-cell">Value 3</td></tr>
+                <tr><td class="table-cell">Row 4</td><td class="table-cell">Value 4</td></tr>
+                <tr><td class="table-cell">Row 5</td><td class="table-cell">Value 5</td></tr>
+                <tr><td class="table-cell">Row 6</td><td class="table-cell">Value 6</td></tr>
+                <tr><td class="table-cell">Row 7</td><td class="table-cell">Value 7</td></tr>
+                <tr><td class="table-cell">Row 8</td><td class="table-cell">Value 8</td></tr>
+                <tr><td class="table-cell">Row 9</td><td class="table-cell">Value 9</td></tr>
+                <tr><td class="table-cell">Row 10</td><td class="table-cell">Value 10</td></tr>
+                <tr><td class="table-cell">Row 11</td><td class="table-cell">Value 11</td></tr>
+                <tr><td class="table-cell">Row 12</td><td class="table-cell">Value 12</td></tr>
+                <tr><td class="table-cell">Row 13</td><td class="table-cell">Value 13</td></tr>
+                <tr><td class="table-cell">Row 14</td><td class="table-cell">Value 14</td></tr>
+                <tr><td class="table-cell">Row 15</td><td class="table-cell">Value 15</td></tr>
+                <tr><td class="table-cell">Row 16</td><td class="table-cell">Value 16</td></tr>
+                <tr><td class="table-cell">Row 17</td><td class="table-cell">Value 17</td></tr>
+                <tr><td class="table-cell">Row 18</td><td class="table-cell">Value 18</td></tr>
+                <tr><td class="table-cell">Row 19</td><td class="table-cell">Value 19</td></tr>
+                <tr><td class="table-cell">Row 20</td><td class="table-cell">Value 20</td></tr>
+                <tr><td class="table-cell">Row 21</td><td class="table-cell">Value 21</td></tr>
+                <tr><td class="table-cell">Row 22</td><td class="table-cell">Value 22</td></tr>
+                <tr><td class="table-cell">Row 23</td><td class="table-cell">Value 23</td></tr>
+                <tr><td class="table-cell">Row 24</td><td class="table-cell">Value 24</td></tr>
+                <tr><td class="table-cell">Row 25</td><td class="table-cell">Value 25</td></tr>
+                <tr><td class="table-cell">Row 26</td><td class="table-cell">Value 26</td></tr>
+                <tr><td class="table-cell">Row 27</td><td class="table-cell">Value 27</td></tr>
+                <tr><td class="table-cell">Row 28</td><td class="table-cell">Value 28</td></tr>
+                <tr><td class="table-cell">Row 29</td><td class="table-cell">Value 29</td></tr>
+                <tr><td class="table-cell">Row 30</td><td class="table-cell">Value 30</td></tr>
+                <tr><td class="table-cell">Row 31</td><td class="table-cell">Value 31</td></tr>
+                <tr><td class="table-cell">Row 32</td><td class="table-cell">Value 32</td></tr>
+                <tr><td class="table-cell">Row 33</td><td class="table-cell">Value 33</td></tr>
+                <tr><td class="table-cell">Row 34</td><td class="table-cell">Value 34</td></tr>
+                <tr><td class="table-cell">Row 35</td><td class="table-cell">Value 35</td></tr>
+                <tr><td class="table-cell">Row 36</td><td class="table-cell">Value 36</td></tr>
+                <tr><td class="table-cell">Row 37</td><td class="table-cell">Value 37</td></tr>
+                <tr><td class="table-cell">Row 38</td><td class="table-cell">Value 38</td></tr>
+                <tr><td class="table-cell">Row 39</td><td class="table-cell">Value 39</td></tr>
+                <tr><td class="table-cell">Row 40</td><td class="table-cell">Value 40</td></tr>
+                <tr><td class="table-cell">Row 41</td><td class="table-cell">Value 41</td></tr>
+                <tr><td class="table-cell">Row 42</td><td class="table-cell">Value 42</td></tr>
+                <tr><td class="table-cell">Row 43</td><td class="table-cell">Value 43</td></tr>
+                <tr><td class="table-cell">Row 44</td><td class="table-cell">Value 44</td></tr>
+                <tr><td class="table-cell">Row 45</td><td class="table-cell">Value 45</td></tr>
+                <tr><td class="table-cell">Row 46</td><td class="table-cell">Value 46</td></tr>
+                <tr><td class="table-cell">Row 47</td><td class="table-cell">Value 47</td></tr>
+                <tr><td class="table-cell">Row 48</td><td class="table-cell">Value 48</td></tr>
+                <tr><td class="table-cell">Row 49</td><td class="table-cell">Value 49</td></tr>
+                <tr><td class="table-cell">Row 50</td><td class="table-cell">Value 50</td></tr>
             </tbody>
         </table>
 
@@ -205,7 +354,7 @@
         </table>
     </div>
 
-    <h2>4. Lists & Markers</h2>
+    <h2 id="section-lists">4. Lists & Markers</h2>
     <div class="section">
         <ul style="list-style-type: disc;">
             <li>Standard Disc Bullet</li>
@@ -219,44 +368,47 @@
         </ol>
     </div>
 
-    <h2>5. Typography & Text Decor</h2>
+    <h2 id="section-typo">5. Typography & Text Decor</h2>
     <div class="section">
         <p><b>Alignments:</b></p>
         <p class="text-right">This text is aligned to the <b>right</b>.</p>
         <p class="text-center">This text is aligned to the <b>center</b>.</p>
-        
+
         <p><b>Decorations:</b></p>
         <p>
-            <u>Underline via u tag</u>, <ins>Underline via ins</ins>, 
+            <u>Underline via u tag</u>, <ins>Underline via ins</ins>,
             <span style="text-decoration: underline;">Underline via CSS</span>.
         </p>
         <p>
-            <s>Strikethrough via s</s>, <del>Strikethrough via del</del>, 
+            <s>Strikethrough via s</s>, <del>Strikethrough via del</del>,
             <span style="text-decoration: line-through;">Strikethrough via CSS</span>.
         </p>
-        
+
         <p><b>White Space:</b></p>
         <div class="pre-text">This block preserves
-    indentation
-        and multiple     spaces
-using white-space: pre;</div>
+            indentation
+            and multiple spaces
+            using white-space: pre;</div>
     </div>
 
-    <h2>6. Replaced Elements (Images & Forms)</h2>
+    <h2 id="section-media">6. Replaced Elements (Images & Forms)</h2>
     <div class="section">
         <b>Image with Alt Fallback:</b><br>
-        <img src="missing.png" alt="Fallback Logo" style="width: 100px; height: 50px; border: 1px solid red; margin: 10px 0;">
+        <img src="missing.png" alt="Fallback Logo"
+            style="width: 100px; height: 50px; border: 1px solid red; margin: 10px 0;">
         <br>
         <b>Form Controls:</b><br>
         <form style="margin-top: 10px;">
             <input type="text" value="Text input value">
-            <button style="background-color: #004d99; color: white; padding: 5px 10px; border: none;">Action Button</button>
+            <button style="background-color: #004d99; color: white; padding: 5px 10px; border: none;">Action
+                Button</button>
             <br><br>
-            <textarea style="width: 100%; height: 50px;">Multi-line textarea content testing overflow and formatting.</textarea>
+            <textarea
+                style="width: 100%; height: 50px;">Multi-line textarea content testing overflow and formatting.</textarea>
         </form>
     </div>
 
-    <h2>7. Inheritance & Advanced CSS</h2>
+    <h2 id="section-advanced">7. Inheritance & Advanced CSS</h2>
     <div class="section">
         <div class="parent-box">
             Parent Box (Color: Purple, Style: Italic)
@@ -273,10 +425,10 @@ using white-space: pre;</div>
         </div>
     </div>
 
-    <h2>8. Pagination & Fragmentation</h2>
+    <h2 id="section-paged">8. Pagination & Fragmentation</h2>
     <div class="section">
         <p>This section tests how content behaves at page boundaries.</p>
-        
+
         <!-- Large spacer to push content down -->
         <div style="height: 300px; border: 1px dashed #ccc; background: #fafafa; padding: 10px; margin-bottom: 20px;">
             Spacer Block (300px): Pushing content towards the bottom of the page to trigger fragmentation.
@@ -284,25 +436,139 @@ using white-space: pre;</div>
 
         <p><b>Fragmentable Block:</b></p>
         <div style="border: 2px solid #52c41a; padding: 10px; background: #f6ffed; margin-bottom: 10px;">
-            This block is allowed to fragment. If it crosses a page boundary, the layout engine will 
+            This block is allowed to fragment. If it crosses a page boundary, the layout engine will
             slice it line-by-line. In future updates, we will implement <code>box-decoration-break: slice</code>
             to ensure side borders continue correctly across pages.
             <br><br>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud 
-            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor 
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
             in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         </div>
 
         <p><b>Atomic Block (page-break-inside: avoid):</b></p>
         <div class="avoid-break">
-            This block uses <code>page-break-inside: avoid</code>. 
-            The engine detects it won't fit in the remaining space of the current page and 
+            This block uses <code>page-break-inside: avoid</code>.
+            The engine detects it won't fit in the remaining space of the current page and
             shifts the <b>entire block</b> to the top of the next page.
         </div>
 
         <p><b>Atomic Image (Block-level):</b></p>
-        <img src="missing.png" alt="Atomic Image" style="display: block; width: 200px; height: 100px; border: 2px solid #1890ff; margin: 10px 0;">
+        <img src="missing.png" alt="Atomic Image"
+            style="display: block; width: 200px; height: 100px; border: 2px solid #1890ff; margin: 10px 0;">
     </div>
 
+    <h3>8.1 Table Fragmentation</h3>
+    <div class="section">
+        <table style="border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid black; padding: 5px;">Header 1</th>
+                    <th style="border: 1px solid black; padding: 5px;">Header 2</th>
+                    <th style="border: 1px solid black; padding: 5px;">Header 3</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 1, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 1, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 1, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 2, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 2, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 2, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 3, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 3, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 3, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 4, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 4, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 4, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 5, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 5, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 5, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 6, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 6, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 6, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 7, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 7, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 7, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 8, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 8, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 8, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 9, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 9, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 9, Cell 3</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">Row 10, Cell 1</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 10, Cell 2</td>
+                    <td style="border: 1px solid black; padding: 5px;">Row 10, Cell 3</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2 id="section-selectors">9. Advanced Selectors & Pseudo-Elements (Phase 8)</h2>
+    <div class="section selector-test">
+        <div class="direct-child">
+            I am a <b>direct child</b> (using <code>.selector-test &gt; .direct-child</code>).
+            <div class="descendant">I am a <b>descendant</b> (using <code>.selector-test .descendant</code>).</div>
+        </div>
+        
+        <p><b>Pseudo-Classes:</b></p>
+        <ul class="list-stripes">
+            <li>First item (blue/bold via <code>:first-of-type</code>)</li>
+            <li>Second item (standard)</li>
+            <li>Third item (red/italic via <code>:last-of-type</code>)</li>
+        </ul>
+
+        <p><b>Pseudo-Elements:</b></p>
+        <div class="pseudo-box" style="border: 1px solid #ccc; padding: 10px; background: #fff;">
+            This box has generated content before and after it.
+        </div>
+
+        <p><b>Attribute Selectors:</b></p>
+        <span data-status="success">Success Status (Green/Bold)</span> | 
+        <span data-status="warning">Warning Status (Yellow)</span>
+        <br><br>
+        <input type="text" value="Styled by [type='text']">
+
+        <p><b>nth-child &amp; nth-of-type:</b></p>
+        <table class="stripe-table" style="width: 100%; border-collapse: collapse;">
+            <tr><td>Row 1 (Odd - Blue Tint)</td></tr>
+            <tr><td>Row 2 (Even - Grey Tint)</td></tr>
+            <tr><td>Row 3 (Odd - Blue Tint)</td></tr>
+        </table>
+        <div class="type-test" style="margin-top: 5px;">
+            <span>Span 1</span> | <span>Span 2 (Red via nth-of-type)</span> | <span>Span 3</span>
+        </div>
+    </div>
+
+    <h2 id="section-links">10. Links & Navigation (Phase 7)</h2>
+    <div class="section link-test">
+        <p>
+            Clickable PDF Hyperlink: 
+            <a href="https://github.com/shubhendrapatel/PyPDFPatra">PyPDFPatra Repository</a>
+        </p>
+        <p>
+            This ensures that <code>&lt;a&gt;</code> tags generate PDF annotations
+            correctly at the resolved coordinates.
+        </p>
+    </div>
 </body>
+
 </html>

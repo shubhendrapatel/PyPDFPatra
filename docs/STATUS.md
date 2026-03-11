@@ -21,9 +21,51 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Fragmentation**: Implement line-breaking and block-fragmentation across pages. (✅)
 - **Table Fragmentation**: Improved non-destructive row shifting and repeating `<thead>` support. (✅)
 
-### Phase 7: Advanced PDF Features (🔄 In Progress)
-- **AcroForms**: Implement interactive fillable widgets. (⬜)
-- **Navigation**: PDF Outlines (Bookmarks) (⬜) and Hyperlink Annotations. (✅)
+### Phase 7: PDF Navigation (✅ Done)
+- **Hyperlink Annotations**: Clickable links (External URLs and Internal #anchors). (✅)
+- **PDF Outlines**: Table of Contents / Bookmarks for Headings. (✅)
+
+### Phase 8: Advanced Selectors & Pseudo-Elements (✅ Done)
+- **Complex Selectors**: Descendant ( `div p`), Child (`div > p`), and Attribute selectors. (✅)
+- **Pseudo-Elements**: `::before` and `::after` with `content` support. (✅)
+- **Pseudo-Classes**: `:first-of-type`, `:last-of-type`, `:nth-child`. (✅)
+
+### Phase 9: Positioning & Stacking (⬜ Not Started)
+- **Relative Positioning**: Offset boxes without affecting flow.
+- **Absolute Positioning**: Remove from flow and position relative to containers.
+- **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers).
+- **Z-Index**: Control overlapping paint order.
+
+### Phase 10: Flexbox Formatting Context (⬜ Not Started)
+- **Flex Container**: `display: flex`.
+- **Flex Directions**: `row`, `column`, `row-reverse`.
+- **Distribution**: `justify-content`, `align-items`, `flex-grow`.
+
+### Phase 11: Professional Paged Media (⬜ Not Started)
+- **Margin Boxes**: Support for `@top-left`, `@bottom-right`, etc. 
+- **Page Counters**: Automatic page numbering (`content: counter(page)`).
+- **Running Elements**: Repeating headers/footers via `position: running()`.
+- **Named Strings**: `string-set` and `string()` for dynamic headers.
+- **Cross-References**: `target-counter()` and `target-text()` for TOCs.
+
+### Phase 12: Advanced Typography & Formatting (⬜ Not Started)
+- **Text Transform**: `uppercase`, `lowercase`, `capitalize`.
+- **Letter Spacing**: `letter-spacing` (pts/em).
+- **Font Variants**: `small-caps`, ligatures, and OpenType features.
+- **Hyphenation**: Automatic line breaking for long words.
+
+### Phase 13: Graphics & Visual Effects (⬜ Not Started)
+- **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths).
+- **Opacity**: Support for `opacity` in backgrounds, borders, and text.
+- **Advanced Backgrounds**: `background-size: cover/contain`, `background-repeat`.
+
+### Phase 14: Multi-Column Layout (⬜ Not Started)
+- **CSS Multi-col**: `columns`, `column-gap`, `column-rule`.
+- **Break Control**: `break-inside: avoid`, `break-after: page`.
+
+### Phase 15: Interactive PDF Forms (⬜ Not Started)
+- **AcroForms**: Fillable text inputs, checkboxes, and radio buttons.
+- **Form Actions**: Basic submit/reset behavior inside PDF.
 
 ---
 
@@ -85,8 +127,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `display: inline-block` | ✅ |
 | `display: table`, `table-row`, `table-cell` | ✅ |
 | `position: static` (normal flow) | ✅ |
-| `position: relative / absolute / fixed` | ⬜ |
+| `position: relative / absolute / fixed` | 🔄 (Planned Phase 9) |
 | `float: left / right` | ⬜ |
+| `display: flex / grid` | 🔄 (Planned Phase 10) |
 | `overflow` | ⬜ |
 
 ### Typography (CSS2.1 §15–16)
@@ -102,6 +145,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `vertical-align: sub / super` | ⬜ |
 | `line-height` | ✅ |
 | `text-align: left/center/right` | ✅ |
+| `text-transform: uppercase / lowercase` | 🔄 (Phase 12) |
+| `letter-spacing` | 🔄 (Phase 12) |
+| `font-variant: small-caps / numeric` | 🔄 (Phase 12) |
 | Inline text line-wrapping (IFC) | ✅ |
 
 ### Backgrounds & Colors (CSS2.1 §14)
@@ -110,8 +156,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 |---|---|
 | `background-color` — hex (`#rrggbb`) | ✅ |
 | `background-color` — named colors, `rgb()` | ✅ |
-| `background-image` | ⬜ |
-| `opacity` | ⬜ |
+| `background-image` | ✅ |
+| `background-size: cover / contain` | 🔄 (Phase 13) |
+| `opacity` | 🔄 (Phase 13) |
 
 ### CSS Length Units
 
@@ -136,4 +183,6 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | Inline Formatting Context (IFC) | CSS2.1 §9.4.2 | ✅ |
 | Painting / Z-order | CSS2.1 App. E | ✅ |
 | Stylesheet parsing (`<style>` / `.css`) | CSS2.1 §2 | ✅ |
-| Page model / `@page` rules | CSS Paged Media | ⬜ |
+| Page model / `@page` rules | CSS Paged Media | 🔄 (Planned Phase 11) |
+| Margin boxes / Page numbering | CSS Paged Media | ⬜ |
+| Multi-column Layout | CSS Multi-col | 🔄 (Phase 14) |

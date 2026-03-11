@@ -1,36 +1,30 @@
-# Visual Accuracy & Layout Fixes
+# Mission: "Perfect Invoice" Layout
 
-This plan addressed the rendering discrepancies between PyPDFPatra and Chromium.
+This plan outlines the steps required to achieve 1:1 visual parity with WeasyPrint for the `invoice.html` sample.
 
-## Completed Changes
+## 🛠️ Step 1: Advanced Selector Engine (Phase 8)
+*   **Goal:** Allow the CSS matcher to handle the specialized selectors in `invoice.css`.
+*   [ ] **Descendant Selectors:** Support `aside address` and `dt dd`.
+*   [ ] **Pseudo-Classes:** Implement `:first-of-type` and `:last-of-type` for table column alignment.
+*   [ ] **Pseudo-Elements:** Implement `::before` and `::after` with `content` support (needed for the colon `:` after labels).
 
-### 1. HR Element Rendering (✅ Done)
-- **Fix:** Updated [style.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/style.py) UA styles to use `border-top` for a crisp single line, later refined to match Chromium's `inset` behavior where requested.
+## 🛠️ Step 2: Positioning & Stacking (Phase 9)
+*   **Goal:** Enable absolute layout for the header info and the fixed footer.
+*   [ ] **Absolute Positioning:** Remove elements from "Normal Flow" and place them using `top`, `bottom`, `right`, `left`.
+*   [ ] **Anchor Logic:** Support positioning relative to the page boundary (needed for `bottom: 0` footer).
 
-### 2. Table Consistency (✅ Done)
-- **Fix:** Implemented `border-collapse`, `border-spacing`, and correctly centered captions in [layout_table.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/layout_table.py).
+## 🛠️ Step 3: Flexbox Formatting Context (Phase 10)
+*   **Goal:** Enable side-by-side addresses in the header.
+*   [ ] **Flex Container:** Implement horizontal distribution for `display: flex`.
+*   [ ] **Flex Alignment:** Support `justify-content` and `flex: 1`.
 
-### 3. Centering (Block & Inline) (✅ Done)
-- **Fix:** 
-    - Block: Implemented `margin: auto` logic in [layout_block.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/layout_block.py).
-    - Inline: Passed `text-align` through IFC to correctly shift line boxes in [layout_inline.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/layout_inline.py).
+## 🛠️ Step 4: Paged Media Margin Boxes (Phase 11)
+*   **Goal:** Correct footer placement for "Thank you!" and contact info.
+*   [ ] **Margin Boxes:** Implement `@bottom-left` and `@bottom-right` in the page loop within `render.py`.
 
-### 4. Text Decorations (✅ Done)
-- **Fix:** Implemented custom line-drawing for `underline` and `line-through` in [_draw_text](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/render.py#367-452) ([render.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/render.py)). Fixed double-underline by removing built-in FPDF underline.
+## 🛠️ Step 5: Visual Polish
+*   [ ] **Text Transform:** Implement `text-transform: uppercase` in the renderer.
+*   [ ] **White Space:** Support `white-space: pre-line` for address blocks.
 
-### 5. Border Fidelity (✅ Done)
-- **Fix:** Rewrote [_draw_borders](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/render.py#242-365) to use line-based drawing with support for `dashed`, `dotted`, and `double` styles, including half-width edge offsets for CSS alignment.
-
-## Next: Page Break Handling
-
-### 1. Line-box Overflow Detection
-- **Problem:** Text is drawn at absolute coordinates that overflow the `PAGE_HEIGHT` (842.0). 
-- **Cause:** [layout_inline.py](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/layout_inline.py) continues stacking line boxes vertically without checking if they fit on the current page.
-- **Fix:** 
-    - [ ] Update [layout_inline_context](file:///d:/programming/repo/PyPDFPatra/src/pypdfpatra/engine/layout_inline.py#299-366) to track available space.
-    - [ ] Trigger a page break (adjust `current_y`) when a line box would overflow the page boundary.
-
-## Verification Plan
-1. Run [example/test_coverage.py](file:///d:/programming/repo/PyPDFPatra/example/test_coverage.py).
-2. Verify that `box-model-1` text is visible on Page 4 (currently cut off at bottom of Page 3).
-
+## Verification
+- Compare `example/invoice.pdf` against the WeasyPrint reference image.

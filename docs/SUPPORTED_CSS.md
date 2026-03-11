@@ -9,7 +9,7 @@ The mapping engine (powered by parsed ASTs from `tinycss2`) fully applies the ca
 * **Class (CSS 1)**: `.classname`
 * **ID (CSS 1)**: `#idname`
 
-*Note: Pseudo-classes (like `:hover`), pseudo-elements (like `::before`), and complex combinators (like `div > p` or `div + p`) are currently under active development and not fully supported by the layout engine yet.*
+*Note: Pseudo-classes (like `:first-of-type`), pseudo-elements (like `::after`), and complex combinators (like `div > p`) are planned for **Phase 8**. See [STATUS.md](STATUS.md) for the full roadmap.*
 
 ## Display & Box Model (CSS 2.1)
 The block formatting context and inline formatting context support W3C-standard flow layout.
@@ -55,11 +55,13 @@ Standard shorthand is supported (`border: 1px solid black;`).
 * **`text-align`** (CSS 1): `left`, `center`, `right` (aligns text within its containing block)
 * **`text-decoration`** (CSS 1): `underline`, `line-through` (also triggered automatically by standard `<u>`, `<s>`, `<del>` HTML tags)
 * **`white-space`** (CSS 1): `pre` (Supported; preserves explicit spaces and newlines over standard wrapping)
+* **`line-height`**: Specified in absolute points or relative unitless values (e.g., `1.6`).
 
 ## Colors & Backgrounds (CSS 1, CSS 2.1, CSS Color Module Level 4)
 Colors can be specified using short hex (e.g., `#fff`), standard hex (e.g., `#ffffff`), or by directly typing any of the 148 standard W3C CSS4 named colors (e.g., `blue`, `papayawhip`, `cornflowerblue`).
 * **`color`** (CSS 1)
 * **`background-color`** (CSS 1)
+* **`background-image`**: Support for local and remote image URLs.
 
 ## Lists (CSS 1 & 2.1)
 * **`list-style-type`**: `disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`.
