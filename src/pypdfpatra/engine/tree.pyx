@@ -116,6 +116,9 @@ cdef class Node:
         self.children = []  # Child Node objects
         self.style    = {}  # CSS property dict, e.g. {'color': 'red'}
         self.boxes    = []  # Box geometry objects created during layout
+        self.pseudo_before = {}
+        self.pseudo_after  = {}
+        self.parent        = None
 
     def add_child(self, Node child):
         """
@@ -124,4 +127,5 @@ cdef class Node:
         Args:
             child (Node): The child Node to append.
         """
+        child.parent = self
         self.children.append(child)

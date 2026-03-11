@@ -18,12 +18,18 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
     """
     Recursively matches CSS rules to a Node and its children.
     """
+    # Build ancestor list for descendant matching
+    ancestors = []
+    curr = node.parent
+    while curr:
+        ancestors.append(curr)
+        curr = curr.parent
+
     # 1. Match Rules to this specific Node
     for rule in rules:
-        # Check if the rule is a 'Qualified Rule' (has a selector and declarations)
         if isinstance(rule, tinycss2.ast.QualifiedRule):
-            # Convert the selector tokens to a string (e.g. ['div'], ['.', 'custom-box'])
-            selector = "".join(
+            # Parse selector into parts (handling basic combinators)
+            selector_str = "".join(
                 [
                     t.serialize()
                     if hasattr(t, "serialize")
@@ -34,31 +40,26 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
                 ]
             ).strip()
 
-            matched = False
-            # 1. ID Matcher (#my-id)
-            if selector.startswith("#"):
-                target_id = selector[1:]
-                if node.props.get("id") == target_id:
-                    matched = True
-            # 2. Class Matcher (.my-class)
-            elif selector.startswith("."):
-                target_class = selector[1:]
-                # Handle multiple classes (e.g., class="btn primary")
-                node_classes = node.props.get("class", "").split()
-                if target_class in node_classes:
-                    matched = True
-            # 3. Simple Tag Matcher (div)
-            else:
-                if selector == node.tag:
-                    matched = True
+            # Check for pseudo-elements
+            pseudo_el = None
+            if "::before" in selector_str:
+                pseudo_el = "before"
+                selector_str = selector_str.replace("::before", "").strip()
+            elif "::after" in selector_str:
+                pseudo_el = "after"
+                selector_str = selector_str.replace("::after", "").strip()
 
-            if matched:
-                _inject_declarations(node, rule.content)
+            if _matches_selector(node, selector_str, ancestors):
+                if pseudo_el == "before":
+                    _inject_declarations(node, rule.content, node.pseudo_before)
+                elif pseudo_el == "after":
+                    _inject_declarations(node, rule.content, node.pseudo_after)
+                else:
+                    _inject_declarations(node, rule.content, node.style)
 
     # 1.5. Apply Inline Styles (e.g. <div style="...">)
     inline_style_str = node.props.get("style")
     if inline_style_str:
-        # tinycss2 parses declaration lists directly
         inline_declarations = tinycss2.parse_declaration_list(
             inline_style_str, skip_comments=True, skip_whitespace=True
         )
@@ -75,19 +76,163 @@ def apply_styles(node: Node, rules: List[tinycss2.ast.Node]) -> None:
                     ]
                 )
 
-    # 2. Recursively apply to all children in the tree
+    # 2. Recursively apply to all children
     for child in node.children:
         apply_styles(child, rules)
 
 
-def _inject_declarations(node: Node, content: List[tinycss2.ast.Node]) -> None:
+def _matches_selector(node: Node, selector: str, ancestors: List[Node]) -> bool:
     """
-    Parses CSS declarations and stores them in the Node's Cython style dictionary.
+    Supports: #id, .class, tag, descendant (a b), child (a > b),
+              :first-of-type, :last-of-type
+    """
+    # Split by commas for multiple selectors (e.g. h1, h2)
+    for part in [s.strip() for s in selector.split(",")]:
+        if _matches_single_selector(node, part, ancestors):
+            return True
+    return False
+
+
+def _matches_single_selector(node: Node, selector: str, ancestors: List[Node]) -> bool:
+    """
+    Handles a single selector string (no commas).
+    """
+    # Handle Child Combinator (a > b)
+    if ">" in selector:
+        parts = [p.strip() for p in selector.split(">")]
+        target = parts[-1]
+        parent_sel = " ".join(parts[:-1])
+        if _matches_simple_selector(node, target):
+            if ancestors and _matches_single_selector(
+                ancestors[0], parent_sel, ancestors[1:]
+            ):
+                return True
+        return False
+
+    # Handle Descendant Combinator (a b)
+    parts = selector.split()
+    if len(parts) > 1:
+        target = parts[-1]
+        ancestor_sel = " ".join(parts[:-1])
+        if _matches_simple_selector(node, target):
+            # Check all ancestors
+            for i, anc in enumerate(ancestors):
+                if _matches_single_selector(anc, ancestor_sel, ancestors[i + 1 :]):
+                    return True
+        return False
+
+    return _matches_simple_selector(node, selector)
+
+
+def _matches_simple_selector(node: Node, selector: str) -> bool:
+    """
+    Matches #id, .class, tag, pseudo-classes, or attribute selectors on a single node.
+    """
+    if not selector:
+        return False
+
+    # 1. Attribute Selectors [attr=val]
+    if selector.startswith("[") and selector.endswith("]"):
+        inner = selector[1:-1]
+        if "=" in inner:
+            attr, val = inner.split("=", 1)
+            val = val.strip("'\"")
+            return node.props.get(attr) == val
+        else:
+            return inner in node.props
+
+    # 2. Pseudo-classes (multiple can be chained: div:first-child:hover)
+    if ":" in selector:
+        if selector.startswith(":"):
+            base = "*"
+            pseudo_full = selector[1:]
+        else:
+            base, pseudo_full = selector.split(":", 1)
+
+        if base != "*" and not _matches_simple_selector(node, base):
+            return False
+
+        # Multiple pseudos can be chained: :first-child:nth-of-type(2)
+        for pseudo in [p.strip() for p in pseudo_full.split(":") if p]:
+            args = ""
+            if "(" in pseudo and pseudo.endswith(")"):
+                pseudo, args = pseudo[:-1].split("(", 1)
+
+            if pseudo == "first-of-type":
+                if not node.parent:
+                    return True
+                siblings = [c for c in node.parent.children if c.tag == node.tag]
+                if not (siblings and siblings[0] == node):
+                    return False
+            elif pseudo == "last-of-type":
+                if not node.parent:
+                    return True
+                siblings = [c for c in node.parent.children if c.tag == node.tag]
+                if not (siblings and siblings[-1] == node):
+                    return False
+            elif pseudo == "first-child":
+                if not (node.parent and node.parent.children[0] == node):
+                    return False
+            elif pseudo == "last-child":
+                if not (node.parent and node.parent.children[-1] == node):
+                    return False
+            elif pseudo == "nth-child":
+                if not (
+                    node.parent
+                    and _matches_nth(node.parent.children.index(node) + 1, args)
+                ):
+                    return False
+            elif pseudo == "nth-of-type":
+                if not node.parent:
+                    return True
+                siblings = [c for c in node.parent.children if c.tag == node.tag]
+                if not (
+                    node in siblings and _matches_nth(siblings.index(node) + 1, args)
+                ):
+                    return False
+            else:
+                return False
+        return True
+
+    # 3. ID Matcher
+    if selector.startswith("#"):
+        return node.props.get("id") == selector[1:]
+
+    # 4. Class Matcher
+    if selector.startswith("."):
+        target_class = selector[1:]
+        node_classes = node.props.get("class", "").split()
+        return target_class in node_classes
+
+    # 5. Tag Matcher
+    return selector == node.tag or selector == "*"
+
+
+def _matches_nth(index: int, formula: str) -> bool:
+    """
+    Evaluates nth-child logic (Supports: 'odd', 'even', or a single integer).
+    """
+    formula = formula.strip().lower()
+    if formula == "odd":
+        return index % 2 != 0
+    if formula == "even":
+        return index % 2 == 0
+    try:
+        return index == int(formula)
+    except ValueError:
+        return False
+
+
+def _inject_declarations(
+    node: Node, content: List[tinycss2.ast.Node], target_style: dict
+) -> None:
+    """
+    Parses CSS declarations and stores them in the provided style dictionary.
     """
     declarations = tinycss2.parse_declaration_list(content)
     for decl in declarations:
         if isinstance(decl, tinycss2.ast.Declaration):
-            node.style[decl.name] = "".join(
+            target_style[decl.name] = "".join(
                 [
                     t.serialize()
                     if hasattr(t, "serialize")

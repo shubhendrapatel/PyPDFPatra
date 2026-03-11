@@ -19,6 +19,40 @@ from pypdfpatra.engine.font_metrics import parse_font
 from pypdfpatra.engine.tree import Box, TextBox
 
 
+def register_anchors(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0) -> dict:
+    """
+    Traverses the box tree to find elements with 'id' attributes and
+    registers them as PDF destinations (internal links).
+    """
+    anchor_map = {}
+
+    def _collect(box_list, curr_dy):
+        for box in box_list:
+            if box is None:
+                continue
+
+            node_id = getattr(box.node, "props", {}).get("id")
+            if node_id and node_id not in anchor_map:
+                # Calculate the exact Y position on the page
+                border_box_y = (box.y + curr_dy) + box.margin_top
+                page_idx = int(border_box_y / PAGE_HEIGHT)
+                local_y = border_box_y - (page_idx * PAGE_HEIGHT)
+
+                # Ensure the target page exists
+                _ensure_page(pdf, page_idx)
+
+                # Create link destination
+                link_id = pdf.add_link()
+                pdf.set_link(link_id, y=local_y, page=page_idx + 1)
+                anchor_map[node_id] = link_id
+
+            if hasattr(box, "children") and box.children:
+                _collect(box.children, curr_dy)
+
+    _collect(boxes, dy)
+    return anchor_map
+
+
 def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
     """Ensures the PDF has enough pages and resets state cache for new pages."""
     target_page = page_idx + 1
@@ -206,7 +240,10 @@ def _draw_text(
     border_top: float,
     border_left: float,
 ) -> None:
-    """Paints correctly formatted and styled inline text primitives or vector list markers."""
+    """
+    Paints correctly formatted and styled inline text primitives or
+    vector list markers.
+    """
     text_content = box.text_content
     if not text_content:
         return
@@ -251,7 +288,8 @@ def _draw_text(
     align_map = {"left": "L", "center": "C", "right": "R", "justify": "J"}
     fpdf_align = align_map.get(style.get("text-align", "left"), "L")
 
-    # Font and color settings MUST follow _ensure_page to avoid state desync on new pages
+    # Font and color settings MUST follow _ensure_page to avoid state
+    # desync on new pages
     pdf.set_text_color(r, g, b)
     from pypdfpatra.engine.font_metrics import FontMetrics
 
@@ -321,7 +359,9 @@ def _draw_image(
         pdf.set_text_color(0, 0, 0)
 
 
-def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
+def draw_boxes(
+    pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0, anchor_map: dict = None
+):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
     and paints the boxes onto the PDF.
@@ -384,8 +424,15 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
         if href:
             page_idx = int(border_box_y / PAGE_HEIGHT)
             local_y = border_box_y - (page_idx * PAGE_HEIGHT)
+
+            target = href
+            if href.startswith("#") and anchor_map:
+                target_id = href[1:]
+                if target_id in anchor_map:
+                    target = anchor_map[target_id]
+
             pdf.link(
-                x=border_box_x, y=local_y, w=border_box_w, h=border_box_h, link=href
+                x=border_box_x, y=local_y, w=border_box_w, h=border_box_h, link=target
             )
 
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
@@ -393,13 +440,30 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
 
+        # PDF Bookmarks (Outlines) for Headings (Phase 7)
+        tag = getattr(box.node, "tag", "").lower()
+        if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            level = int(tag[1]) - 1
+            # We get the text content from the box children if they are text boxes
+            heading_text = ""
+            for child in box.children:
+                if isinstance(child, TextBox):
+                    heading_text += child.text_content
+
+            if heading_text:
+                page_idx = int(border_box_y / PAGE_HEIGHT)
+                local_y = border_box_y - (page_idx * PAGE_HEIGHT)
+                # Ensure we are on the right page for the bookmark
+                _ensure_page(pdf, page_idx)
+                pdf.bookmark(heading_text, level=level, y=local_y)
+
         if box.__class__.__name__ == "ImageBox":
             _draw_image(
                 pdf, box, style, border_box_x, border_box_y, border_top, border_left
             )
 
         if box.children:
-            draw_boxes(pdf, box.children, dy=dy)
+            draw_boxes(pdf, box.children, dy=dy, anchor_map=anchor_map)
 
         if dy == 0.0 and box.__class__.__name__ == "TableBox":
             thead_rows = getattr(box, "thead_rows", [])
@@ -412,4 +476,4 @@ def draw_boxes(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0):
                     for p in range(start_page + 1, end_page + 1):
                         header_target_y = (p * PAGE_HEIGHT) + DEFAULT_MARGIN_TOP
                         repeat_dy = header_target_y - header_original_y
-                        draw_boxes(pdf, thead_rows, dy=repeat_dy)
+                        draw_boxes(pdf, thead_rows, dy=repeat_dy, anchor_map=anchor_map)

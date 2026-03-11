@@ -25,7 +25,7 @@ from pypdfpatra.engine import (
 )
 from pypdfpatra.engine.font_metrics import FontMetrics
 from pypdfpatra.logger import logger
-from pypdfpatra.render import draw_boxes
+from pypdfpatra.render import draw_boxes, register_anchors
 
 
 class HTML:
@@ -107,7 +107,9 @@ class HTML:
                     logger.warning(f"Failed to add font to PDF: {e}")
 
         if root_box is not None:
-            draw_boxes(pdf, [root_box])
+            # 5a. Anchor Registration (Phase 7 Internal Links)
+            anchor_map = register_anchors(pdf, [root_box])
+            draw_boxes(pdf, [root_box], anchor_map=anchor_map)
 
         # 5. Output Phase
         logger.info(f"[5/5] Saving to {target}...")

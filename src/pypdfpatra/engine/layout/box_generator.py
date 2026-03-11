@@ -145,4 +145,29 @@ def generate_box_tree(
         # Insert at the beginning of the children list
         box.children.insert(0, marker_box)
 
+    # --- Generate Pseudo-Elements (Phase 8) ---
+    # Handle ::before
+    if "content" in node.pseudo_before:
+        content_val = node.pseudo_before["content"].strip("'\"")
+        if content_val and content_val != "none":
+            pseudo_node = Node(tag="#text", props={})
+            pseudo_node.parent = node
+            pseudo_node.style = node.pseudo_before.copy()
+            pseudo_node.style["content"] = content_val
+            pseudo_box = generate_box_tree(pseudo_node, base_url)
+            if pseudo_box:
+                box.children.insert(0, pseudo_box)
+
+    # Handle ::after
+    if "content" in node.pseudo_after:
+        content_val = node.pseudo_after["content"].strip("'\"")
+        if content_val and content_val != "none":
+            pseudo_node = Node(tag="#text", props={})
+            pseudo_node.parent = node
+            pseudo_node.style = node.pseudo_after.copy()
+            pseudo_node.style["content"] = content_val
+            pseudo_box = generate_box_tree(pseudo_node, base_url)
+            if pseudo_box:
+                box.children.append(pseudo_box)
+
     return box
