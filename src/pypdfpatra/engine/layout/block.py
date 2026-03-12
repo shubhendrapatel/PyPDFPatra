@@ -23,6 +23,11 @@ from pypdfpatra.engine.tree import (
     InlineBox,
     TextBox,
 )
+from collections import namedtuple
+import math
+
+# Context for positioning relative ancestors
+PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
 
 
 def _parse_length(
@@ -45,7 +50,9 @@ def _parse_length(
         return 0.0
 
 
-def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]:
+def _resolve_box_geometry(
+    box: Box, aw: float, style: dict, pos_cb: PosCB = None
+) -> tuple[str, float]:
     """Resolves margin, padding, border, and width metrics."""
     # Parse spacing.
     margin_top = _parse_length(style.get("margin-top", "0px"), aw)
@@ -128,6 +135,30 @@ def _resolve_box_geometry(box: Box, aw: float, style: dict) -> tuple[str, float]
     box.padding_left = padding_left
     box.padding_right = padding_right
 
+    # Positioning (Phase 9)
+    box.top = _parse_length(style.get("top", "nan"), aw, default_auto=float("nan"))
+    box.bottom = _parse_length(
+        style.get("bottom", "nan"), aw, default_auto=float("nan")
+    )
+    box.left = _parse_length(style.get("left", "nan"), aw, default_auto=float("nan"))
+    box.right = _parse_length(style.get("right", "nan"), aw, default_auto=float("nan"))
+
+    # --- W3C Absolute Dimension Calculation (CSS2.1 10.3.7 & 10.6.4) ---
+    if box.position == "absolute" and pos_cb is not None:
+        # Width calculation
+        if math.isnan(box.w) or css_width_str == "auto":
+            if not math.isnan(box.left) and not math.isnan(box.right):
+                # Stretching width
+                total_horizontal_box = pos_cb.w - box.left - box.right
+                # Width is total minus horizontal padding/borders/margins
+                # For simplicity, we assume margins are 0 if not specified as auto.
+                box.w = max(0.0, total_horizontal_box - (padding_left + padding_right + border_left + border_right + margin_left + margin_right))
+        
+        # Height calculation (Preliminary based on offsets)
+        if not math.isnan(box.top) and not math.isnan(box.bottom):
+            total_vertical_box = pos_cb.h - box.top - box.bottom
+            box.h = max(0.0, total_vertical_box - (padding_top + padding_bottom + border_top + border_bottom + margin_top + margin_bottom))
+
     return box_sizing, css_width, margin_top, margin_bottom
 
 
@@ -164,13 +195,19 @@ def _wrap_inline_children(box: Box) -> None:
     box.children = new_children
 
 
-def _layout_block_children(box: Box, content_x: float, content_y: float) -> float:
+def _layout_block_children(
+    box: Box, content_x: float, content_y: float, pos_cb: PosCB = None
+) -> float:
     """Lays out all child boxes and returns the final content bottom Y."""
     current_border_box_bottom = content_y
     prev_margin_bottom = 0.0
     first_child = True
 
     for child_box in box.children:
+        # Phase 9: Remove absolute/fixed from flow
+        if child_box.position in ("absolute", "fixed"):
+            continue
+
         # Pagination: Determine if the child box overflows the current page area.
         current_page_idx = int(current_border_box_bottom / PAGE_HEIGHT)
         page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
@@ -252,14 +289,18 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
                     )
 
             if child_box.__class__.__name__ == "TableBox":
-                layout_table_context(child_box, content_x, child_margin_box_y, box.w)
+                layout_table_context(
+                    child_box, content_x, child_margin_box_y, box.w
+                )
             elif child_box.__class__.__name__ == "ImageBox":
                 _resolve_box_geometry(child_box, box.w, child_style)
                 child_box.x = content_x
                 child_box.y = child_margin_box_y
                 child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
             else:
-                layout_block_context(child_box, content_x, child_margin_box_y, box.w)
+                layout_block_context(
+                    child_box, content_x, child_margin_box_y, box.w, pos_cb=pos_cb
+                )
 
             current_border_box_bottom = (
                 child_box.y
@@ -298,12 +339,23 @@ def _layout_block_children(box: Box, content_x: float, content_y: float) -> floa
     return current_border_box_bottom
 
 
-def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> None:
+def layout_block_context(
+    box: Box, cb_x: float, cb_y: float, cb_w: float, pos_cb: PosCB = None
+) -> None:
     """
     Recursively calculates the CSS Box Model layout for a block element.
     """
+    if pos_cb is None:
+        # Default to initial containing block (the page)
+        # Using A4 default dimensions 519.0 (CONTENT_WIDTH)
+        # But for positioning it's usually the full page area or the first page.
+        from pypdfpatra.defaults import PAGE_WIDTH
+        pos_cb = PosCB(0.0, 0.0, PAGE_WIDTH, PAGE_HEIGHT)
+
     style = getattr(box.node, "style", {}) if box.node else {}
-    box_sizing, css_width, mt, mb = _resolve_box_geometry(box, cb_w, style)
+    box_sizing, css_width, mt, mb = _resolve_box_geometry(
+        box, cb_w, style, pos_cb=pos_cb
+    )
 
     css_height = _parse_length(style.get("height", "auto"), cb_w, default_auto=None)
 
@@ -334,10 +386,24 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
         box.y + box.margin_top + box.border_top + box.padding_top
     )
 
+    # Determine the containing block for absolute children
+    padding_x = box.x + box.margin_left + box.border_left
+    padding_y = box.y + box.margin_top + box.border_top
+    padding_w = box.w + box.padding_left + box.padding_right
+    # padding_h is yet to be determined if height is auto
+
+    if box.position != "static":
+        # This box establishes a new containing block
+        # We don't know H yet, but we will pass it anyway and update it later if needed
+        # Or better: children of a positioned box always use this box as PosCB.
+        child_pos_cb = PosCB(padding_x, padding_y, padding_w, 0.0) # H will be updated
+    else:
+        child_pos_cb = pos_cb
+
     _wrap_inline_children(box)
 
     current_border_box_bottom = _layout_block_children(
-        box, content_x, current_border_box_bottom
+        box, content_x, current_border_box_bottom, pos_cb=child_pos_cb
     )
 
     if css_height is not None:
@@ -352,6 +418,9 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
             )
         else:
             box.h = css_height
+    elif box.position == "absolute" and not math.isnan(box.top) and not math.isnan(box.bottom):
+        # Height was already set in _resolve_box_geometry based on offsets
+        pass
     else:
         content_bottom = current_border_box_bottom
         content_y = box.y + box.margin_top + box.border_top + box.padding_top
@@ -359,3 +428,118 @@ def layout_block_context(box: Box, cb_x: float, cb_y: float, cb_w: float) -> Non
 
         if isinstance(box, TextBox) and box.h == 0:
             box.h = 20.0
+
+    # Final padding height is now known
+    padding_h = box.h + box.padding_top + box.padding_bottom
+
+    # Update the child_pos_cb with the resolved height if this box is positioned
+    if box.position != "static":
+        final_pos_cb = PosCB(padding_x, padding_y, padding_w, padding_h)
+    else:
+        final_pos_cb = pos_cb
+
+    # Phase 9: Relative Positioning Offset (Visual shift only)
+    if box.position == "relative":
+        from .inline import shift_box
+
+        dx = 0.0
+        dy = 0.0
+        if not math.isnan(box.left):
+            dx = box.left
+        elif not math.isnan(box.right):
+            dx = -box.right
+
+        if not math.isnan(box.top):
+            dy = box.top
+        elif not math.isnan(box.bottom):
+            dy = -box.bottom
+
+        if dx != 0 or dy != 0:
+            shift_box(box, dx, dy)
+
+    # Phase 9: Absolute Positioning (Simplified: Relative to Container/Page)
+    # W3C: Absolute containing block is the PADDING box of the nearest
+    # positioned ancestor.
+    _layout_positioned_children(box, final_pos_cb)
+
+
+def _layout_positioned_children(box: Box, pos_cb: PosCB):
+    """Lays out absolute/fixed boxes that belong to this containing block context."""
+    for child_box in box.children:
+        if child_box.position not in ("absolute", "fixed"):
+            continue
+
+        child_style = (
+            getattr(child_box.node, "style", {}) if child_box.node else {}
+        )
+        _resolve_box_geometry(child_box, pos_cb.w, child_style, pos_cb=pos_cb)
+
+
+        import math
+
+        from .inline import shift_box
+
+        # Simplified Absolute positioning:
+        # If position is absolute, coordinates are relative to the
+        # containing block (this box).
+        # In this implementation, we apply it relative to the
+        # container's top-left.
+
+        if child_box.position == "fixed":
+            # Fixed is relative to page (standard viewport)
+            ref_x, ref_y, ref_w, ref_h = 0.0, int(box.y / PAGE_HEIGHT) * PAGE_HEIGHT, 595.0, PAGE_HEIGHT
+        else:
+            ref_x, ref_y, ref_w, ref_h = pos_cb.x, pos_cb.y, pos_cb.w, pos_cb.h
+
+        init_x = ref_x
+        init_y = ref_y
+
+        # Handle X (initial guessed X)
+        if not math.isnan(child_box.left):
+            init_x = ref_x + child_box.left
+        elif not math.isnan(child_box.right):
+            # approximate parent width
+            init_x = ref_x + ref_w - child_box.w - child_box.right
+        else:
+            init_x = ref_x
+
+        # Handle Y (initial guessed Y)
+        if not math.isnan(child_box.top):
+            init_y = ref_y + child_box.top
+        elif not math.isnan(child_box.bottom):
+            # Initially place at bottom of container, we will shift up after layout
+            init_y = ref_y + ref_h - child_box.h - child_box.bottom
+        else:
+            init_y = ref_y
+
+        # Recursively layout children of positioned box
+        if child_box.__class__.__name__ == "TableBox":
+            from .table import layout_table_context
+
+            layout_table_context(
+                child_box, init_x, init_y, child_box.w
+            )
+        elif child_box.__class__.__name__ == "ImageBox":
+            child_box.x = init_x
+            child_box.y = init_y
+            child_box.h = child_box.image_h * (
+                child_box.w / child_box.image_w
+            )
+        else:
+            layout_block_context(child_box, init_x, init_y, child_box.w, pos_cb=pos_cb)
+
+        # Post-layout adjustment for right/bottom
+        dx = 0.0
+        dy = 0.0
+        if not math.isnan(child_box.right) and math.isnan(child_box.left):
+            # Re-calculate correct X now that width is definitely known
+            target_x = ref_x + ref_w - child_box.w - child_box.right
+            dx = target_x - child_box.x
+
+        if not math.isnan(child_box.bottom) and math.isnan(child_box.top):
+            # Re-calculate correct Y now that height is definitely known
+            target_y = ref_y + ref_h - child_box.h - child_box.bottom
+            dy = target_y - child_box.y
+
+        if dx != 0 or dy != 0:
+            shift_box(child_box, dx, dy)

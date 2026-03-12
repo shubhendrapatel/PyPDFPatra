@@ -28,10 +28,11 @@ INHERITED_PROPERTIES = frozenset(
         "line-height",
         "color",
         "text-align",
-        "text-decoration",  # Technically not inherited in W3C but effectively cascaded in renderers
+        "text-decoration",  # Cascaded in most renderers
         "visibility",
         "white-space",
         "list-style-type",
+        "text-transform",
     }
 )
 

@@ -80,6 +80,8 @@ def _draw_background(
     border_box_h: float,
 ) -> None:
     """Paints background colors across potentially multiple pages."""
+    if style.get("visibility") == "hidden":
+        return
     bg_color_str = style.get("background-color")
     if bg_color_str and bg_color_str != "transparent":
         rgb = parse_color(bg_color_str)
@@ -127,6 +129,8 @@ def _draw_borders(
     border_box_h: float,
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
+    if style.get("visibility") == "hidden":
+        return
     # Use butt caps (0 J) to ensure borders meet precisely at corners.
     pdf._out("0 J")
 
@@ -244,9 +248,20 @@ def _draw_text(
     Paints correctly formatted and styled inline text primitives or
     vector list markers.
     """
+    if style.get("visibility") == "hidden":
+        return
+
     text_content = box.text_content
     if not text_content:
         return
+
+    transform = style.get("text-transform", "none").lower()
+    if transform == "uppercase":
+        text_content = text_content.upper()
+    elif transform == "lowercase":
+        text_content = text_content.lower()
+    elif transform == "capitalize":
+        text_content = text_content.title()
 
     content_x = border_box_x + border_left + box.padding_left
     content_y = border_box_y + border_top + box.padding_top
@@ -328,6 +343,8 @@ def _draw_image(
     border_left: float,
 ) -> None:
     """Paints external image assets onto the PDF respecting absolute geometry."""
+    if style.get("visibility") == "hidden":
+        return
     img_src = getattr(box, "img_src", "")
     if not img_src:
         return
@@ -366,7 +383,27 @@ def draw_boxes(
     Recursively iterates through the W3C Box Tree (Render Tree)
     and paints the boxes onto the PDF.
     """
-    for box in boxes:
+    # Phase 9: Stacking Order (z-index)
+    # W3C Appendix E: Positioned elements paint after non-positioned ones.
+    def stacking_key(b):
+        zi = getattr(b, "z_index", 0)
+        pos = getattr(b, "position", "static")
+        is_pos = (pos != "static")
+        
+        # Level 1: Negative Z-index positioned
+        # Level 2: Normal flow (is_pos=False)
+        # Level 3: Z-index >= 0 positioned
+        if is_pos:
+            if zi < 0:
+                return (0, zi) # Level 0, then sort by zi
+            else:
+                return (2, zi) # Level 2, then sort by zi
+        else:
+            return (1, 0) # Level 1 (normal flow)
+
+    sorted_boxes = sorted(boxes, key=stacking_key)
+
+    for box in sorted_boxes:
         if box is None:
             continue
 
@@ -380,10 +417,18 @@ def draw_boxes(
         border_box_x = box.x + box.margin_left
         border_box_y = (box.y + dy) + box.margin_top
         border_box_w = (
-            border_left + box.padding_left + box.w + box.padding_right + border_right
+            border_left
+            + box.padding_left
+            + box.w
+            + box.padding_right
+            + border_right
         )
         border_box_h = (
-            border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
+            border_top
+            + box.padding_top
+            + box.h
+            + box.padding_bottom
+            + border_bottom
         )
 
         if box.__class__.__name__ == "TableBox":
@@ -453,9 +498,12 @@ def draw_boxes(
             if heading_text:
                 page_idx = int(border_box_y / PAGE_HEIGHT)
                 local_y = border_box_y - (page_idx * PAGE_HEIGHT)
-                # Ensure we are on the right page for the bookmark
                 _ensure_page(pdf, page_idx)
-                # pdf.bookmark(heading_text, level=level, y=local_y)
+                # Save position, jump to heading Y, start section, restore position
+                old_y = pdf.y
+                pdf.y = local_y
+                pdf.start_section(heading_text, level=level - 1)
+                pdf.y = old_y
 
         if box.__class__.__name__ == "ImageBox":
             _draw_image(

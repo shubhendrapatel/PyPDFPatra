@@ -97,7 +97,7 @@ def generate_box_tree(
         # Defaults to inline for spans, anchors, strong, etc.
         box = InlineBox(node=node)
 
-    # Process children, keeping track of list items if this node is an ordered/unordered list
+    # Process children, keeping track of list items for ol/ul tags
     child_li_counter = 1
     if tag == "ol" or tag == "ul":
         start_val = getattr(node, "props", {}).get("start")
@@ -130,6 +130,15 @@ def generate_box_tree(
 
     # 4. Generate Pseudo-Elements (Phase 8 - Refactored)
     _process_pseudo_elements(node, box, base_url)
+
+    # 5. Populate Positioning fields (Phase 9)
+    box.position = style.get("position", "static").strip().lower()
+
+    # Just set z_index if present.
+    try:
+        box.z_index = int(style.get("z-index", "0"))
+    except ValueError:
+        box.z_index = 0
 
     return box
 

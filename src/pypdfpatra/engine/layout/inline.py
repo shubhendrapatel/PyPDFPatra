@@ -10,7 +10,7 @@ from pypdfpatra.engine.tree import Box, LineBox, TextBox
 
 
 def _flatten_inline(boxes: list[Box]) -> list[Box]:
-    """Flattens nested InlineBox wrappers into a flat 1D sequence for the line wrapper."""
+    """Flattens nested InlineBox wrappers into a 1D sequence for line wrapper."""
     flat = []
     for b in boxes:
         if isinstance(b, TextBox):
@@ -134,6 +134,14 @@ def _process_text_box(
     white_space = style.get("white-space", "normal")
 
     family, fpdf_style, size = parse_font(style)
+    transform = style.get("text-transform", "none").lower()
+    if transform == "uppercase":
+        content = content.upper()
+    elif transform == "lowercase":
+        content = content.lower()
+    elif transform == "capitalize":
+        content = content.title()
+
     space_width = measure_text(" ", family, size, fpdf_style)
 
     if white_space == "pre":

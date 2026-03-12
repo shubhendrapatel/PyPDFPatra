@@ -117,7 +117,12 @@ def expand_shorthand_properties(style_dict: dict) -> dict:
             _expand_quad_shorthand(prop, val, expanded)
         elif prop == "border":
             _expand_border_shorthand(val, expanded)
+        elif prop == "background":
+            # Simplistic expansion: assume the value contains a color
+            # PyPDFPatra currently only renders colors from background-color
+            expanded["background-color"] = val
         elif prop in ("border-top", "border-right", "border-bottom", "border-left"):
+
             # Expands e.g. 'border-left: 1px solid black' into 'border-left-width', etc.
             temp = {}
             _expand_border_shorthand(val, temp)

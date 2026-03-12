@@ -41,6 +41,14 @@ cdef class Box:
         self.border_bottom = 0.0
         self.border_left   = 0.0
 
+        # Positioning defaults (Phase 9)
+        self.position = "static"
+        self.top = float('nan')
+        self.right = float('nan')
+        self.bottom = float('nan')
+        self.left = float('nan')
+        self.z_index = 0
+
 cdef class BlockBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)

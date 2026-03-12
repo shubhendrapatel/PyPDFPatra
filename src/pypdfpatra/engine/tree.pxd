@@ -41,6 +41,14 @@ cdef class Box:
     cdef public list children
     cdef public object node  # Reference back to the DOM Node
 
+    # Positioning (Phase 9)
+    cdef public str position
+    cdef public double top
+    cdef public double right
+    cdef public double bottom
+    cdef public double left
+    cdef public int z_index
+
 cdef class BlockBox(Box):
     pass
     
