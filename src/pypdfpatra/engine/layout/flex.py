@@ -207,6 +207,9 @@ def _layout_flex_row(
             layout_block_context(c, 0, 0, cb_w, pos_cb=pos_cb, override_w=c.w)
 
         lh = max((_get_outer_height(c) for c in line), default=0.0)
+        if len(lines) == 1 and container_fixed_h > lh:
+            lh = container_fixed_h
+
         line_configs.append({"items": line, "lh": lh, "lw": lw})
         total_lines_h += lh
 
@@ -335,6 +338,7 @@ def _layout_flex_column(
                 shift_box(c, 0, shift_y)
 
     # Alignment
+    from .inline import shift_box
     for c in flow_children:
         c_style = getattr(c.node, "style", {})
         c_align = c_style.get("align-self", "auto").strip().lower()
@@ -352,5 +356,19 @@ def _layout_flex_column(
             layout_block_context(
                 c, content_x, c.y, cb_w, pos_cb=pos_cb, override_w=c.w, override_h=c.h
             )
+        else:
+            # Re-layout to ensure height is correct (if not already stretched)
+            layout_block_context(
+                c, content_x, c.y, cb_w, pos_cb=pos_cb, override_w=c.w, override_h=c.h
+            )
+
+            dx = 0.0
+            if c_align == "flex-end":
+                dx = cb_w - _get_outer_width(c)
+            elif c_align == "center":
+                dx = (cb_w - _get_outer_width(c)) / 2.0
+
+            if dx > 0:
+                shift_box(c, dx, 0)
 
     return content_y + max(total_h, container_fixed_h)
