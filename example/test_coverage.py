@@ -1,4 +1,5 @@
 import os
+
 from pypdfpatra import HTML
 from pypdfpatra.logger import logger
 
