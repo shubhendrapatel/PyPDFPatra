@@ -54,7 +54,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Text Transform**: `uppercase`, `lowercase`, `capitalize`. (✅)
 - **Letter Spacing**: `letter-spacing` (pts/em). (✅)
 - **Font Variants**: `small-caps` simulation. (✅)
-- **Hyphenation**: Automatic line breaking for long words. (⬜)
+- **Hyphenation**: Automatic line breaking for long words. (✅)
 
 ### Phase 13: Graphics & Visual Effects (⬜ Not Started)
 - **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths).
@@ -146,7 +146,8 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `text-decoration: underline / line-through` | ✅ |
 | `vertical-align: sub / super` | ⬜ |
 | `line-height` | ✅ |
-| `text-align: left/center/right` | ✅ |
+| `text-align: left/center/right/justify` | ✅ |
+| `hyphens: auto` | partial (pyphen) |
 | `text-transform: uppercase / lowercase / capitalize` | ✅ |
 | `letter-spacing` | ✅ |
 | `font-variant: small-caps` | ✅ |

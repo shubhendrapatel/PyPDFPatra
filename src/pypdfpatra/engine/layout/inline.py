@@ -6,9 +6,33 @@ Implements the W3C Inline Formatting Context (IFC).
 
 import re
 
+import pyphen
+
 from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
+
+_pyphen_cache = {}
+
+
+def _get_pyphen(lang: str = "en"):
+    if lang not in _pyphen_cache:
+        try:
+            _pyphen_cache[lang] = pyphen.Pyphen(lang=lang)
+        except Exception:
+            _pyphen_cache[lang] = pyphen.Pyphen(lang="en")
+    return _pyphen_cache[lang]
+
+
+def _get_lang(node):
+    curr = node
+    while curr:
+        if hasattr(curr, "props"):
+            lang = curr.props.get("lang")
+            if lang:
+                return lang
+        curr = getattr(curr, "parent", None)
+    return "en"
 
 
 def _flatten_inline(boxes: list[Box]) -> list[Box]:
@@ -48,6 +72,7 @@ def _commit_line(
     cb_w: float,
     parent_box: Box,
     text_align: str = "left",
+    is_last_line: bool = False,
 ) -> float:
     """
     Constructs a LineBox from the accumulated inline boxes and appends it to the parent.
@@ -96,6 +121,16 @@ def _commit_line(
         dx = max(0.0, (cb_w - total_line_width) / 2.0)
     elif text_align == "right":
         dx = max(0.0, cb_w - total_line_width)
+    elif text_align == "justify":
+        # W3C: last line of a paragraph is NOT justified by default (text-align-last).
+        if not is_last_line and len(current_line_boxes) > 1:
+            extra_total = cb_w - total_line_width
+            # Only justify if there's a reasonable amount of text (avoid weird gaps)
+            if extra_total > 0 and extra_total < (cb_w * 0.4):
+                gap_per_word = extra_total / (len(current_line_boxes) - 1)
+                for i, (child, _, _) in enumerate(current_line_boxes):
+                    shift_box(child, i * gap_per_word, 0)
+                total_line_width = cb_w
 
     for item in current_line_boxes:
         child, _, outer_h = item
@@ -167,7 +202,13 @@ def _process_text_box(
         for i, line in enumerate(lines):
             if i > 0:
                 consumed_h, current_y = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
+                    current_line_boxes,
+                    line_x,
+                    current_y,
+                    cb_w,
+                    parent_box,
+                    text_align,
+                    is_last_line=True,
                 )
                 current_line_boxes.clear()
                 current_line_width = 0.0
@@ -177,13 +218,22 @@ def _process_text_box(
                 continue
 
             word_w = measure_text(line, family, size, fpdf_style)
-            if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h, current_y = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
-                )
-                current_line_boxes.clear()
-                current_line_width = 0.0
-                current_line_ends_with_space = False
+            while current_line_width + word_w > cb_w:
+                if current_line_width > 0:
+                    consumed_h, current_y = _commit_line(
+                        current_line_boxes,
+                        line_x,
+                        current_y,
+                        cb_w,
+                        parent_box,
+                        text_align,
+                        is_last_line=False,
+                    )
+                    current_line_boxes.clear()
+                    current_line_width = 0.0
+                    current_line_ends_with_space = False
+                else:
+                    break
 
             word_box = TextBox(text_content=line, node=child.node)
             word_box.w = word_w
@@ -212,6 +262,7 @@ def _process_text_box(
                         cb_w,
                         parent_box,
                         text_align,
+                        is_last_line=True,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
@@ -254,13 +305,122 @@ def _process_text_box(
                 if letter_spacing != 0 and len(token) > 1:
                     word_w += (len(token) - 1) * letter_spacing
 
-            if current_line_width + word_w > cb_w and current_line_width > 0:
-                consumed_h, current_y = _commit_line(
-                    current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
-                )
-                current_line_boxes.clear()
-                current_line_width = 0.0
-                current_line_ends_with_space = False
+            if current_line_width + word_w > cb_w:
+                hyphens_mode = style.get("hyphens", "manual").lower()
+                if hyphens_mode == "auto":
+                    lang = _get_lang(child.node).split("-")[0]
+                    dic = _get_pyphen(lang)
+
+                    # Try to hyphenate the word
+                    hyphenated = dic.iterate(token)
+                    remaining_space = cb_w - current_line_width
+                    hyphen_w = measure_text("-", family, size, fpdf_style)
+
+                    best_prefix = None
+                    best_prefix_w = 0.0
+                    leftover = token
+
+                    for prefix, suffix in hyphenated:
+                        # Prefix width + hyphen must fit
+                        p_w = measure_text(prefix, family, size, fpdf_style)
+                        if variant == "small-caps":
+                            # Accurate small-caps measurement for prefix
+                            p_w = 0.0
+                            for char in prefix:
+                                if char.islower():
+                                    p_w += (
+                                        measure_text(
+                                            char.upper(), family, size * 0.8, fpdf_style
+                                        )
+                                        + letter_spacing
+                                    )
+                                else:
+                                    p_w += (
+                                        measure_text(char, family, size, fpdf_style)
+                                        + letter_spacing
+                                    )
+                            if prefix:
+                                p_w -= letter_spacing
+                        elif letter_spacing != 0 and len(prefix) > 1:
+                            p_w += (len(prefix) - 1) * letter_spacing
+
+                        if p_w + hyphen_w <= remaining_space:
+                            best_prefix = prefix + "-"
+                            best_prefix_w = p_w + hyphen_w
+                            leftover = suffix
+                            break  # Found the longest prefix that fits
+
+                    if best_prefix:
+                        # Commit the prefix and hyphen
+                        p_box = TextBox(text_content=best_prefix, node=child.node)
+                        p_box.w = best_prefix_w
+                        p_box.h = get_line_height(family, size, fpdf_style)
+                        p_box.x = line_x + current_line_width
+                        p_box.y = 0.0
+                        current_line_boxes.append((p_box, best_prefix_w, p_box.h))
+
+                        consumed_h, current_y = _commit_line(
+                            current_line_boxes,
+                            line_x,
+                            current_y,
+                            cb_w,
+                            parent_box,
+                            text_align,
+                        )
+                        current_line_boxes.clear()
+                        current_line_width = 0.0
+                        current_line_ends_with_space = False
+
+                        # Process the remaining part of the word as the new token
+                        token = leftover
+                        # Re-calculate word_w for the leftover
+                        if variant == "small-caps":
+                            word_w = 0.0
+                            for char in token:
+                                if char.islower():
+                                    word_w += (
+                                        measure_text(
+                                            char.upper(), family, size * 0.8, fpdf_style
+                                        )
+                                        + letter_spacing
+                                    )
+                                else:
+                                    word_w += (
+                                        measure_text(char, family, size, fpdf_style)
+                                        + letter_spacing
+                                    )
+                            if token:
+                                word_w -= letter_spacing
+                        else:
+                            word_w = measure_text(token, family, size, fpdf_style)
+                            if letter_spacing != 0 and len(token) > 1:
+                                word_w += (len(token) - 1) * letter_spacing
+                    elif current_line_width > 0:
+                        consumed_h, current_y = _commit_line(
+                            current_line_boxes,
+                            line_x,
+                            current_y,
+                            cb_w,
+                            parent_box,
+                            text_align,
+                            is_last_line=False,
+                        )
+                        current_line_boxes.clear()
+                        current_line_width = 0.0
+                        current_line_ends_with_space = False
+                elif current_line_width > 0:
+                    consumed_h, current_y = _commit_line(
+                        current_line_boxes,
+                        line_x,
+                        current_y,
+                        cb_w,
+                        parent_box,
+                        text_align,
+                        is_last_line=False,
+                    )
+                    current_line_boxes.clear()
+                    current_line_width = 0.0
+                    current_line_ends_with_space = False
 
             word_box = TextBox(text_content=token, node=child.node)
             word_box.w = word_w
@@ -439,8 +599,15 @@ def layout_inline_context(
                 )
             )
 
+    # Final commit for the last remaining line of the paragraph
     consumed_h, current_y = _commit_line(
-        current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
+        current_line_boxes,
+        line_x,
+        current_y,
+        cb_w,
+        parent_box,
+        text_align,
+        is_last_line=True,
     )
 
     # The parent block box height expands to fit all the line boxes

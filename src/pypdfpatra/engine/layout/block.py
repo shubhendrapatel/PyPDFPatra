@@ -32,9 +32,12 @@ PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
 
 
 def _parse_length(
-    value: str, parent_value: float, default_auto: float | None = 0.0
+    value: str,
+    parent_value: float,
+    default_auto: float | None = 0.0,
+    font_size: float = 12.0,
 ) -> float | None:
-    """Parse a CSS length string (e.g. '10px', '50%') to a float (points)."""
+    """Parse a CSS length string (e.g. '10px', '50%', '10pt') to a float (points)."""
     if not value:
         return default_auto
     value = value.strip().lower()
@@ -43,6 +46,16 @@ def _parse_length(
     try:
         if value.endswith("px"):
             return float(value[:-2])
+        elif value.endswith("pt"):
+            return float(value[:-2])
+        elif value.endswith("in"):
+            return float(value[:-2]) * 72.0
+        elif value.endswith("cm"):
+            return float(value[:-2]) * 72.0 / 2.54
+        elif value.endswith("mm"):
+            return float(value[:-2]) * 72.0 / 25.4
+        elif value.endswith("em"):
+            return float(value[:-2]) * font_size
         elif value.endswith("%"):
             return float(value[:-1]) / 100.0 * parent_value
         else:
@@ -55,24 +68,57 @@ def _resolve_box_geometry(
     box: Box, aw: float, style: dict, pos_cb: PosCB = None
 ) -> tuple[str, float]:
     """Resolves margin, padding, border, and width metrics."""
+    # Resolve font-size for 'em' units
+    fs_str = style.get("font-size", "12pt").strip().lower()
+    font_size = 12.0
+    if fs_str.endswith("pt"):
+        try:
+            font_size = float(fs_str[:-2])
+        except ValueError:
+            pass
+    elif fs_str.endswith("px"):
+        try:
+            font_size = float(fs_str[:-2])
+        except ValueError:
+            pass
+
     # Parse spacing.
-    margin_top = _parse_length(style.get("margin-top", "0px"), aw)
-    margin_bottom = _parse_length(style.get("margin-bottom", "0px"), aw)
+    margin_top = _parse_length(style.get("margin-top", "0px"), aw, font_size=font_size)
+    margin_bottom = _parse_length(
+        style.get("margin-bottom", "0px"), aw, font_size=font_size
+    )
 
     margin_left_str = style.get("margin-left", "0px").strip().lower()
     margin_right_str = style.get("margin-right", "0px").strip().lower()
-    margin_left = _parse_length(margin_left_str, aw)
-    margin_right = _parse_length(margin_right_str, aw)
 
-    padding_top = _parse_length(style.get("padding-top", "0px"), aw)
-    padding_bottom = _parse_length(style.get("padding-bottom", "0px"), aw)
-    padding_left = _parse_length(style.get("padding-left", "0px"), aw)
-    padding_right = _parse_length(style.get("padding-right", "0px"), aw)
+    margin_left = _parse_length(margin_left_str, aw, font_size=font_size)
+    margin_right = _parse_length(margin_right_str, aw, font_size=font_size)
 
-    border_top = _parse_length(style.get("border-top-width", "0px"), aw)
-    border_bottom = _parse_length(style.get("border-bottom-width", "0px"), aw)
-    border_left = _parse_length(style.get("border-left-width", "0px"), aw)
-    border_right = _parse_length(style.get("border-right-width", "0px"), aw)
+    padding_top = _parse_length(
+        style.get("padding-top", "0px"), aw, font_size=font_size
+    )
+    padding_bottom = _parse_length(
+        style.get("padding-bottom", "0px"), aw, font_size=font_size
+    )
+    padding_left = _parse_length(
+        style.get("padding-left", "0px"), aw, font_size=font_size
+    )
+    padding_right = _parse_length(
+        style.get("padding-right", "0px"), aw, font_size=font_size
+    )
+
+    border_top = _parse_length(
+        style.get("border-top-width", "0px"), aw, font_size=font_size
+    )
+    border_bottom = _parse_length(
+        style.get("border-bottom-width", "0px"), aw, font_size=font_size
+    )
+    border_left = _parse_length(
+        style.get("border-left-width", "0px"), aw, font_size=font_size
+    )
+    border_right = _parse_length(
+        style.get("border-right-width", "0px"), aw, font_size=font_size
+    )
 
     if style.get("border-top-style", "none") in ("none", "hidden"):
         border_top = 0.0
@@ -91,7 +137,7 @@ def _resolve_box_geometry(
     # --- W3C Width Calculation ---
     box_sizing = style.get("box-sizing", "content-box").strip().lower()
     css_width_str = style.get("width", "auto").strip().lower()
-    css_width = _parse_length(css_width_str, aw, default_auto=None)
+    css_width = _parse_length(css_width_str, aw, default_auto=None, font_size=font_size)
 
     if css_width is not None:
         if box_sizing == "border-box":

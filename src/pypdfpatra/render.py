@@ -342,8 +342,9 @@ def _draw_text(
     family, fpdf_style, size = parse_font(style)
 
     # Map CSS text-align to FPDF align code
-    align_map = {"left": "L", "center": "C", "right": "R", "justify": "J"}
-    fpdf_align = align_map.get(style.get("text-align", "left"), "L")
+    # NOTE: We map all to "L" because the layout engine (IFC) pre-calculates
+    # absolute x/y coordinates for every TextBox after alignment shifts.
+    fpdf_align = "L"
 
     # Font and color settings
     pdf.set_text_color(r, g, b)

@@ -35,6 +35,7 @@ INHERITED_PROPERTIES = frozenset(
         "text-transform",
         "letter-spacing",
         "font-variant",
+        "hyphens",
     }
 )
 
