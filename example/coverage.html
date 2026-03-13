@@ -440,6 +440,7 @@
             <li><a href="#section-flex">13. Flexbox Layout</a></li>
             <li><a href="#section-paged-pro">14. Professional Paged Media (@page)</a></li>
             <li><a href="#section-breaks">15. Page Break Controls</a></li>
+            <li><a href="#section-typo-adv">16. Advanced Typography & Formatting</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -1128,6 +1129,28 @@
             <p style="page-break-before: always; border: 2px solid red; padding: 10px;">
                 This paragraph also forced a new page!
             </p>
+        </div>
+        <h2 id="section-typo-adv" style="page-break-before: always;">16. Advanced Typography & Formatting</h2>
+        <div class="section">
+            <p>This section explores Phase 12 features like letter-spacing and simulated small-caps.</p>
+
+            <h3>Letter Spacing</h3>
+            <p style="letter-spacing: 2px;">This paragraph has <code>letter-spacing: 2px</code>. It feels more airy and
+                spaced out.</p>
+            <p style="letter-spacing: 5px; font-weight: bold; color: #004d99;">ULTRA WIDE TRACKING (5px)</p>
+            <p style="letter-spacing: -1px;">Tight tracking with <code>letter-spacing: -1px</code>. Letters are closer
+                together.</p>
+
+            <h3>Font Variant (Small-Caps)</h3>
+            <p style="font-variant: small-caps; font-size: 20px;">This is a Small-Caps demonstration. Lowercase letters
+                become small capitals.</p>
+            <p>Mixed case: <span style="font-variant: small-caps; color: #d9363e;">PyPDFPatra Engine</span> (Notice how
+                P
+                and E stay full size while others shrink).</p>
+
+            <h3>Text Transform Recap</h3>
+            <p style="text-transform: uppercase;">this was lowercase html but rendered as uppercase.</p>
+            <p style="text-transform: capitalize;">this is capitalized via css transform.</p>
         </div>
 </body>
 

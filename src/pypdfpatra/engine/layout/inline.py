@@ -138,6 +138,20 @@ def _process_text_box(
     white_space = style.get("white-space", "normal")
 
     family, fpdf_style, size = parse_font(style)
+
+    # Phase 12: Support letter-spacing
+    ls_str = style.get("letter-spacing", "normal").strip().lower()
+    letter_spacing = 0.0
+    if ls_str != "normal":
+        if ls_str.endswith("px") or ls_str.endswith("pt"):
+            letter_spacing = float(ls_str[:-2])
+        elif ls_str.endswith("em"):
+            letter_spacing = float(ls_str[:-2]) * size
+        else:
+            try:
+                letter_spacing = float(ls_str)
+            except ValueError:
+                pass
     transform = style.get("text-transform", "none").lower()
     if transform == "uppercase":
         content = content.upper()
@@ -213,11 +227,33 @@ def _process_text_box(
                     current_line_ends_with_space = True
                 continue
 
+            variant = style.get("font-variant", "normal").lower()
             if token.lower().startswith("target-counter"):
                 # Estimate width as a 2-digit page number for layout purposes
                 word_w = measure_text("00", family, size, fpdf_style)
+            elif variant == "small-caps":
+                word_w = 0.0
+                small_size = size * 0.8
+                for char in token:
+                    if char.islower():
+                        word_w += (
+                            measure_text(char.upper(), family, small_size, fpdf_style)
+                            + letter_spacing
+                        )
+                    else:
+                        word_w += (
+                            measure_text(char, family, size, fpdf_style)
+                            + letter_spacing
+                        )
+                # Subtract trailing letter spacing as it's added inside the loop
+                if token:
+                    word_w -= letter_spacing
             else:
                 word_w = measure_text(token, family, size, fpdf_style)
+                # Phase 12: Apply letter-spacing to width
+                if letter_spacing != 0 and len(token) > 1:
+                    word_w += (len(token) - 1) * letter_spacing
+
             if current_line_width + word_w > cb_w and current_line_width > 0:
                 consumed_h, current_y = _commit_line(
                     current_line_boxes, line_x, current_y, cb_w, parent_box, text_align

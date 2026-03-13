@@ -33,6 +33,8 @@ INHERITED_PROPERTIES = frozenset(
         "white-space",
         "list-style-type",
         "text-transform",
+        "letter-spacing",
+        "font-variant",
     }
 )
 

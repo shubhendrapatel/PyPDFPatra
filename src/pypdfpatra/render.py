@@ -345,14 +345,42 @@ def _draw_text(
     align_map = {"left": "L", "center": "C", "right": "R", "justify": "J"}
     fpdf_align = align_map.get(style.get("text-align", "left"), "L")
 
-    # Font and color settings MUST follow _ensure_page to avoid state
-    # desync on new pages
+    # Font and color settings
     pdf.set_text_color(r, g, b)
     from pypdfpatra.engine.font_metrics import FontMetrics
 
-    FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
+    metrics = FontMetrics.get_instance()
+    metrics.set_font_safe(pdf, family, size, fpdf_style)
 
-    pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
+    # Phase 12: Handle letter-spacing and small-caps
+    ls_str = style.get("letter-spacing", "normal").strip().lower()
+    letter_spacing = 0.0
+    if ls_str != "normal":
+        if ls_str.endswith("px") or ls_str.endswith("pt"):
+            letter_spacing = float(ls_str[:-2])
+        elif ls_str.endswith("em"):
+            letter_spacing = float(ls_str[:-2]) * size
+
+    variant = style.get("font-variant", "normal").lower()
+
+    # Phase 12: Manual character drawing for letter-spacing/small-caps
+    if letter_spacing != 0 or variant == "small-caps":
+        current_x = content_x
+        small_size = size * 0.8
+
+        for char in text_content:
+            is_small = variant == "small-caps" and char.islower()
+            draw_size = small_size if is_small else size
+            char_to_draw = char.upper() if is_small else char
+
+            metrics.set_font_safe(pdf, family, draw_size, fpdf_style)
+            c_w = pdf.get_string_width(char_to_draw) + letter_spacing
+
+            pdf.set_xy(current_x, local_y)
+            pdf.cell(w=c_w, h=box.h, text=char_to_draw)
+            current_x += c_w
+    else:
+        pdf.cell(w=box.w, h=box.h, text=text_content, align=fpdf_align)
 
     # Draw text decoration lines (underline and line-through)
     decoration = style.get("text-decoration", "none").strip().lower()

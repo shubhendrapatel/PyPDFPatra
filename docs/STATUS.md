@@ -52,9 +52,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 
 ### Phase 12: Advanced Typography & Formatting (✅ Done)
 - **Text Transform**: `uppercase`, `lowercase`, `capitalize`. (✅)
-- **Letter Spacing**: `letter-spacing` (pts/em). (⬜)
-- **Font Variants**: `small-caps`, ligatures, and OpenType features.
-- **Hyphenation**: Automatic line breaking for long words.
+- **Letter Spacing**: `letter-spacing` (pts/em). (✅)
+- **Font Variants**: `small-caps` simulation. (✅)
+- **Hyphenation**: Automatic line breaking for long words. (⬜)
 
 ### Phase 13: Graphics & Visual Effects (⬜ Not Started)
 - **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths).
@@ -148,8 +148,8 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `line-height` | ✅ |
 | `text-align: left/center/right` | ✅ |
 | `text-transform: uppercase / lowercase / capitalize` | ✅ |
-| `letter-spacing` | 🔄 (Phase 12) |
-| `font-variant: small-caps / numeric` | 🔄 (Phase 12) |
+| `letter-spacing` | ✅ |
+| `font-variant: small-caps` | ✅ |
 | Inline text line-wrapping (IFC) | ✅ |
 
 ### Backgrounds & Colors (CSS2.1 §14)
