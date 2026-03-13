@@ -3,6 +3,7 @@ pypdfpatra.engine.layout.inline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Implements the W3C Inline Formatting Context (IFC).
 """
+import re
 
 from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
@@ -178,10 +179,12 @@ def _process_text_box(
             current_line_width += word_w
             current_line_boxes.append((word_box, word_w, word_box.h))
     else:
-        import re
         # Preserve newlines and spaces, then handle them according to
-        # white-space property
-        tokens = re.split(r"([ \t\n\r]+)", content)
+        # white-space property.
+        # PROTECT target-counter(...) from being split by spaces
+        tokens = re.split(
+            r"(target-counter\s*\(.*?\)|[ \t\n\r]+)", content, flags=re.IGNORECASE
+        )
         tokens = [t for t in tokens if t]
 
         for token in tokens:
@@ -209,7 +212,11 @@ def _process_text_box(
                     current_line_ends_with_space = True
                 continue
 
-            word_w = measure_text(token, family, size, fpdf_style)
+            if token.lower().startswith("target-counter"):
+                # Estimate width as a 2-digit page number for layout purposes
+                word_w = measure_text("00", family, size, fpdf_style)
+            else:
+                word_w = measure_text(token, family, size, fpdf_style)
             if current_line_width + word_w > cb_w and current_line_width > 0:
                 consumed_h, current_y = _commit_line(
                     current_line_boxes, line_x, current_y, cb_w, parent_box, text_align

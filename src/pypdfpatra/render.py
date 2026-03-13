@@ -259,6 +259,7 @@ def _draw_text(
     border_box_y: float,
     border_top: float,
     border_left: float,
+    anchor_map: dict = None,
 ) -> None:
     """
     Paints correctly formatted and styled inline text primitives or
@@ -278,6 +279,30 @@ def _draw_text(
         text_content = text_content.lower()
     elif transform == "capitalize":
         text_content = text_content.title()
+
+    # Phase 11: Resolve cross-references in text: target-counter(#id, page)
+    if "target-counter" in text_content and anchor_map:
+        import re
+
+        tc_regex = r"target-counter\(([^,]+),\s*page\)"
+        matches = re.findall(tc_regex, text_content)
+        for target_id_raw in matches:
+            target_id = target_id_raw.strip("#'\" ")
+            if target_id in anchor_map:
+                val = anchor_map[target_id]
+                if isinstance(val, tuple):
+                    replacement = str(val[1] + 1)
+                    text_content = text_content.replace(
+                        f"target-counter({target_id_raw}, page)", replacement
+                    )
+                else:
+                    text_content = text_content.replace(
+                        f"target-counter({target_id_raw}, page)", "??"
+                    )
+            else:
+                text_content = text_content.replace(
+                    f"target-counter({target_id_raw}, page)", "??"
+                )
 
     content_x = border_box_x + border_left + box.padding_left
     content_y = border_box_y + border_top + box.padding_top
@@ -407,23 +432,24 @@ def draw_boxes(
     """
     if string_map is None:
         string_map = {}
+
     # Phase 9: Stacking Order (z-index)
     # W3C Appendix E: Positioned elements paint after non-positioned ones.
     def stacking_key(b):
         zi = getattr(b, "z_index", 0)
         pos = getattr(b, "position", "static")
-        is_pos = (pos != "static")
+        is_pos = pos != "static"
 
         # Level 1: Negative Z-index positioned
         # Level 2: Normal flow (is_pos=False)
         # Level 3: Z-index >= 0 positioned
         if is_pos:
             if zi < 0:
-                return (0, zi) # Level 0, then sort by zi
+                return (0, zi)  # Level 0, then sort by zi
             else:
-                return (2, zi) # Level 2, then sort by zi
+                return (2, zi)  # Level 2, then sort by zi
         else:
-            return (1, 0) # Level 1 (normal flow)
+            return (1, 0)  # Level 1 (normal flow)
 
     sorted_boxes = sorted(boxes, key=stacking_key)
 
@@ -443,18 +469,10 @@ def draw_boxes(
         border_box_x = box.x + box.margin_left
         border_box_y = (box.y + dy) + box.margin_top
         border_box_w = (
-            border_left
-            + box.padding_left
-            + box.w
-            + box.padding_right
-            + border_right
+            border_left + box.padding_left + box.w + box.padding_right + border_right
         )
         border_box_h = (
-            border_top
-            + box.padding_top
-            + box.h
-            + box.padding_bottom
-            + border_bottom
+            border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
         )
 
         if box.__class__.__name__ == "TableBox":
@@ -497,6 +515,7 @@ def draw_boxes(
             # Format: name content()
             # Simplified: name content()
             import re
+
             match = re.search(r"(\w+)\s+content\(", string_set)
             if match:
                 sname = match.group(1)
@@ -534,7 +553,14 @@ def draw_boxes(
 
         if isinstance(box, TextBox) or box.__class__.__name__ == "MarkerBox":
             _draw_text(
-                pdf, box, style, border_box_x, border_box_y, border_top, border_left
+                pdf,
+                box,
+                style,
+                border_box_x,
+                border_box_y,
+                border_top,
+                border_left,
+                anchor_map=anchor_map,
             )
 
         # PDF Bookmarks (Outlines) for Headings (Phase 7)
@@ -586,7 +612,13 @@ def draw_boxes(
                         draw_boxes(pdf, thead_rows, dy=repeat_dy, anchor_map=anchor_map)
 
 
-def draw_page_margin_boxes(pdf: fpdf.FPDF, page_rules: list[PageRule], total_pages: int, anchor_map: dict = None, string_map: dict = None):
+def draw_page_margin_boxes(
+    pdf: fpdf.FPDF,
+    page_rules: list[PageRule],
+    total_pages: int,
+    anchor_map: dict = None,
+    string_map: dict = None,
+):
     """Draws margin boxes (@top-left, etc) on every page."""
     from pypdfpatra.defaults import (
         DEFAULT_MARGIN_BOTTOM,
@@ -598,7 +630,7 @@ def draw_page_margin_boxes(pdf: fpdf.FPDF, page_rules: list[PageRule], total_pag
     )
 
     if string_map is None:
-        string_map = {} # Maps page_idx -> {string_name: value}
+        string_map = {}  # Maps page_idx -> {string_name: value}
 
     pdf._suppress_page_jump = True
     for page_idx in range(total_pages):
@@ -606,10 +638,14 @@ def draw_page_margin_boxes(pdf: fpdf.FPDF, page_rules: list[PageRule], total_pag
         page_style = resolve_page_style(page_rules, page_idx)
 
         # Determine actual margins for this page (from @page { margin: ... })
-        ml = float(page_style.style.get("margin-left", str(DEFAULT_MARGIN_LEFT)).replace("pt", ""))
-        mr = float(page_style.style.get("margin-right", str(DEFAULT_MARGIN_RIGHT)).replace("pt", ""))
-        mt = float(page_style.style.get("margin-top", str(DEFAULT_MARGIN_TOP)).replace("pt", ""))
-        mb = float(page_style.style.get("margin-bottom", str(DEFAULT_MARGIN_BOTTOM)).replace("pt", ""))
+        def _get_m(key, default, style):
+            val = style.get(key, str(default))
+            return float(val.replace("pt", ""))
+
+        ml = _get_m("margin-left", DEFAULT_MARGIN_LEFT, page_style.style)
+        mr = _get_m("margin-right", DEFAULT_MARGIN_RIGHT, page_style.style)
+        mt = _get_m("margin-top", DEFAULT_MARGIN_TOP, page_style.style)
+        mb = _get_m("margin-bottom", DEFAULT_MARGIN_BOTTOM, page_style.style)
 
         content_w = PAGE_WIDTH - ml - mr
 
@@ -632,26 +668,35 @@ def draw_page_margin_boxes(pdf: fpdf.FPDF, page_rules: list[PageRule], total_pag
 
             # Resolve named strings: string(name)
             import re
+
             string_matches = re.findall(r"string\(([^)]+)\)", content)
             for sname in string_matches:
                 val = curr_strings.get(sname, "")
                 content = content.replace(f"string({sname})", val)
 
             # Resolve cross-references: target-counter(#id, page)
-            target_counter_matches = re.findall(r"target-counter\(([^,]+),\s*page\)", content)
+            tc_regex = r"target-counter\(([^,]+),\s*page\)"
+            target_counter_matches = re.findall(tc_regex, content)
             for target_id_raw in target_counter_matches:
                 target_id = target_id_raw.strip("#'\" ")
                 if anchor_map and target_id in anchor_map:
                     # In fpdf2, link destination doesn't easily expose page number
-                    # But we stored it in register_anchors! Wait, we didn't store page index in anchor_map values.
+                    # But we stored it in register_anchors!
                     # Let's fix register_anchors to store (link_id, page_idx)
                     val = anchor_map[target_id]
                     if isinstance(val, tuple):
-                        content = content.replace(f"target-counter({target_id_raw}, page)", str(val[1] + 1))
+                        replacement = str(val[1] + 1)
+                        content = content.replace(
+                            f"target-counter({target_id_raw}, page)", replacement
+                        )
                     else:
-                        content = content.replace(f"target-counter({target_id_raw}, page)", "??")
+                        content = content.replace(
+                            f"target-counter({target_id_raw}, page)", "??"
+                        )
                 else:
-                    content = content.replace(f"target-counter({target_id_raw}, page)", "??")
+                    content = content.replace(
+                        f"target-counter({target_id_raw}, page)", "??"
+                    )
 
             content = content.strip("\"'")
 
@@ -689,10 +734,11 @@ def draw_page_margin_boxes(pdf: fpdf.FPDF, page_rules: list[PageRule], total_pag
 
             pdf.set_text_color(r, g, b)
             from pypdfpatra.engine.font_metrics import FontMetrics
+
             FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
 
             pdf.set_xy(x, y)
-            fpdf_align = {"left":"L", "center":"C", "right":"R"}.get(align, "C")
+            fpdf_align = {"left": "L", "center": "C", "right": "R"}.get(align, "C")
             pdf.cell(w=w, h=h, text=content, align=fpdf_align)
 
     pdf._suppress_page_jump = False

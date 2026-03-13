@@ -32,6 +32,24 @@
             border: 1px solid #ddd;
         }
 
+        #toc {
+            page-break-before: always;
+            padding: 20px !important;
+            background-color: #f9f9f9;
+            border: 2px solid #004d99;
+        }
+
+        #toc h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        #toc li a::after {
+            content: " ................. " target-counter(attr(href), page);
+            color: #888;
+            font-size: 0.95em;
+        }
+
         /* 1. Box Model & Borders */
         .border-solid {
             border: 2px solid black;
@@ -399,10 +417,12 @@
     <div class="pos-fixed-header"><b>PyPDFPatra Global Header</b> (position: fixed - repeats on every page)</div>
     <div class="pos-fixed-footer"><b>PyPDFPatra Global Footer</b> (position: fixed - repeats on every page)</div>
 
-    <h1>PyPDFPatra Coverage Showcase</h1>
-    <p>This document demonstrates the full range of supported W3C CSS features in the current engine.</p>
+    <div style="text-align: center; margin-top: 150px; margin-bottom: 300px;">
+        <h1 style="border-bottom: none; font-size: 36px;">PyPDFPatra Coverage Showcase</h1>
+        <p style="font-size: 18px; color: #666;">A comprehensive demonstration of W3C CSS Paged Media support.</p>
+    </div>
 
-    <div class="section" style="background-color: #f9f9f9; padding: 20px; border: 2px solid #004d99;">
+    <div class="section" id="toc">
         <h2 style="margin-top: 0;">Table of Contents (Internal Links)</h2>
         <ul style="line-height: 1.8;">
             <li><a href="#section-box">1. Visual Box Model & Borders</a></li>
@@ -419,6 +439,7 @@
             <li><a href="#section-pos">12. Positioning & Stacking</a></li>
             <li><a href="#section-flex">13. Flexbox Layout</a></li>
             <li><a href="#section-paged-pro">14. Professional Paged Media (@page)</a></li>
+            <li><a href="#section-breaks">15. Page Break Controls</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -1093,7 +1114,20 @@
             </div>
 
             <p>The margin boxes (top and bottom) are defined in CSS using <code>@top-center</code> and
-                <code>@bottom-right</code>.</p>
+                <code>@bottom-right</code>.
+            </p>
+        </div>
+        <h2 id="section-breaks" style="page-break-before: always;">15. Page Break Controls</h2>
+        <div class="section">
+            <p>This section was forced to start on a new page using <code>page-break-before: always</code>.</p>
+            <div style="background: #fffbe6; padding: 15px; border: 1px solid #ffe58f; margin-bottom: 500px;">
+                This block has a large margin-bottom to push content, but the next heading will start on a new page
+                anyway
+                if we used <code>page-break-after</code> or <code>before</code>.
+            </div>
+            <p style="page-break-before: always; border: 2px solid red; padding: 10px;">
+                This paragraph also forced a new page!
+            </p>
         </div>
 </body>
 

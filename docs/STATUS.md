@@ -63,7 +63,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 
 ### Phase 14: Multi-Column Layout (⬜ Not Started)
 - **CSS Multi-col**: `columns`, `column-gap`, `column-rule`.
-- **Break Control**: `break-inside: avoid`, `break-after: page`.
+- **Break Control**: `break-inside: avoid`, `break-after: page`. (✅ `page-break-before/after: always` and `page-break-inside: avoid` implemented)
 
 ### Phase 15: Interactive PDF Forms (⬜ Not Started)
 - **AcroForms**: Fillable text inputs, checkboxes, and radio buttons.

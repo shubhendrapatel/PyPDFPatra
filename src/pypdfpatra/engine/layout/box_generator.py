@@ -12,6 +12,8 @@ Elements with `display: none` are dropped. Nodes are converted into:
 
 from __future__ import annotations
 
+import re
+
 from pypdfpatra.engine.image import get_image_info
 from pypdfpatra.engine.tree import (
     BlockBox,
@@ -162,8 +164,19 @@ def _process_pseudo_elements(node: Node, box: Box, base_url: str):
     # Handle ::before
     before_style = node.pseudos.get("before")
     if before_style and "content" in before_style:
-        content_val = before_style["content"].strip("'\"")
+        content_val = before_style["content"]
         if content_val and content_val != "none":
+            # 1. Resolve attr(...) - e.g. attr(href)
+            def _resolve_attr(match):
+                attr_name = match.group(1)
+                return getattr(node, "props", {}).get(attr_name, "")
+
+            content_val = re.sub(r"attr\((\w+)\)", _resolve_attr, content_val)
+
+            # 2. Cleanup quotes from strings in content property
+            # content: "Page " target-counter(...) -> Page target-counter(...)
+            content_val = content_val.replace('"', "").replace("'", "")
+
             pseudo_node = Node(tag="#text", props={})
             pseudo_node.parent = node
             pseudo_node.style = before_style.copy()
@@ -175,8 +188,18 @@ def _process_pseudo_elements(node: Node, box: Box, base_url: str):
     # Handle ::after
     after_style = node.pseudos.get("after")
     if after_style and "content" in after_style:
-        content_val = after_style["content"].strip("'\"")
+        content_val = after_style["content"]
         if content_val and content_val != "none":
+            # 1. Resolve attr(...) - e.g. attr(href)
+            def _resolve_attr(match):
+                attr_name = match.group(1)
+                return getattr(node, "props", {}).get(attr_name, "")
+
+            content_val = re.sub(r"attr\((\w+)\)", _resolve_attr, content_val)
+
+            # 2. Cleanup quotes
+            content_val = content_val.replace('"', "").replace("'", "")
+
             pseudo_node = Node(tag="#text", props={})
             pseudo_node.parent = node
             pseudo_node.style = after_style.copy()

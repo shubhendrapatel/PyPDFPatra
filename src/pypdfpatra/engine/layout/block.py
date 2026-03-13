@@ -261,8 +261,21 @@ def _layout_block_children(
             from .table import layout_table_context
 
             child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
-            child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
+            # Phase 11: Support page-break-before: always
+            if child_style.get("page-break-before") == "always":
+                current_border_box_bottom = (
+                    current_page_idx + 1
+                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                current_page_idx += 1
+                page_boundary = (
+                    (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+                )
+                # Forced breaks reset margin collapsing
+                prev_margin_bottom = 0.0
+                first_child = True
 
+            child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
+            # ... existing margin collapse logic ...
             if first_child:
                 collapsed_margin = child_mt
                 first_child = False
@@ -304,7 +317,10 @@ def _layout_block_children(
                     )
             else:
                 # Predictive break for normal blocks: only if they have content
-                if (child_box.children or getattr(child_box.node, "pseudos", {})) and child_margin_box_y + 15 > page_boundary:
+                has_content = (
+                    child_box.children or getattr(child_box.node, "pseudos", {})
+                )
+                if has_content and child_margin_box_y + 15 > page_boundary:
                     current_border_box_bottom = (
                         current_page_idx + 1
                     ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
@@ -331,7 +347,16 @@ def _layout_block_children(
                 + child_box.h
                 + child_box.padding_bottom
             )
+
+            # Phase 11: Support page-break-after: always
+            if child_style.get("page-break-after") == "always":
+                page_idx_after = int(current_border_box_bottom / PAGE_HEIGHT)
+                current_border_box_bottom = (
+                    page_idx_after + 1
+                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+
             prev_margin_bottom = child_box.margin_bottom
+            first_child = False  # Ensure subsequent children aren't first_child
 
         elif child_box.__class__.__name__ == "MarkerBox":
             from pypdfpatra.engine.font_metrics import (

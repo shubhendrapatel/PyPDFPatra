@@ -106,4 +106,24 @@ The W3C cascade inheritance model correctly propagates the following special key
 * **`inherit`** (CSS 2.1): Specifically pulls the parent's computed property.
 * **`currentColor`** (CSS 3 Color Module): Syncs styling properties (like borders) strictly to the rendered text color scalar.
 * **`transparent`** (CSS 2.1): Renders 0,0,0 scalar internally but bypasses background fill.
+## Paged Media (W3C Paged Media Module)
+* **`@page` Rules**: Define custom page sizes (e.g., `A4`, `letter`) and margins.
+* **Margin Boxes**: Support for standard W3C margin boxes:
+    * `@top-left`, `@top-center`, `@top-right`
+    * `@bottom-left`, `@bottom-center`, `@bottom-right`
+* **Page Counters**: `counter(page)` and `counter(pages)` supported in `content`.
+* **Named Strings (Phase 11)**: `string-set` and `string()` support for dynamic headers (e.g., repeating the nearest `<h2>` title).
 
+## Page Break Controls (CSS Fragmentation Level 3)
+* **`page-break-before: always`**: Forces elment to start on a new PDF page.
+* **`page-break-after: always`**: Forces subsequent content to a new page.
+* **`page-break-inside: avoid`**: Prevents a block (like a table row or image) from being split across page boundaries.
+
+## Cross-References & Generated Content
+* **`target-counter(#id, page)`**: Resolves the target's physical page number.
+* **`attr(name)`**: Support for pulling attribute values (like `href`) into `content` pseudo-elements.
+* **Function resolution**: Support for mixing strings, `attr()`, and `target-counter()` in the same `content` declaration.
+
+## Interactive Navigation
+* **Internal Links**: Support for `href="#id"` for document-level navigation.
+* **PDF Bookmarks**: Automatic generation of PDF "Outlines" (bookmarks sidebar) from heading tags (`<h1>`-`<h6>`).
