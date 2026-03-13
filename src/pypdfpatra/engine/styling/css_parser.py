@@ -11,6 +11,7 @@ from typing import List
 import tinycss2
 
 from pypdfpatra.engine.font_metrics import FontMetrics
+from pypdfpatra.engine.page import parse_page_rule
 from pypdfpatra.engine.tree import Node
 
 __all__ = ["parse_stylesheets"]
@@ -114,29 +115,41 @@ def _register_font_face(rule: tinycss2.ast.AtRule, base_url: str):
                 )
 
 
-def parse_stylesheets(root_node: Node, base_url: str = "") -> List[tinycss2.ast.Node]:
+def parse_stylesheets(root_node: Node, base_url: str = "") -> dict:
     """
     Finds CSS sources in the DOM, extracts text, handles @font-face loading,
     and parses them into tinycss2 AST rules for cascading.
+    
+    Returns:
+        dict: {
+            "qualified_rules": List[tinycss2.ast.QualifiedRule],
+            "page_rules": List[PageRule]
+        }
     """
     css_sources: List[str] = []
     _find_css_sources(root_node, css_sources, base_url)
 
-    all_rules: List[tinycss2.ast.Node] = []
+    qualified_rules: List[tinycss2.ast.QualifiedRule] = []
+    page_rules = []
 
     for css_text in css_sources:
         rules = tinycss2.parse_stylesheet(
             css_text, skip_comments=True, skip_whitespace=True
         )
 
-        # Extract custom font faces for Singleton FPDF measure registration
         for rule in rules:
-            if (
-                isinstance(rule, tinycss2.ast.AtRule)
-                and rule.lower_at_keyword == "font-face"
-            ):
-                _register_font_face(rule, base_url)
+            if isinstance(rule, tinycss2.ast.AtRule):
+                if rule.lower_at_keyword == "font-face":
+                    _register_font_face(rule, base_url)
+                elif rule.lower_at_keyword == "page":
+                    try:
+                        page_rules.append(parse_page_rule(rule))
+                    except Exception as e:
+                        logging.warning(f"Failed to parse @page rule: {e}")
+            elif isinstance(rule, tinycss2.ast.QualifiedRule):
+                qualified_rules.append(rule)
 
-        all_rules.extend(rules)
-
-    return all_rules
+    return {
+        "qualified_rules": qualified_rules,
+        "page_rules": page_rules
+    }

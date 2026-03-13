@@ -124,7 +124,11 @@ def generate_box_tree(
                 child_box = generate_box_tree(child, base_url)
 
             if child_box is not None:
-                box.children.append(child_box)
+                if getattr(child_box, "position", "static").startswith("running("):
+                    # Remove from normal flow
+                    pass
+                else:
+                    box.children.append(child_box)
 
     # 3. Generate MarkerBox for list-items
     if display == "list-item":
@@ -134,7 +138,13 @@ def generate_box_tree(
     _process_pseudo_elements(node, box, base_url)
 
     # 5. Populate Positioning fields (Phase 9)
-    box.position = style.get("position", "static").strip().lower()
+    pos = style.get("position", "static").strip().lower()
+    box.position = pos
+
+    if pos.startswith("running("):
+        # We mark it as running and keep it for now.
+        # The caller (generate_box_tree) will decide whether to include it in children.
+        pass
 
     # Just set z_index if present.
     try:

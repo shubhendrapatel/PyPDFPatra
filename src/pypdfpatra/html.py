@@ -25,7 +25,7 @@ from pypdfpatra.engine import (
 )
 from pypdfpatra.engine.font_metrics import FontMetrics
 from pypdfpatra.logger import logger
-from pypdfpatra.render import draw_boxes, register_anchors
+from pypdfpatra.render import draw_boxes, draw_page_margin_boxes, register_anchors
 
 
 class HTML:
@@ -70,8 +70,11 @@ class HTML:
 
         # 2. CSS Matching & W3C Style Resolution (CSSOM Phase)
         logger.info("[2/5] Resolving W3C Cascading Styles...")
-        rules = parse_stylesheets(root_node, self.base_url)
-        apply_styles(root_node, rules)
+        css_data = parse_stylesheets(root_node, self.base_url)
+        qualified_rules = css_data["qualified_rules"]
+        page_rules = css_data["page_rules"]
+
+        apply_styles(root_node, qualified_rules)
         resolve_styles(root_node)
 
         # 3. W3C Render Tree Generation
@@ -110,19 +113,23 @@ class HTML:
             # 5a. Anchor Registration (Phase 7 Internal Links)
             anchor_map = register_anchors(pdf, [root_box])
             # 5b. Main Content (Skip fixed elements for now)
-            draw_boxes(pdf, [root_box], anchor_map=anchor_map, skip_fixed=True)
+            string_map = {}
+            draw_boxes(pdf, [root_box], anchor_map=anchor_map, skip_fixed=True, string_map=string_map)
 
             # 5c. Global Fixed Elements (Repeat on every page)
             from pypdfpatra.render import collect_fixed_boxes
             fixed_boxes = collect_fixed_boxes([root_box])
             if fixed_boxes:
                 total_pages = len(pdf.pages)
+                pdf._suppress_page_jump = True
                 for page_idx in range(total_pages):
-                    for fb in fixed_boxes:
-                        # Calculate shift from its original layout page to current page
-                        original_page = int((fb.y + fb.margin_top) / PAGE_HEIGHT)
-                        repeat_dy = (page_idx - original_page) * PAGE_HEIGHT
-                        draw_boxes(pdf, [fb], dy=repeat_dy, skip_fixed=False)
+                    pdf.page = page_idx + 1
+                    draw_boxes(pdf, fixed_boxes, anchor_map=anchor_map)
+                pdf._suppress_page_jump = False
+
+            # 5d. Page Margin Boxes (@top-left, etc.)
+            total_pages = len(pdf.pages)
+            draw_page_margin_boxes(pdf, page_rules, total_pages, anchor_map=anchor_map, string_map=string_map)
 
         # 5. Output Phase
         logger.info(f"[5/5] Saving to {target}...")

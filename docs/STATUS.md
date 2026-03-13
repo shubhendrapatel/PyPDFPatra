@@ -43,12 +43,12 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Distribution**: `justify-content` (flex-start, flex-end, center, space-between) and `align-items` (stretch, flex-start, flex-end, center). (✅)
 - **Intrinsic Sizing**: Support for "fit-content" behavior on `width: auto` children. (✅)
 
-### Phase 11: Professional Paged Media (⬜ Not Started)
-- **Margin Boxes**: Support for `@top-left`, `@bottom-right`, etc. 
-- **Page Counters**: Automatic page numbering (`content: counter(page)`).
-- **Running Elements**: Repeating headers/footers via `position: running()`.
-- **Named Strings**: `string-set` and `string()` for dynamic headers.
-- **Cross-References**: `target-counter()` and `target-text()` for TOCs.
+### Phase 11: Professional Paged Media (✅ Done)
+- **Margin Boxes**: Support for `@top-left`, `@bottom-right`, etc. (✅)
+- **Page Counters**: Automatic page numbering (`content: counter(page)`). (✅)
+- **Running Elements**: Repeating headers/footers via `position: running()`. (✅ Partial)
+- **Named Strings**: `string-set` and `string()` for dynamic headers. (✅)
+- **Cross-References**: `target-counter()` and `target-text()` for TOCs. (✅)
 
 ### Phase 12: Advanced Typography & Formatting (✅ Done)
 - **Text Transform**: `uppercase`, `lowercase`, `capitalize`. (✅)
@@ -100,7 +100,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | File | Purpose | Priority |
 |---|---|---|
 | `engine/font_resolver.py` | Resolve `font-family` → actual font file, load into `fpdf2` | 🟡 Medium |
-| `engine/page.py` | Page size, `@page` CSS rules, page-break handling | 🟡 Medium |
+| `engine/page.py` | Page size, `@page` CSS rules, page-break handling | ✅ Done |
 
 ---
 
@@ -185,6 +185,6 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | Inline Formatting Context (IFC) | CSS2.1 §9.4.2 | ✅ |
 | Painting / Z-order | CSS2.1 App. E | ✅ |
 | Stylesheet parsing (`<style>` / `.css`) | CSS2.1 §2 | ✅ |
-| Page model / `@page` rules | CSS Paged Media | 🔄 (Planned Phase 11) |
-| Margin boxes / Page numbering | CSS Paged Media | ⬜ |
+| Page model / `@page` rules | CSS Paged Media | ✅ Done |
+| Margin boxes / Page numbering | CSS Paged Media | ✅ Done |
 | Multi-column Layout | CSS Multi-col | 🔄 (Phase 14) |

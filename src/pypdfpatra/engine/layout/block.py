@@ -303,7 +303,8 @@ def _layout_block_children(
                         current_border_box_bottom + collapsed_margin - child_mt
                     )
             else:
-                if child_margin_box_y + 15 > page_boundary:
+                # Predictive break for normal blocks: only if they have content
+                if (child_box.children or getattr(child_box.node, "pseudos", {})) and child_margin_box_y + 15 > page_boundary:
                     current_border_box_bottom = (
                         current_page_idx + 1
                     ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
