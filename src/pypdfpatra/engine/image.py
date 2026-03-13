@@ -13,7 +13,8 @@ from urllib.request import urlopen
 
 from PIL import Image
 
-# Simple cache so we don't fetch/parse the same image multiple times during layout & render
+# Simple cache so we don't fetch/parse the same image multiple times
+# during layout & render.
 _IMAGE_CACHE = {}
 
 
@@ -55,10 +56,10 @@ def get_image_info(src: str, base_url: str = "") -> dict | None:
                 img = Image.open(io.BytesIO(image_data))
                 width, height = img.size
 
-                # We need to save remote images locally to a temp file because fpdf.image
-                # usually takes a filepath (or PIL object, but for simplicity we can cache locally).
-                # Actually, fpdf2 CAN sometimes take a URL, but caching locally avoids network latency during render.
-                # Let's keep it simple and just cache the dimensions and raw URL for now.
+                # Save remote images locally or provide PIL object?
+                # Actually, fpdf2 CAN sometimes take a URL, but caching locally
+                # avoids network latency during render.
+                # Let's keep it simple and just cache the dimensions and raw URL.
         else:
             if not os.path.exists(full_path):
                 print(f"pypdfpatra - WARNING - Image not found: {full_path}")

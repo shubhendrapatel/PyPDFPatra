@@ -9,6 +9,9 @@ Accepts a Box (part of the Render Tree) and calculates geometry.
 
 from __future__ import annotations
 
+import math
+from collections import namedtuple
+
 from pypdfpatra.defaults import (
     DEFAULT_MARGIN_BOTTOM,
     DEFAULT_MARGIN_TOP,
@@ -23,8 +26,6 @@ from pypdfpatra.engine.tree import (
     InlineBox,
     TextBox,
 )
-from collections import namedtuple
-import math
 
 # Context for positioning relative ancestors
 PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
@@ -151,13 +152,28 @@ def _resolve_box_geometry(
                 # Stretching width
                 total_horizontal_box = pos_cb.w - box.left - box.right
                 # Width is total minus horizontal padding/borders/margins
-                # For simplicity, we assume margins are 0 if not specified as auto.
-                box.w = max(0.0, total_horizontal_box - (padding_left + padding_right + border_left + border_right + margin_left + margin_right))
-        
+                extra_w = (
+                    padding_left
+                    + padding_right
+                    + border_left
+                    + border_right
+                    + margin_left
+                    + margin_right
+                )
+                box.w = max(0.0, total_horizontal_box - extra_w)
+
         # Height calculation (Preliminary based on offsets)
         if not math.isnan(box.top) and not math.isnan(box.bottom):
             total_vertical_box = pos_cb.h - box.top - box.bottom
-            box.h = max(0.0, total_vertical_box - (padding_top + padding_bottom + border_top + border_bottom + margin_top + margin_bottom))
+            extra_h = (
+                padding_top
+                + padding_bottom
+                + border_top
+                + border_bottom
+                + margin_top
+                + margin_bottom
+            )
+            box.h = max(0.0, total_vertical_box - extra_h)
 
     return box_sizing, css_width, margin_top, margin_bottom
 
@@ -418,7 +434,11 @@ def layout_block_context(
             )
         else:
             box.h = css_height
-    elif box.position == "absolute" and not math.isnan(box.top) and not math.isnan(box.bottom):
+    elif (
+        box.position == "absolute"
+        and not math.isnan(box.top)
+        and not math.isnan(box.bottom)
+    ):
         # Height was already set in _resolve_box_geometry based on offsets
         pass
     else:
@@ -487,7 +507,10 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
 
         if child_box.position == "fixed":
             # Fixed is relative to page (standard viewport)
-            ref_x, ref_y, ref_w, ref_h = 0.0, int(box.y / PAGE_HEIGHT) * PAGE_HEIGHT, 595.0, PAGE_HEIGHT
+            ref_x = 0.0
+            ref_y = int(box.y / PAGE_HEIGHT) * PAGE_HEIGHT
+            ref_w = 595.0
+            ref_h = PAGE_HEIGHT
         else:
             ref_x, ref_y, ref_w, ref_h = pos_cb.x, pos_cb.y, pos_cb.w, pos_cb.h
 

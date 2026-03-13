@@ -389,7 +389,7 @@ def draw_boxes(
         zi = getattr(b, "z_index", 0)
         pos = getattr(b, "position", "static")
         is_pos = (pos != "static")
-        
+
         # Level 1: Negative Z-index positioned
         # Level 2: Normal flow (is_pos=False)
         # Level 3: Z-index >= 0 positioned

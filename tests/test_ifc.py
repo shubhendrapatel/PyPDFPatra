@@ -1,7 +1,13 @@
 from pypdfpatra.api import build_tree
-from pypdfpatra.matcher import apply_styles
-from pypdfpatra.engine import resolve_styles, generate_box_tree, layout_block_context
-from pypdfpatra.engine.tree import BlockBox, AnonymousBlockBox, LineBox
+from pypdfpatra.engine import (
+    AnonymousBlockBox,
+    BlockBox,
+    LineBox,
+    apply_styles,
+    generate_box_tree,
+    layout_block_context,
+    resolve_styles,
+)
 
 
 def test_ifc_line_breaking():
@@ -10,11 +16,11 @@ def test_ifc_line_breaking():
     <body>
         <div style="background-color: #f0f0f0; width: 300px; padding: 20px;">
             <text>
-                This is a very long paragraph of text that should automatically wrap 
-                when it hits the edge of its 300px container. If the Inline Formatting 
-                Context (IFC) is working correctly, this text will flow naturally across 
-                multiple lines, generating precise W3C Line Boxes for each horizontal block. 
-                Line breaking is famously difficult to write from scratch, so let's hope 
+                This is a very long paragraph of text that should automatically wrap
+                when it hits the edge of its 300px container. If the Inline Formatting
+                Context (IFC) is working correctly, this text will flow naturally across
+                multiple lines, generating precise W3C Line Boxes for each horizontal block.
+                Line breaking is famously difficult to write from scratch, so let's hope
                 our implementation is robust enough to handle this!
             </text>
         </div>

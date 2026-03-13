@@ -84,7 +84,10 @@ class FontMetrics:
         font_size: float,
         font_style: str,
     ):
-        """Attempts to set a font, falling back to base styles if a specific bold/italic TTF is unmapped."""
+        """
+        Attempts to set a font, falling back to base styles if a specific
+        bold/italic TTF is unmapped.
+        """
         try:
             pdf_instance.set_font(font_family, style=font_style, size=font_size)
         except fpdf.errors.FPDFException:

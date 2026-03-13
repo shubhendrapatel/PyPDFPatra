@@ -1,7 +1,11 @@
 from pypdfpatra.api import build_tree
-from pypdfpatra.matcher import apply_styles
-from pypdfpatra.engine import resolve_styles, generate_box_tree, layout_block_context
-from pypdfpatra.engine.tree import BlockBox
+from pypdfpatra.engine import (
+    BlockBox,
+    apply_styles,
+    generate_box_tree,
+    layout_block_context,
+    resolve_styles,
+)
 
 
 def test_margin_collapse():
@@ -14,7 +18,6 @@ def test_margin_collapse():
         <div style="background-color: #00ff00; width: 100px; height: 100px; margin-top: 50px;">
             <text>Box 2</text>
         </div>
-        
         <div style="background-color: #0000ff; width: 100px; height: 100px; margin-top: 100px;">
             <text>Box 3 (100px gap)</text>
         </div>
