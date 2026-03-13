@@ -384,6 +384,7 @@
             <li><a href="#section-links">10. Links & Navigation</a></li>
             <li><a href="#section-spec">11. Specificity & !important</a></li>
             <li><a href="#section-pos">12. Positioning & Stacking</a></li>
+            <li><a href="#section-flex">13. Flexbox Layout</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -977,6 +978,39 @@
             <p class="uppercase">this was lowercase text rendered as uppercase.</p>
             <p class="lowercase">THIS WAS UPPERCASE TEXT RENDERED AS LOWERCASE.</p>
             <p class="capitalize">this is capitalized text.</p>
+        </div>
+    </div>
+
+    <h2 id="section-flex">Flex Layout</h2>
+    <div class="section">
+        <h3>Flex Row: Standard Flow</h3>
+        <div style="display: flex; background: #eee; padding: 10px; border: 1px solid #ccc;">
+            <div style="background: #ffcccc; padding: 5px; border: 1px solid red;">Flex Item 1</div>
+            <div style="background: #ccffcc; padding: 5px; border: 1px solid green;">Flex Item 2</div>
+            <div style="background: #ccccff; padding: 5px; border: 1px solid blue;">Flex Item 3</div>
+        </div>
+
+        <h3>Flex Column: Default</h3>
+        <div style="display: flex; flex-direction: column; background: #eee; padding: 10px; border: 1px solid #ccc;">
+            <div style="background: #ffcccc; padding: 5px; border: 1px solid red;">Flex Column 1</div>
+            <div style="background: #ccffcc; padding: 5px; border: 1px solid green;">Flex Column 2</div>
+            <div style="background: #ccccff; padding: 5px; border: 1px solid blue;">Flex Column 3</div>
+        </div>
+
+        <h3>Flex Row: justify-content: center; align-items: center;</h3>
+        <div
+            style="display: flex; justify-content: center; align-items: center; background: #eee; height: 100px; border: 1px solid #ccc;">
+            <div style="background: #ffcccc; width: 50px; height: 50px;"></div>
+            <div style="background: #ccffcc; width: 50px; height: 30px;"></div>
+            <div style="background: #ccccff; width: 50px; height: 70px;"></div>
+        </div>
+
+        <h3>Flex Row: justify-content: space-between; align-items: flex-end;</h3>
+        <div
+            style="display: flex; justify-content: space-between; align-items: flex-end; background: #eee; height: 100px; border: 1px solid #ccc;">
+            <div style="background: #ffcccc; width: 50px; height: 50px;"></div>
+            <div style="background: #ccffcc; width: 50px; height: 30px;"></div>
+            <div style="background: #ccccff; width: 50px; height: 70px;"></div>
         </div>
     </div>
 </body>

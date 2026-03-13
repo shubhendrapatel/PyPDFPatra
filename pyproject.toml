@@ -43,6 +43,10 @@ exclude = ["src/pypdfpatra/engine/*.pyx", "src/pypdfpatra/engine/*.pxd", "build/
 select = ["E", "F", "I", "W", "UP", "B"]
 ignore = []
 
+[tool.ruff.lint.isort]
+known-first-party = ["pypdfpatra"]
+combine-as-imports = true
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

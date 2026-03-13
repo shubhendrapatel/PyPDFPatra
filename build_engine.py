@@ -5,8 +5,8 @@ Direct Cython build script for the PyPDFPatra engine.
 Run:  python build_engine.py build_ext --inplace
 """
 
-from setuptools import setup, Extension
 from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 ext_modules = cythonize(
     [

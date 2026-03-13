@@ -218,35 +218,9 @@ def _layout_block_children(
     display = style.get("display", "block").strip().lower()
 
     if display == "flex":
-        # Phase 10 Preview: Basic Horizontal Flex Row
-        # 1. Gather flow children
-        flow_children = [
-            c for c in box.children if c.position not in ("absolute", "fixed")
-        ]
-        if not flow_children:
-            return content_y
+        from .flex import layout_flex_context
 
-        # 2. Divide width (Simplified: equal shares)
-        child_w = box.w / len(flow_children)
-        max_child_h = 0.0
-        curr_x = content_x
-
-        for child_box in flow_children:
-            if isinstance(child_box, AnonymousBlockBox):
-                from .inline import layout_inline_context
-
-                child_box.x = curr_x
-                child_box.y = content_y
-                child_box.w = child_w
-                layout_inline_context(child_box, curr_x, content_y, child_w, "left")
-            else:
-                layout_block_context(
-                    child_box, curr_x, content_y, child_w, pos_cb=pos_cb
-                )
-            max_child_h = max(max_child_h, child_box.h)
-            curr_x += child_w
-
-        return content_y + max_child_h
+        return layout_flex_context(box, content_x, content_y, box.w, pos_cb=pos_cb)
 
     current_border_box_bottom = content_y
     prev_margin_bottom = 0.0

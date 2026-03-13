@@ -37,10 +37,11 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers). (✅)
 - **Z-Index**: Control overlapping paint order. (✅)
 
-### Phase 10: Flexbox Formatting Context (🔄 In Progress)
-- **Flex Container**: `display: flex`. (🔄 Basic horizontal row implemented)
-- **Flex Directions**: `row`, `column`, `row-reverse`.
-- **Distribution**: `justify-content`, `align-items`, `flex-grow`.
+### Phase 10: Flexbox Formatting Context (✅ Done)
+- **Flex Container**: `display: flex`. (✅ Support for row and column flow)
+- **Flex Directions**: `row`, `column`. (✅ Robust axis management)
+- **Distribution**: `justify-content` (flex-start, flex-end, center, space-between) and `align-items` (stretch, flex-start, flex-end, center). (✅)
+- **Intrinsic Sizing**: Support for "fit-content" behavior on `width: auto` children. (✅)
 
 ### Phase 11: Professional Paged Media (⬜ Not Started)
 - **Margin Boxes**: Support for `@top-left`, `@bottom-right`, etc. 
@@ -130,7 +131,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `position: static` (normal flow) | ✅ |
 | `position: relative / absolute / fixed` | ✅ |
 | `float: left / right` | ⬜ |
-| `display: flex / grid` | 🔄 (Basic Flex implementation) |
+| `display: flex / grid` | ✅ (Flexbox Row/Column implemented) |
 | `overflow` | ⬜ |
 
 ### Typography (CSS2.1 §15–16)

@@ -34,10 +34,13 @@ The block formatting context and inline formatting context support W3C-standard 
 ### Paged Media (position: fixed)
 In the PDF context, **`position: fixed`** follows the W3C paged media standard by repeating the element on **every page** of the document. This is the primary method for creating global headers and footers.
 
-### Basic Flexbox Support (In Progress)
-Current engine supports a simplified horizontal row for **`display: flex`**.
-*   **Behavior**: Non-positioned children are distributed equally across the horizontal width of the container.
-*   **Limitations**: No support for `justify-content`, `align-items`, or `flex-grow` yet.
+### Flexbox Support
+Current implementation support flex containers with:
+- **`display: flex`**
+- **`flex-direction`**: `row`, `column`.
+- **`justify-content`**: `flex-start`, `flex-end`, `center`, `space-between`.
+- **`align-items`**: `stretch` (default), `flex-start`, `flex-end`, `center`.
+- **Intrinsic Sizing**: Flex items with `width: auto` correctly size themselves to their content (text/images) before distribution.
 
 ## Dimensions (CSS 1 & CSS 2.1)
 Values can be specified in pixels (`px`) or percentages (`%`). Em (`em`) scaling is supported relative to current font sizes.
