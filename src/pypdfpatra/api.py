@@ -106,8 +106,9 @@ class PatraParser(HTMLParser):
         if in_pre:
             cleaned = data
         else:
-            # Collapse multiple whitespaces into space, but KEEP leading/trailing
-            cleaned = re.sub(r"\s+", " ", data)
+            # Collapse multiple spaces/tabs into one, but PRESERVE newlines
+            # This allows 'pre-line' to work.
+            cleaned = re.sub(r"[ \t]+", " ", data)
 
         text_node = Node("#text")
         text_node.style["content"] = cleaned

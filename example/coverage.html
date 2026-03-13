@@ -720,11 +720,18 @@
             <span style="text-decoration: line-through;">Strikethrough via CSS</span>.
         </p>
 
-        <p><b>White Space:</b></p>
+        <p><b>White Space: pre</b></p>
         <div class="pre-text">This block preserves
             indentation
             and multiple spaces
             using white-space: pre;</div>
+
+        <p><b>White Space: pre-line</b></p>
+        <div style="white-space: pre-line; background: #f9f9f9; padding: 10px; border: 1px solid #ddd;">
+            Line 1: This is the first line.
+            Line 2: Newlines should be preserved.
+            Line 3: Multiple spaces should collapse.
+        </div>
     </div>
 
     <h2 id="section-media">6. Replaced Elements (Images & Forms)</h2>
@@ -1011,6 +1018,31 @@
             <div style="background: #ffcccc; width: 50px; height: 50px;"></div>
             <div style="background: #ccffcc; width: 50px; height: 30px;"></div>
             <div style="background: #ccccff; width: 50px; height: 70px;"></div>
+        </div>
+
+        <h3>Flex Row: Advanced (flex-grow, wrap, and basis)</h3>
+        <div style="display: flex; background: #eee; padding: 10px; border: 1px solid #ccc;">
+            <div style="flex-grow: 1; background: #ffcccc; border: 1px solid red;">Flex Grow 1</div>
+            <div style="flex-grow: 2; background: #ccffcc; border: 1px solid green;">Flex Grow 2 (Takes more space)
+            </div>
+            <div style="width: 100px; background: #ccccff; border: 1px solid blue;">Fixed 100px</div>
+        </div>
+
+        <h3>Flex Row: Order & align-self</h3>
+        <div
+            style="display: flex; align-items: flex-start; background: #eee; height: 100px; padding: 10px; border: 1px solid #ccc;">
+            <div style="order: 3; background: #ffcccc; margin-right: 5px;">Item 1 (order: 3)</div>
+            <div style="order: 1; align-self: center; background: #ccffcc; margin-right: 5px;">Item 2 (order: 1,
+                self-center)</div>
+            <div style="order: 2; align-self: flex-end; background: #ccccff;">Item 3 (order: 2, self-end)</div>
+        </div>
+
+        <h3>Flex Shrinkage</h3>
+        <div style="display: flex; width: 300px; background: #eee; border: 1px solid #ccc; padding: 10px;">
+            <div style="flex-shrink: 1; width: 200px; background: #ffcccc; border: 1px solid red;">Shrink 1 (Base 200px)
+            </div>
+            <div style="flex-shrink: 3; width: 200px; background: #ccffcc; border: 1px solid green;">Shrink 3 (Base
+                200px - Shrinks more)</div>
         </div>
     </div>
 </body>

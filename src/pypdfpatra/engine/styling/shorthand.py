@@ -121,6 +121,16 @@ def expand_shorthand_properties(style_dict: dict) -> dict:
             # Simplistic expansion: assume the value contains a color
             # PyPDFPatra currently only renders colors from background-color
             expanded["background-color"] = val
+        elif prop == "flex":
+            # Very basic flex shorthand expansion: flex: <grow>
+            # Standard: [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]
+            parts = val.strip().split()
+            if parts:
+                expanded["flex-grow"] = parts[0]
+                if len(parts) > 1:
+                    expanded["flex-shrink"] = parts[1]
+                if len(parts) > 2:
+                    expanded["flex-basis"] = parts[2]
         elif prop in ("border-top", "border-right", "border-bottom", "border-left"):
 
             # Expands e.g. 'border-left: 1px solid black' into 'border-left-width', etc.

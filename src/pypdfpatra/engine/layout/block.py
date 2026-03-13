@@ -312,9 +312,7 @@ def _layout_block_children(
                     )
 
             if child_box.__class__.__name__ == "TableBox":
-                layout_table_context(
-                    child_box, content_x, child_margin_box_y, box.w
-                )
+                layout_table_context(child_box, content_x, child_margin_box_y, box.w)
             elif child_box.__class__.__name__ == "ImageBox":
                 _resolve_box_geometry(child_box, box.w, child_style)
                 child_box.x = content_x
@@ -363,7 +361,13 @@ def _layout_block_children(
 
 
 def layout_block_context(
-    box: Box, cb_x: float, cb_y: float, cb_w: float, pos_cb: PosCB = None
+    box: Box,
+    cb_x: float,
+    cb_y: float,
+    cb_w: float,
+    pos_cb: PosCB = None,
+    override_w: float | None = None,
+    override_h: float | None = None,
 ) -> None:
     """
     Recursively calculates the CSS Box Model layout for a block element.
@@ -373,6 +377,7 @@ def layout_block_context(
         # Using A4 default dimensions 519.0 (CONTENT_WIDTH)
         # But for positioning it's usually the full page area or the first page.
         from pypdfpatra.defaults import PAGE_WIDTH
+
         pos_cb = PosCB(0.0, 0.0, PAGE_WIDTH, PAGE_HEIGHT)
 
     style = getattr(box.node, "style", {}) if box.node else {}
@@ -380,7 +385,12 @@ def layout_block_context(
         box, cb_w, style, pos_cb=pos_cb
     )
 
+    if override_w is not None:
+        box.w = override_w
+
     css_height = _parse_length(style.get("height", "auto"), cb_w, default_auto=None)
+    if override_h is not None:
+        css_height = override_h
 
     if css_height is not None:
         total_h = css_height
@@ -419,7 +429,7 @@ def layout_block_context(
         # This box establishes a new containing block
         # We don't know H yet, but we will pass it anyway and update it later if needed
         # Or better: children of a positioned box always use this box as PosCB.
-        child_pos_cb = PosCB(padding_x, padding_y, padding_w, 0.0) # H will be updated
+        child_pos_cb = PosCB(padding_x, padding_y, padding_w, 0.0)  # H will be updated
     else:
         child_pos_cb = pos_cb
 
@@ -496,11 +506,8 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
         if child_box.position not in ("absolute", "fixed"):
             continue
 
-        child_style = (
-            getattr(child_box.node, "style", {}) if child_box.node else {}
-        )
+        child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
         _resolve_box_geometry(child_box, pos_cb.w, child_style, pos_cb=pos_cb)
-
 
         import math
 
@@ -546,15 +553,11 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
         if child_box.__class__.__name__ == "TableBox":
             from .table import layout_table_context
 
-            layout_table_context(
-                child_box, init_x, init_y, child_box.w
-            )
+            layout_table_context(child_box, init_x, init_y, child_box.w)
         elif child_box.__class__.__name__ == "ImageBox":
             child_box.x = init_x
             child_box.y = init_y
-            child_box.h = child_box.image_h * (
-                child_box.w / child_box.image_w
-            )
+            child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
         else:
             layout_block_context(child_box, init_x, init_y, child_box.w, pos_cb=pos_cb)
 

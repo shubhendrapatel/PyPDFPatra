@@ -24,6 +24,8 @@ def _flatten_inline(boxes: list[Box]) -> list[Box]:
                     if "href" not in c.node.props:
                         c.node.props["href"] = href
             flat.extend(children)
+        elif b.__class__.__name__ == "LineBox":
+            flat.extend(_flatten_inline(b.children))
         else:
             flat.append(b)
     return flat
@@ -177,10 +179,30 @@ def _process_text_box(
             current_line_boxes.append((word_box, word_w, word_box.h))
     else:
         import re
-
-        tokens = [t for t in re.split(r"(\s+)", content) if t]
+        # Preserve newlines and spaces, then handle them according to
+        # white-space property
+        tokens = re.split(r"([ \t\n\r]+)", content)
+        tokens = [t for t in tokens if t]
 
         for token in tokens:
+            if "\n" in token or "\r" in token:
+                if white_space == "pre-line":
+                    consumed_h, current_y = _commit_line(
+                        current_line_boxes,
+                        line_x,
+                        current_y,
+                        cb_w,
+                        parent_box,
+                        text_align,
+                    )
+                    current_line_boxes.clear()
+                    current_line_width = 0.0
+                    current_line_ends_with_space = False
+                    continue
+                else:
+                    # Treat newline as space for 'normal'
+                    token = " "
+
             if token.isspace():
                 if current_line_width > 0 and not current_line_ends_with_space:
                     current_line_width += space_width

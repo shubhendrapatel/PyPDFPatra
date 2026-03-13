@@ -34,13 +34,19 @@ The block formatting context and inline formatting context support W3C-standard 
 ### Paged Media (position: fixed)
 In the PDF context, **`position: fixed`** follows the W3C paged media standard by repeating the element on **every page** of the document. This is the primary method for creating global headers and footers.
 
-### Flexbox Support
-Current implementation support flex containers with:
+### Flexbox Support (CSS Flexible Box Layout Module Level 1)
+The engine implements a comprehensive Flexbox Formatting Context (FFC):
 - **`display: flex`**
-- **`flex-direction`**: `row`, `column`.
+- **`flex-direction`**: `row`, `column`, `row-reverse`, `column-reverse`.
+- **`flex-wrap`**: `nowrap`, `wrap` (support for multi-line flex containers).
 - **`justify-content`**: `flex-start`, `flex-end`, `center`, `space-between`.
-- **`align-items`**: `stretch` (default), `flex-start`, `flex-end`, `center`.
-- **Intrinsic Sizing**: Flex items with `width: auto` correctly size themselves to their content (text/images) before distribution.
+- **`align-items`**: `stretch`, `flex-start`, `flex-end`, `center`.
+- **`align-self`**: Per-item alignment override.
+- **`align-content`**: Distribution of lines in multi-line containers.
+- **`flex-grow`**, **`flex-shrink`**, **`flex-basis`**: Full support for flexible sizing and overflow handling.
+- **`flex`**: Standard shorthand support.
+- **`order`**: Support for custom item rendering order.
+- **Intrinsic Sizing**: Flex items with `width: auto` correctly use "shrink-to-fit" (max-content) logic before flex calculations.
 
 ## Dimensions (CSS 1 & CSS 2.1)
 Values can be specified in pixels (`px`) or percentages (`%`). Em (`em`) scaling is supported relative to current font sizes.
