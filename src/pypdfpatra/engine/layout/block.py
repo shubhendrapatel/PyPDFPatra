@@ -268,8 +268,8 @@ def _layout_block_children(
                 ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
                 current_page_idx += 1
                 page_boundary = (
-                    (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
-                )
+                    current_page_idx + 1
+                ) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
                 # Forced breaks reset margin collapsing
                 prev_margin_bottom = 0.0
                 first_child = True
@@ -317,8 +317,8 @@ def _layout_block_children(
                     )
             else:
                 # Predictive break for normal blocks: only if they have content
-                has_content = (
-                    child_box.children or getattr(child_box.node, "pseudos", {})
+                has_content = child_box.children or getattr(
+                    child_box.node, "pseudos", {}
                 )
                 if has_content and child_margin_box_y + 15 > page_boundary:
                     current_border_box_bottom = (

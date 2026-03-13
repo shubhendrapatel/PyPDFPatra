@@ -119,7 +119,7 @@ def parse_stylesheets(root_node: Node, base_url: str = "") -> dict:
     """
     Finds CSS sources in the DOM, extracts text, handles @font-face loading,
     and parses them into tinycss2 AST rules for cascading.
-    
+
     Returns:
         dict: {
             "qualified_rules": List[tinycss2.ast.QualifiedRule],
@@ -149,7 +149,4 @@ def parse_stylesheets(root_node: Node, base_url: str = "") -> dict:
             elif isinstance(rule, tinycss2.ast.QualifiedRule):
                 qualified_rules.append(rule)
 
-    return {
-        "qualified_rules": qualified_rules,
-        "page_rules": page_rules
-    }
+    return {"qualified_rules": qualified_rules, "page_rules": page_rules}

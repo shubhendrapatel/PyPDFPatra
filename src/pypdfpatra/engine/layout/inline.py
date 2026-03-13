@@ -3,6 +3,7 @@ pypdfpatra.engine.layout.inline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Implements the W3C Inline Formatting Context (IFC).
 """
+
 import re
 
 from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT

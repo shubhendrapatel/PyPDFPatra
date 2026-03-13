@@ -132,7 +132,6 @@ def expand_shorthand_properties(style_dict: dict) -> dict:
                 if len(parts) > 2:
                     expanded["flex-basis"] = parts[2]
         elif prop in ("border-top", "border-right", "border-bottom", "border-left"):
-
             # Expands e.g. 'border-left: 1px solid black' into 'border-left-width', etc.
             temp = {}
             _expand_border_shorthand(val, temp)

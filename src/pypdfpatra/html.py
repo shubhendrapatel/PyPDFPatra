@@ -115,12 +115,16 @@ class HTML:
             # 5b. Main Content (Skip fixed elements for now)
             string_map = {}
             draw_boxes(
-                pdf, [root_box], anchor_map=anchor_map,
-                skip_fixed=True, string_map=string_map
+                pdf,
+                [root_box],
+                anchor_map=anchor_map,
+                skip_fixed=True,
+                string_map=string_map,
             )
 
             # 5c. Global Fixed Elements (Repeat on every page)
             from pypdfpatra.render import collect_fixed_boxes
+
             fixed_boxes = collect_fixed_boxes([root_box])
             if fixed_boxes:
                 total_pages = len(pdf.pages)
@@ -133,8 +137,11 @@ class HTML:
             # 5d. Page Margin Boxes (@top-left, etc.)
             total_pages = len(pdf.pages)
             draw_page_margin_boxes(
-                pdf, page_rules, total_pages,
-                anchor_map=anchor_map, string_map=string_map
+                pdf,
+                page_rules,
+                total_pages,
+                anchor_map=anchor_map,
+                string_map=string_map,
             )
 
         # 5. Output Phase

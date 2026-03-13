@@ -227,6 +227,7 @@ def _layout_flex_row(
 
     # Step 4: Final positioning
     from .inline import shift_box
+
     for config in line_configs:
         items, lh, lw = config["items"], config["lh"], config["lw"]
         curr_x = content_x
@@ -273,6 +274,7 @@ def _layout_flex_row(
             if c_align == "stretch":
                 if isinstance(c, AnonymousBlockBox):
                     from .inline import layout_inline_context
+
                     layout_inline_context(c, c.x, c.y, c.w, "left")
                 else:
                     layout_block_context(
@@ -334,11 +336,13 @@ def _layout_flex_column(
 
         if shift_y > 0:
             from .inline import shift_box
+
             for c in flow_children:
                 shift_box(c, 0, shift_y)
 
     # Alignment
     from .inline import shift_box
+
     for c in flow_children:
         c_style = getattr(c.node, "style", {})
         c_align = c_style.get("align-self", "auto").strip().lower()
