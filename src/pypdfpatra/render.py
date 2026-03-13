@@ -235,16 +235,119 @@ def _draw_borders(
             if edge == "bottom" and p != end_page:
                 continue
 
+            def _draw_line(x1, y1, x2, y2, color_rgb=None, width=None):
+                if color_rgb:
+                    pdf.set_draw_color(*color_rgb)
+                if width is not None:
+                    pdf.set_line_width(width)
+                pdf.line(x1, y1, x2, y2)
+
+            def _get_shades(base_rgb):
+                def clamp(c):
+                    return max(0, min(255, int(c)))
+
+                r, g, b = base_rgb
+                light = (clamp(r + 50), clamp(g + 50), clamp(b + 50))
+                dark = (clamp(r - 50), clamp(g - 50), clamp(b - 50))
+                return light, dark
+
+            light, dark = _get_shades((r, g, b))
+
             if border_style == "dashed":
                 pdf.set_dash_pattern(dash=b_w * 3, gap=b_w * 2)
-                pdf.line(line_x1, p_y1, line_x2, p_y2)
+                _draw_line(line_x1, p_y1, line_x2, p_y2)
                 pdf.set_dash_pattern()
             elif border_style == "dotted":
                 pdf.set_dash_pattern(dash=b_w, gap=b_w)
-                pdf.line(line_x1, p_y1, line_x2, p_y2)
+                _draw_line(line_x1, p_y1, line_x2, p_y2)
                 pdf.set_dash_pattern()
+            elif border_style == "double":
+                third = b_w / 3.0
+                offset = third
+                if edge == "top":
+                    _draw_line(
+                        line_x1, p_y1 - offset, line_x2, p_y2 - offset, width=third
+                    )
+                    _draw_line(
+                        line_x1, p_y1 + offset, line_x2, p_y2 + offset, width=third
+                    )
+                elif edge == "bottom":
+                    _draw_line(
+                        line_x1, p_y1 - offset, line_x2, p_y2 - offset, width=third
+                    )
+                    _draw_line(
+                        line_x1, p_y1 + offset, line_x2, p_y1 + offset, width=third
+                    )
+                elif edge == "left":
+                    _draw_line(
+                        line_x1 - offset, p_y1, line_x2 - offset, p_y2, width=third
+                    )
+                    _draw_line(
+                        line_x1 + offset, p_y1, line_x2 + offset, p_y2, width=third
+                    )
+                elif edge == "right":
+                    _draw_line(
+                        line_x1 - offset, p_y1, line_x2 - offset, p_y2, width=third
+                    )
+                    _draw_line(
+                        line_x1 + offset, p_y1, line_x2 + offset, p_y2, width=third
+                    )
+            elif border_style in ("ridge", "groove"):
+                half_w = b_w / 2.0
+                off = half_w / 2.0
+                is_ridge = border_style == "ridge"
+                c1 = light if is_ridge else dark
+                c2 = dark if is_ridge else light
+                if edge in ("top", "left"):
+                    pass
+                else:
+                    c1, c2 = c2, c1
+
+                if edge in ("top", "bottom"):
+                    _draw_line(
+                        line_x1,
+                        p_y1 - off,
+                        line_x2,
+                        p_y2 - off,
+                        color_rgb=c1,
+                        width=half_w,
+                    )
+                    _draw_line(
+                        line_x1,
+                        p_y1 + off,
+                        line_x2,
+                        p_y2 + off,
+                        color_rgb=c2,
+                        width=half_w,
+                    )
+                else:
+                    _draw_line(
+                        line_x1 - off,
+                        p_y1,
+                        line_x2 - off,
+                        p_y2,
+                        color_rgb=c1,
+                        width=half_w,
+                    )
+                    _draw_line(
+                        line_x1 + off,
+                        p_y1,
+                        line_x2 + off,
+                        p_y2,
+                        color_rgb=c2,
+                        width=half_w,
+                    )
+            elif border_style in ("inset", "outset"):
+                is_inset = border_style == "inset"
+                shade = (
+                    dark
+                    if (is_inset and edge in ("top", "left"))
+                    or (not is_inset and edge in ("bottom", "right"))
+                    else light
+                )
+                _draw_line(line_x1, p_y1, line_x2, p_y2, color_rgb=shade)
             else:
-                pdf.line(line_x1, p_y1, line_x2, p_y2)
+                _draw_line(line_x1, p_y1, line_x2, p_y2)
 
     pdf.set_line_width(0.2)
     pdf.set_draw_color(0, 0, 0)

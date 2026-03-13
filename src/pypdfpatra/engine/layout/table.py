@@ -15,7 +15,13 @@ from pypdfpatra.engine.tree import (
 )
 
 
-def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -> None:
+def layout_table_context(
+    box: TableBox,
+    cb_x: float,
+    cb_y: float,
+    cb_w: float,
+    root_font_size: float = 12.0,
+) -> None:
     """
     Executes the Table Formatting Context (TFC) algorithm with support for
     colspan and rowspan.
@@ -28,17 +34,21 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     from .inline import shift_box
 
     style = getattr(box.node, "style", {}) if box.node else {}
-    _, css_width, _, _ = _resolve_box_geometry(box, cb_w, style)
+    _, css_width, _, _ = _resolve_box_geometry(
+        box, cb_w, style, root_font_size=root_font_size
+    )
 
     box.x = cb_x
     box.y = cb_y
 
     spacing_val = str(style.get("border-spacing", "0px"))
     parts = spacing_val.split()
-    h_spacing = _parse_length(parts[0], cb_w) if parts else 0.0
+    h_spacing = (
+        _parse_length(parts[0], cb_w, root_font_size=root_font_size) if parts else 0.0
+    )
     v_spacing = h_spacing
     if len(parts) > 1:
-        v_spacing = _parse_length(parts[1], cb_w)
+        v_spacing = _parse_length(parts[1], cb_w, root_font_size=root_font_size)
 
     # 1. Collect all rows and cells
     rows = []
@@ -126,7 +136,9 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
     def _compute_cell_intrinsic_width(cell: TableCellBox):
         n = getattr(cell, "node", None)
         s = getattr(n, "style", {}) if n else {}
-        _, c_w, _, _ = _resolve_box_geometry(cell, cb_w, s)
+        _, c_w, _, _ = _resolve_box_geometry(
+            cell, cb_w, s, root_font_size=root_font_size
+        )
 
         cell_max_w = 20.0
         for tbox in _get_text_nodes(cell):
@@ -192,7 +204,9 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
 
     for child in box.children:
         if getattr(child.node, "tag", "") == "caption":
-            layout_block_context(child, content_x, current_y, box.w)
+            layout_block_context(
+                child, content_x, current_y, box.w, root_font_size=root_font_size
+            )
             current_y += (
                 child.margin_top
                 + child.border_top
@@ -219,7 +233,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             cell_w = sum(col_widths[sc : sc + csp]) + (csp - 1) * h_spacing
 
             # Reset cell to safe virtual position
-            layout_block_context(cell, 0, 0, cell_w)
+            layout_block_context(cell, 0, 0, cell_w, root_font_size=root_font_size)
 
             total_h = (
                 cell.h
@@ -277,7 +291,7 @@ def layout_table_context(box: TableBox, cb_x: float, cb_y: float, cb_w: float) -
             c_h = sum(row_heights[r_idx : r_idx + rsp]) + (rsp - 1) * v_spacing
 
             # Re-layout with definitive width
-            layout_block_context(cell, c_x, 0.0, c_w)
+            layout_block_context(cell, c_x, 0.0, c_w, root_font_size=root_font_size)
 
             # Fix cell height to match spanned rows
             cell.h = (

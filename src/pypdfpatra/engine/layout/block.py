@@ -36,6 +36,7 @@ def _parse_length(
     parent_value: float,
     default_auto: float | None = 0.0,
     font_size: float = 12.0,
+    root_font_size: float = 12.0,
 ) -> float | None:
     """Parse a CSS length string (e.g. '10px', '50%', '10pt') to a float (points)."""
     if not value:
@@ -56,6 +57,8 @@ def _parse_length(
             return float(value[:-2]) * 72.0 / 25.4
         elif value.endswith("em"):
             return float(value[:-2]) * font_size
+        elif value.endswith("rem"):
+            return float(value[:-3]) * root_font_size
         elif value.endswith("%"):
             return float(value[:-1]) / 100.0 * parent_value
         else:
@@ -65,7 +68,11 @@ def _parse_length(
 
 
 def _resolve_box_geometry(
-    box: Box, aw: float, style: dict, pos_cb: PosCB = None
+    box: Box,
+    aw: float,
+    style: dict,
+    pos_cb: PosCB = None,
+    root_font_size: float = 12.0,
 ) -> tuple[str, float]:
     """Resolves margin, padding, border, and width metrics."""
     # Resolve font-size for 'em' units
@@ -83,41 +90,77 @@ def _resolve_box_geometry(
             pass
 
     # Parse spacing.
-    margin_top = _parse_length(style.get("margin-top", "0px"), aw, font_size=font_size)
+    margin_top = _parse_length(
+        style.get("margin-top", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
+    )
     margin_bottom = _parse_length(
-        style.get("margin-bottom", "0px"), aw, font_size=font_size
+        style.get("margin-bottom", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
 
     margin_left_str = style.get("margin-left", "0px").strip().lower()
     margin_right_str = style.get("margin-right", "0px").strip().lower()
 
-    margin_left = _parse_length(margin_left_str, aw, font_size=font_size)
-    margin_right = _parse_length(margin_right_str, aw, font_size=font_size)
+    margin_left = _parse_length(
+        margin_left_str, aw, font_size=font_size, root_font_size=root_font_size
+    )
+    margin_right = _parse_length(
+        margin_right_str, aw, font_size=font_size, root_font_size=root_font_size
+    )
 
     padding_top = _parse_length(
-        style.get("padding-top", "0px"), aw, font_size=font_size
+        style.get("padding-top", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     padding_bottom = _parse_length(
-        style.get("padding-bottom", "0px"), aw, font_size=font_size
+        style.get("padding-bottom", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     padding_left = _parse_length(
-        style.get("padding-left", "0px"), aw, font_size=font_size
+        style.get("padding-left", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     padding_right = _parse_length(
-        style.get("padding-right", "0px"), aw, font_size=font_size
+        style.get("padding-right", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
 
     border_top = _parse_length(
-        style.get("border-top-width", "0px"), aw, font_size=font_size
+        style.get("border-top-width", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     border_bottom = _parse_length(
-        style.get("border-bottom-width", "0px"), aw, font_size=font_size
+        style.get("border-bottom-width", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     border_left = _parse_length(
-        style.get("border-left-width", "0px"), aw, font_size=font_size
+        style.get("border-left-width", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
     border_right = _parse_length(
-        style.get("border-right-width", "0px"), aw, font_size=font_size
+        style.get("border-right-width", "0px"),
+        aw,
+        font_size=font_size,
+        root_font_size=root_font_size,
     )
 
     if style.get("border-top-style", "none") in ("none", "hidden"):
@@ -137,7 +180,13 @@ def _resolve_box_geometry(
     # --- W3C Width Calculation ---
     box_sizing = style.get("box-sizing", "content-box").strip().lower()
     css_width_str = style.get("width", "auto").strip().lower()
-    css_width = _parse_length(css_width_str, aw, default_auto=None, font_size=font_size)
+    css_width = _parse_length(
+        css_width_str,
+        aw,
+        default_auto=None,
+        font_size=font_size,
+        root_font_size=root_font_size,
+    )
 
     if css_width is not None:
         if box_sizing == "border-box":
@@ -183,12 +232,30 @@ def _resolve_box_geometry(
     box.padding_right = padding_right
 
     # Positioning (Phase 9)
-    box.top = _parse_length(style.get("top", "nan"), aw, default_auto=float("nan"))
-    box.bottom = _parse_length(
-        style.get("bottom", "nan"), aw, default_auto=float("nan")
+    box.top = _parse_length(
+        style.get("top", "nan"),
+        aw,
+        default_auto=float("nan"),
+        root_font_size=root_font_size,
     )
-    box.left = _parse_length(style.get("left", "nan"), aw, default_auto=float("nan"))
-    box.right = _parse_length(style.get("right", "nan"), aw, default_auto=float("nan"))
+    box.bottom = _parse_length(
+        style.get("bottom", "nan"),
+        aw,
+        default_auto=float("nan"),
+        root_font_size=root_font_size,
+    )
+    box.left = _parse_length(
+        style.get("left", "nan"),
+        aw,
+        default_auto=float("nan"),
+        root_font_size=root_font_size,
+    )
+    box.right = _parse_length(
+        style.get("right", "nan"),
+        aw,
+        default_auto=float("nan"),
+        root_font_size=root_font_size,
+    )
 
     # --- W3C Absolute Dimension Calculation (CSS2.1 10.3.7 & 10.6.4) ---
     if box.position == "absolute" and pos_cb is not None:
@@ -258,7 +325,11 @@ def _wrap_inline_children(box: Box) -> None:
 
 
 def _layout_block_children(
-    box: Box, content_x: float, content_y: float, pos_cb: PosCB = None
+    box: Box,
+    content_x: float,
+    content_y: float,
+    pos_cb: PosCB = None,
+    root_font_size: float = 12.0,
 ) -> float:
     style = getattr(box.node, "style", {}) if box.node else {}
     display = style.get("display", "block").strip().lower()
@@ -266,7 +337,14 @@ def _layout_block_children(
     if display == "flex":
         from .flex import layout_flex_context
 
-        return layout_flex_context(box, content_x, content_y, box.w, pos_cb=pos_cb)
+        return layout_flex_context(
+            box,
+            content_x,
+            content_y,
+            box.w,
+            pos_cb=pos_cb,
+            root_font_size=root_font_size,
+        )
 
     current_border_box_bottom = content_y
     prev_margin_bottom = 0.0
@@ -293,7 +371,12 @@ def _layout_block_children(
             text_align = style.get("text-align", "left").strip().lower()
 
             layout_inline_context(
-                child_box, content_x, current_border_box_bottom, box.w, text_align
+                child_box,
+                content_x,
+                current_border_box_bottom,
+                box.w,
+                text_align,
+                root_font_size=root_font_size,
             )
 
             current_border_box_bottom = child_box.y + child_box.h
@@ -320,7 +403,11 @@ def _layout_block_children(
                 prev_margin_bottom = 0.0
                 first_child = True
 
-            child_mt = _parse_length(child_style.get("margin-top", "0px"), box.w)
+            child_mt = _parse_length(
+                child_style.get("margin-top", "0px"),
+                box.w,
+                root_font_size=root_font_size,
+            )
             # ... existing margin collapse logic ...
             if first_child:
                 collapsed_margin = child_mt
@@ -337,10 +424,13 @@ def _layout_block_children(
 
             if is_atomic:
                 _, predicted_w, _, _ = _resolve_box_geometry(
-                    child_box, box.w, child_style
+                    child_box, box.w, child_style, root_font_size=root_font_size
                 )
                 css_h = _parse_length(
-                    child_style.get("height", "auto"), box.w, default_auto=None
+                    child_style.get("height", "auto"),
+                    box.w,
+                    default_auto=None,
+                    root_font_size=root_font_size,
                 )
                 predicted_h = css_h if css_h is not None else 0.0
                 total_h = (
@@ -375,15 +465,28 @@ def _layout_block_children(
                     )
 
             if child_box.__class__.__name__ == "TableBox":
-                layout_table_context(child_box, content_x, child_margin_box_y, box.w)
+                layout_table_context(
+                    child_box,
+                    content_x,
+                    child_margin_box_y,
+                    box.w,
+                    root_font_size=root_font_size,
+                )
             elif child_box.__class__.__name__ == "ImageBox":
-                _resolve_box_geometry(child_box, box.w, child_style)
+                _resolve_box_geometry(
+                    child_box, box.w, child_style, root_font_size=root_font_size
+                )
                 child_box.x = content_x
                 child_box.y = child_margin_box_y
                 child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
             else:
                 layout_block_context(
-                    child_box, content_x, child_margin_box_y, box.w, pos_cb=pos_cb
+                    child_box,
+                    content_x,
+                    child_margin_box_y,
+                    box.w,
+                    pos_cb=pos_cb,
+                    root_font_size=root_font_size,
                 )
 
             current_border_box_bottom = (
@@ -440,6 +543,7 @@ def layout_block_context(
     pos_cb: PosCB = None,
     override_w: float | None = None,
     override_h: float | None = None,
+    root_font_size: float = 12.0,
 ) -> None:
     """
     Recursively calculates the CSS Box Model layout for a block element.
@@ -454,13 +558,18 @@ def layout_block_context(
 
     style = getattr(box.node, "style", {}) if box.node else {}
     box_sizing, css_width, mt, mb = _resolve_box_geometry(
-        box, cb_w, style, pos_cb=pos_cb
+        box, cb_w, style, pos_cb=pos_cb, root_font_size=root_font_size
     )
 
     if override_w is not None:
         box.w = override_w
 
-    css_height = _parse_length(style.get("height", "auto"), cb_w, default_auto=None)
+    css_height = _parse_length(
+        style.get("height", "auto"),
+        cb_w,
+        default_auto=None,
+        root_font_size=root_font_size,
+    )
     if override_h is not None:
         css_height = override_h
 
@@ -508,7 +617,11 @@ def layout_block_context(
     _wrap_inline_children(box)
 
     current_border_box_bottom = _layout_block_children(
-        box, content_x, current_border_box_bottom, pos_cb=child_pos_cb
+        box,
+        content_x,
+        current_border_box_bottom,
+        pos_cb=child_pos_cb,
+        root_font_size=root_font_size,
     )
 
     if css_height is not None:
@@ -569,17 +682,49 @@ def layout_block_context(
     # Phase 9: Absolute Positioning (Simplified: Relative to Container/Page)
     # W3C: Absolute containing block is the PADDING box of the nearest
     # positioned ancestor.
-    _layout_positioned_children(box, final_pos_cb)
+    _layout_positioned_children(box, final_pos_cb, root_font_size=root_font_size)
 
 
-def _layout_positioned_children(box: Box, pos_cb: PosCB):
+def _get_outer_width(box: Box) -> float:
+    """Returns the total horizontal space occupied by a box (margin-box width)."""
+    return (
+        getattr(box, "margin_left", 0.0)
+        + getattr(box, "border_left", 0.0)
+        + getattr(box, "padding_left", 0.0)
+        + box.w
+        + getattr(box, "padding_right", 0.0)
+        + getattr(box, "border_right", 0.0)
+        + getattr(box, "margin_right", 0.0)
+    )
+
+
+def _get_outer_height(box: Box) -> float:
+    """Returns the total vertical space occupied by a box (margin-box height)."""
+    return (
+        getattr(box, "margin_top", 0.0)
+        + getattr(box, "border_top", 0.0)
+        + getattr(box, "padding_top", 0.0)
+        + box.h
+        + getattr(box, "padding_bottom", 0.0)
+        + getattr(box, "border_bottom", 0.0)
+        + getattr(box, "margin_bottom", 0.0)
+    )
+
+
+def _layout_positioned_children(box: Box, pos_cb: PosCB, root_font_size: float = 12.0):
     """Lays out absolute/fixed boxes that belong to this containing block context."""
     for child_box in box.children:
         if child_box.position not in ("absolute", "fixed"):
             continue
 
         child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
-        _resolve_box_geometry(child_box, pos_cb.w, child_style, pos_cb=pos_cb)
+        _resolve_box_geometry(
+            child_box,
+            pos_cb.w,
+            child_style,
+            pos_cb=pos_cb,
+            root_font_size=root_font_size,
+        )
 
         import math
 
@@ -607,8 +752,8 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
         if not math.isnan(child_box.left):
             init_x = ref_x + child_box.left
         elif not math.isnan(child_box.right):
-            # approximate parent width
-            init_x = ref_x + ref_w - child_box.w - child_box.right
+            # Account for full margin-box width
+            init_x = ref_x + ref_w - _get_outer_width(child_box) - child_box.right
         else:
             init_x = ref_x
 
@@ -616,8 +761,8 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
         if not math.isnan(child_box.top):
             init_y = ref_y + child_box.top
         elif not math.isnan(child_box.bottom):
-            # Initially place at bottom of container, we will shift up after layout
-            init_y = ref_y + ref_h - child_box.h - child_box.bottom
+            # Account for full margin-box height
+            init_y = ref_y + ref_h - _get_outer_height(child_box) - child_box.bottom
         else:
             init_y = ref_y
 
@@ -625,25 +770,34 @@ def _layout_positioned_children(box: Box, pos_cb: PosCB):
         if child_box.__class__.__name__ == "TableBox":
             from .table import layout_table_context
 
-            layout_table_context(child_box, init_x, init_y, child_box.w)
+            layout_table_context(
+                child_box, init_x, init_y, child_box.w, root_font_size=root_font_size
+            )
         elif child_box.__class__.__name__ == "ImageBox":
             child_box.x = init_x
             child_box.y = init_y
             child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
         else:
-            layout_block_context(child_box, init_x, init_y, child_box.w, pos_cb=pos_cb)
+            layout_block_context(
+                child_box,
+                init_x,
+                init_y,
+                child_box.w,
+                pos_cb=pos_cb,
+                root_font_size=root_font_size,
+            )
 
         # Post-layout adjustment for right/bottom
         dx = 0.0
         dy = 0.0
         if not math.isnan(child_box.right) and math.isnan(child_box.left):
             # Re-calculate correct X now that width is definitely known
-            target_x = ref_x + ref_w - child_box.w - child_box.right
+            target_x = ref_x + ref_w - _get_outer_width(child_box) - child_box.right
             dx = target_x - child_box.x
 
         if not math.isnan(child_box.bottom) and math.isnan(child_box.top):
             # Re-calculate correct Y now that height is definitely known
-            target_y = ref_y + ref_h - child_box.h - child_box.bottom
+            target_y = ref_y + ref_h - _get_outer_height(child_box) - child_box.bottom
             dy = target_y - child_box.y
 
         if dx != 0 or dy != 0:

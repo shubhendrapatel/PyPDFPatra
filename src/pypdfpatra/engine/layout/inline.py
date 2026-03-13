@@ -164,6 +164,7 @@ def _process_text_box(
     current_line_boxes: list[tuple[Box, float, float]],
     parent_box: Box,
     text_align: str = "left",
+    root_font_size: float = 12.0,
 ) -> tuple[float, float, bool]:
     content = child.text_content
     if not content:
@@ -171,6 +172,7 @@ def _process_text_box(
 
     style = getattr(child.node, "style", {}) if child.node else {}
     white_space = style.get("white-space", "normal")
+    css_lh = style.get("line-height", "normal")
 
     family, fpdf_style, size = parse_font(style)
 
@@ -237,7 +239,9 @@ def _process_text_box(
 
             word_box = TextBox(text_content=line, node=child.node)
             word_box.w = word_w
-            word_box.h = get_line_height(family, size, fpdf_style)
+            word_box.h = get_line_height(
+                family, size, fpdf_style, css_line_height=css_lh
+            )
             word_box.x = line_x + current_line_width
             word_box.y = 0.0  # Will be shifted
 
@@ -246,11 +250,25 @@ def _process_text_box(
     else:
         # Preserve newlines and spaces, then handle them according to
         # white-space property.
-        # PROTECT target-counter(...) from being split by spaces
-        tokens = re.split(
+        # Phase 14: Improve tokenization to support breaking after hyphens
+        # Split by whitespace, and then further split non-whitespace tokens by hyphens
+        raw_tokens = re.split(
             r"(target-counter\s*\(.*?\)|[ \t\n\r]+)", content, flags=re.IGNORECASE
         )
-        tokens = [t for t in tokens if t]
+        tokens = []
+        for t in raw_tokens:
+            if not t:
+                continue
+            if t.isspace() or t.lower().startswith("target-counter"):
+                tokens.append(t)
+                continue
+            # Split after hyphen but NOT if it's the only character
+            if "-" in t and len(t) > 1:
+                # e.g. "multi-stage" -> ["multi-", "stage"]
+                sub_tokens = re.split(r"(?<=-)", t)
+                tokens.extend([st for st in sub_tokens if st])
+            else:
+                tokens.append(t)
 
         for token in tokens:
             if "\n" in token or "\r" in token:
@@ -354,7 +372,9 @@ def _process_text_box(
                         # Commit the prefix and hyphen
                         p_box = TextBox(text_content=best_prefix, node=child.node)
                         p_box.w = best_prefix_w
-                        p_box.h = get_line_height(family, size, fpdf_style)
+                        p_box.h = get_line_height(
+                            family, size, fpdf_style, css_line_height=css_lh
+                        )
                         p_box.x = line_x + current_line_width
                         p_box.y = 0.0
                         current_line_boxes.append((p_box, best_prefix_w, p_box.h))
@@ -424,7 +444,9 @@ def _process_text_box(
 
             word_box = TextBox(text_content=token, node=child.node)
             word_box.w = word_w
-            word_box.h = get_line_height(family, size, fpdf_style)
+            word_box.h = get_line_height(
+                family, size, fpdf_style, css_line_height=css_lh
+            )
             word_box.x = line_x + current_line_width
             word_box.y = 0.0  # Will be shifted
 
@@ -444,6 +466,7 @@ def _process_inline_box(
     current_line_boxes: list[tuple[Box, float, float]],
     parent_box: Box,
     text_align: str = "left",
+    root_font_size: float = 12.0,
 ) -> tuple[float, float, bool]:
     child_style = getattr(child.node, "style", {})
 
@@ -451,21 +474,30 @@ def _process_inline_box(
         from .block import _parse_length, layout_block_context
 
         css_width = _parse_length(
-            child_style.get("width", "auto"), cb_w, default_auto=None
+            child_style.get("width", "auto"),
+            cb_w,
+            default_auto=None,
+            root_font_size=root_font_size,
         )
         if css_width is None:
             css_width = 150.0
 
-        layout_block_context(child, 0.0, 0.0, css_width)
+        layout_block_context(child, 0.0, 0.0, css_width, root_font_size=root_font_size)
 
     elif child.__class__.__name__ == "ImageBox":
         from .block import _parse_length
 
         css_width = _parse_length(
-            child_style.get("width", "auto"), cb_w, default_auto=None
+            child_style.get("width", "auto"),
+            cb_w,
+            default_auto=None,
+            root_font_size=root_font_size,
         )
         css_height = _parse_length(
-            child_style.get("height", "auto"), cb_w, default_auto=None
+            child_style.get("height", "auto"),
+            cb_w,
+            default_auto=None,
+            root_font_size=root_font_size,
         )
 
         # Fallback to HTML attributes if no CSS width/height is present
@@ -549,7 +581,12 @@ def _process_inline_box(
 
 
 def layout_inline_context(
-    parent_box: Box, cb_x: float, cb_y: float, cb_w: float, text_align: str = "left"
+    parent_box: Box,
+    cb_x: float,
+    cb_y: float,
+    cb_w: float,
+    text_align: str = "left",
+    root_font_size: float = 12.0,
 ) -> None:
     """
     Implements a basic W3C Inline Formatting Context (IFC).
@@ -583,6 +620,7 @@ def layout_inline_context(
                     current_line_boxes,
                     parent_box,
                     text_align,
+                    root_font_size=root_font_size,
                 )
             )
         else:
@@ -596,6 +634,7 @@ def layout_inline_context(
                     current_line_boxes,
                     parent_box,
                     text_align,
+                    root_font_size=root_font_size,
                 )
             )
 

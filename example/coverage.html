@@ -82,6 +82,16 @@
             border-left: 4px double orange;
         }
 
+        .border-ridge {
+            border: 6px ridge #52c41a;
+            background: #f6ffed;
+        }
+
+        .border-groove {
+            border: 6px groove #1890ff;
+            background: #e6f7ff;
+        }
+
         .box-padding {
             padding: 15px;
             background-color: #e6f7ff;
@@ -456,7 +466,15 @@
             Effect)</div>
         <div class="border-outset" style="padding: 10px; margin-bottom: 10px; background-color: #eee;">Outset Border (3D
             Effect)</div>
+        <div class="border-ridge" style="padding: 10px; margin-bottom: 10px;">Ridge Border (3D Bevel)</div>
+        <div class="border-groove" style="padding: 10px; margin-bottom: 10px;">Groove Border (3D Inset Line)</div>
         <div class="border-mixed" style="padding: 10px;">Per-Edge Mixed Styles</div>
+    </div>
+
+    <div class="section">
+        <div style="font-size: 1.5rem; background: #fafafa; padding: 1rem; border: 1px solid #ccc;">
+            This box uses <code>rem</code> units for <code>font-size: 1.5rem</code> and <code>padding: 1rem</code>.
+        </div>
     </div>
 
     <div class="section">
@@ -758,6 +776,23 @@
             <li>Second Step</li>
             <li style="list-style-type: decimal-leading-zero;">Leading Zero Step (03)</li>
         </ol>
+        <p><b>Advanced Roman & Alpha:</b></p>
+        <ol style="list-style-type: lower-roman;">
+            <li>lower-roman i</li>
+            <li>lower-roman ii</li>
+        </ol>
+        <ol style="list-style-type: upper-roman; margin-left: 40px;">
+            <li>UPPER-ROMAN I</li>
+            <li>UPPER-ROMAN II</li>
+        </ol>
+        <ol style="list-style-type: lower-alpha;">
+            <li>lower-alpha a</li>
+            <li>lower-alpha b</li>
+        </ol>
+        <ol style="list-style-type: upper-latin; margin-left: 40px;">
+            <li>UPPER-LATIN A</li>
+            <li>UPPER-LATIN B</li>
+        </ol>
     </div>
 
     <h2 id="section-typo">5. Typography & Text Decor</h2>
@@ -787,6 +822,15 @@
             Line 1: This is the first line.
             Line 2: Newlines should be preserved.
             Line 3: Multiple spaces should collapse.
+        </div>
+
+        <p><b>Line Height Controls:</b></p>
+        <div style="background: #fffbe6; padding: 10px; border: 1px solid #ffe58f;">
+            <p style="line-height: 0.8; margin-bottom: 10px; border-bottom: 1px dashed #ccc;">Tight Line Height (0.8) -
+                Lines should be very close or overlapping if fonts are large.</p>
+            <p style="line-height: 2.0; border-bottom: 1px dashed #ccc;">Double Line Height (2.0) - Significant gaps
+                between lines for better readability.</p>
+            <p style="line-height: 32px;">Fixed Line Height (32px) - Precise vertical rhythm control.</p>
         </div>
     </div>
 
@@ -1013,8 +1057,10 @@
     <div class="section">
         <p><b>A. Absolute Positioning:</b></p>
         <div class="pos-container">
-            <div class="pos-abs" style="top: 10px; left: 10px; background: #1890ff;">Top-Left</div>
-            <div class="pos-abs" style="bottom: 10px; right: 10px; background: #52c41a;">Bottom-Right</div>
+            <div class="pos-abs" style="top: 10px; left: 10px; background: #1890ff;">Top:10px-Left:10px</div>
+            <div class="pos-abs" style="top: 0px; right: 0px; background: #c41a3f;">Top:0px-Right:0px</div>
+            <div class="pos-abs" style="bottom: 10px; right: 10px; background: #52c41a;">Bottom:10px-Right:10px</div>
+            <div class="pos-abs" style="bottom: 0px; left: 0px; background: #a2c41a;">Bottom:0px-Left:0px</div>
             <div style="padding: 50px; text-align: center; color: #ccc;">(Container Content)</div>
         </div>
 
@@ -1100,6 +1146,20 @@
             <div style="flex-shrink: 3; width: 200px; background: #ccffcc; border: 1px solid green;">Shrink 3 (Base
                 200px - Shrinks more)</div>
         </div>
+
+        <h3>Flex wrapping: wrap-reverse & align-content</h3>
+        <div
+            style="display: flex; flex-wrap: wrap-reverse; align-content: space-around; height: 150px; background: #f0f5ff; border: 1px solid #1890ff; width: 250px;">
+            <div style="width: 100px; height: 40px; background: #ff4d4f; color: white; border: 1px solid black;">Item 1
+            </div>
+            <div style="width: 100px; height: 40px; background: #722ed1; color: white; border: 1px solid black;">Item 2
+            </div>
+            <div style="width: 100px; height: 40px; background: #2f54eb; color: white; border: 1px solid black;">Item 3
+            </div>
+            <div style="width: 100px; height: 40px; background: #fa8c16; color: white; border: 1px solid black;">Item 4
+            </div>
+        </div>
+        <p><i>Note: <code>wrap-reverse</code> should place the first line at the bottom.</i></p>
         <h2 id="section-paged-pro">14. Professional Paged Media (@page)</h2>
         <div class="section">
             <p>This section showcases advanced paged media features like margin boxes and cross-references.</p>

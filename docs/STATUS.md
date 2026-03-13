@@ -33,7 +33,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 
 ### Phase 9: Positioning & Stacking (✅ Done)
 - **Relative Positioning**: Offset boxes without affecting flow. (✅)
-- **Absolute Positioning**: Remove from flow and position relative to containers. (✅)
+- **Absolute Positioning**: Remove from flow and position relative to containers (including outer dimension logic). (✅)
 - **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers). (✅)
 - **Z-Index**: Control overlapping paint order. (✅)
 
@@ -50,24 +50,54 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Named Strings**: `string-set` and `string()` for dynamic headers. (✅)
 - **Cross-References**: `target-counter()` and `target-text()` for TOCs. (✅)
 
-### Phase 12: Advanced Typography & Formatting (✅ Done)
+### Phase 12: Advanced Typography (✅ Done)
 - **Text Transform**: `uppercase`, `lowercase`, `capitalize`. (✅)
-- **Letter Spacing**: `letter-spacing` (pts/em). (✅)
 - **Font Variants**: `small-caps` simulation. (✅)
-- **Hyphenation**: Automatic line breaking for long words. (✅)
 
-### Phase 13: Graphics & Visual Effects (⬜ Not Started)
+### Phase 13: Professional Hyphenation & Spacing (✅ Done)
+- **Hyphenation**: Automatic line breaking for long words using `pyphen`. (✅)
+- **Letter Spacing**: `letter-spacing` (pts/em). (✅)
+
+### Phase 14: CSS 2.1 Floats & Clearance (⬜ Next Up)
+- **Floats**: `float: left / right`. Requires complex IFC integration for text flow wrapping.
+- **Clearance**: `clear: left / right / both` support to break out of floating contexts.
+
+### Phase 15: CSS3 Backgrounds & Visual Effects (⬜ Planned)
 - **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths).
-- **Opacity**: Support for `opacity` in backgrounds, borders, and text.
-- **Advanced Backgrounds**: `background-size: cover/contain`, `background-repeat`.
+- **Borders**: `border-radius` (Rounded corners).
+- **Transparency**: `opacity` support for text and boxes.
+- **Backgrounds**: Linear gradients (`linear-gradient`) and `background-size: cover/contain`.
 
-### Phase 14: Multi-Column Layout (⬜ Not Started)
+### Phase 16: CSS 2.1 Layout Polish (⬜ Planned)
+- **Min/Max Dimensions**: `min-width`, `max-width`, `min-height`, `max-height`.
+- **Vertical Alignment**: Full `vertical-align` support (top, middle, bottom, etc.) in IFC and Tables.
+- **Overflow & Clipping**: `overflow: hidden / clip` support for box boundaries.
+- **Text & Lists**: `text-indent`, `word-spacing`, and `list-style-position`.
+- **Table Polish**: `caption-side: bottom` and `visibility: collapse`.
+
+### Phase 17: Multi-Column Layout (⬜ Not Started)
 - **CSS Multi-col**: `columns`, `column-gap`, `column-rule`.
-- **Break Control**: `break-inside: avoid`, `break-after: page`. (✅ `page-break-before/after: always` and `page-break-inside: avoid` implemented)
 
-### Phase 15: Interactive PDF Forms (⬜ Not Started)
+### Phase 18: Modern CSS4 Selectors & Logic (⬜ Not Started)
+- **Functional Pseudo-classes**: Support for `:is()`, `:where()`, and complex `:not()`.
+- **Relational Pseudo-class**: Support for the `:has()` "parent" selector (requires selector engine refactor).
+- **Advanced Colors**: Implementation of `color-mix()` and wide-gamut colors logic.
+
+### Phase 19: CSS Grid Layout (⬜ Not Started)
+- **Grid Container**: `display: grid`.
+- **Grid Tracks**: `grid-template-columns`, `grid-template-rows`.
+- **Grid Items**: `grid-column`, `grid-row` placement.
+- **Grid Gaps**: `column-gap`, `row-gap`.
+
+### Phase 20: Interactive PDF Forms (⬜ Not Started)
 - **AcroForms**: Fillable text inputs, checkboxes, and radio buttons.
 - **Form Actions**: Basic submit/reset behavior inside PDF.
+
+### Phase 21: Next-Gen Logical CSS (⬜ Future)
+- **Smart Theming**: `light-dark()` and `color-mix()` for automatic PDF styling.
+- **Layout Logic**: `calc-size()` and `@layer` support for robust document architectures.
+- **Conditional Styles**: Basic implementation of `if()` for template logic.
+- **Container Queries**: Support for `@container` to allow components to resize gracefully within columns.
 
 ---
 
@@ -111,6 +141,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | Property | Status |
 |---|---|
 | `width`, `height` — `<length>`, `auto` | ✅ |
+| `min-width`, `max-width`, `min-height`, `max-height` | 🔄 (Phase 16) |
 | `box-sizing: content-box / border-box` | ✅ |
 | `margin-top/right/bottom/left` | ✅ |
 | `padding-top/right/bottom/left` | ✅ |
@@ -130,9 +161,10 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `display: table`, `table-row`, `table-cell` | ✅ |
 | `position: static` (normal flow) | ✅ |
 | `position: relative / absolute / fixed` | ✅ |
-| `float: left / right` | ⬜ |
-| `display: flex / grid` | ✅ (Flexbox Row/Column implemented) |
-| `overflow` | ⬜ |
+| `float: left / right` | 🔄 (Phase 14) |
+| `display: flex` | ✅ |
+| `display: grid` | ⬜ (Phase 19) |
+| `overflow` | 🔄 (Phase 16) |
 
 ### Typography (CSS2.1 §15–16)
 
@@ -144,7 +176,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `font-weight: bold` | ✅ |
 | `font-style: italic` | ✅ |
 | `text-decoration: underline / line-through` | ✅ |
-| `vertical-align: sub / super` | ⬜ |
+| `vertical-align: top / middle / bottom / baseline` | 🔄 (Phase 16) |
 | `line-height` | ✅ |
 | `text-align: left/center/right/justify` | ✅ |
 | `hyphens: auto` | partial (pyphen) |
@@ -160,8 +192,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `background-color` — hex (`#rrggbb`) | ✅ |
 | `background-color` — named colors, `rgb()` | ✅ |
 | `background-image` | ✅ |
-| `background-size: cover / contain` | 🔄 (Phase 13) |
-| `opacity` | 🔄 (Phase 13) |
+| `background-size: cover / contain` | 🔄 (Phase 15) |
+| `opacity` | 🔄 (Phase 15) |
+| `border-collapse: collapse` | ⬜ |
 
 ### CSS Length Units
 
@@ -169,8 +202,8 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 |---|---|
 | `px`, `%`, `auto`, `inherit`, `currentColor` | ✅ |
 | `em` | ✅ |
-| `rem` | ⬜ |
-| `pt`, `cm`, `mm`, `in` | ⬜ |
+| `rem` | ✅ |
+| `pt`, `cm`, `mm`, `in` | ✅ |
 
 ---
 
@@ -188,4 +221,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | Stylesheet parsing (`<style>` / `.css`) | CSS2.1 §2 | ✅ |
 | Page model / `@page` rules | CSS Paged Media | ✅ Done |
 | Margin boxes / Page numbering | CSS Paged Media | ✅ Done |
-| Multi-column Layout | CSS Multi-col | 🔄 (Phase 14) |
+| Floats & Clearance | CSS2.1 §9.5 | 🔄 (Phase 14) |
+| CSS3 Visuals (Borders/Gradients) | Various CSS3 Modules | 🔄 (Phase 15) |
+| Layout Polish (Min/Max, Align) | CSS2.1 / Misc | 🔄 (Phase 16) |
+| Multi-column Layout | CSS Multi-col | ⬜ (Phase 17) |

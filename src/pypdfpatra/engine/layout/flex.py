@@ -68,7 +68,12 @@ def _get_decorations_h(box: Box) -> float:
 
 
 def layout_flex_context(
-    box: Box, content_x: float, content_y: float, cb_w: float, pos_cb: PosCB = None
+    box: Box,
+    content_x: float,
+    content_y: float,
+    cb_w: float,
+    pos_cb: PosCB = None,
+    root_font_size: float = 12.0,
 ) -> float:
     """
     Lays out children in a flex container.
@@ -108,6 +113,7 @@ def layout_flex_context(
             container_fixed_h,
             style,
             pos_cb,
+            root_font_size,
         )
     else:
         return _layout_flex_column(
@@ -119,6 +125,7 @@ def layout_flex_context(
             container_fixed_h,
             style,
             pos_cb,
+            root_font_size,
         )
 
 
@@ -131,6 +138,7 @@ def _layout_flex_row(
     container_fixed_h,
     style,
     pos_cb,
+    root_font_size,
 ):
     justify_content = style.get("justify-content", "flex-start").strip().lower()
     align_items = style.get("align-items", "stretch").strip().lower()
@@ -151,16 +159,20 @@ def _layout_flex_row(
         elif basis == "auto":
             style_w = child_style.get("width", "auto")
             if style_w == "auto":
-                layout_block_context(child_box, 0, 0, cb_w, pos_cb=pos_cb)
+                layout_block_context(
+                    child_box, 0, 0, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+                )
                 child_box.w = _get_intrinsic_width(child_box)
             else:
-                layout_block_context(child_box, 0, 0, cb_w, pos_cb=pos_cb)
+                layout_block_context(
+                    child_box, 0, 0, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+                )
         else:
             child_box.w = 0.0
 
         outer_w = _get_outer_width(child_box)
         if (
-            flex_wrap == "wrap"
+            flex_wrap in ("wrap", "wrap-reverse")
             and current_line
             and current_line_outer_w + outer_w > cb_w
         ):
@@ -204,7 +216,15 @@ def _layout_flex_row(
 
         # Re-layout at final width
         for c in line:
-            layout_block_context(c, 0, 0, cb_w, pos_cb=pos_cb, override_w=c.w)
+            layout_block_context(
+                c,
+                0,
+                0,
+                cb_w,
+                pos_cb=pos_cb,
+                override_w=c.w,
+                root_font_size=root_font_size,
+            )
 
         lh = max((_get_outer_height(c) for c in line), default=0.0)
         if len(lines) == 1 and container_fixed_h > lh:
@@ -214,6 +234,9 @@ def _layout_flex_row(
         total_lines_h += lh
 
     # Step 3: Vertical line placement
+    if flex_wrap == "wrap-reverse":
+        line_configs.reverse()
+
     curr_y = content_y
     line_space = 0.0
     if container_fixed_h > total_lines_h:
@@ -224,6 +247,13 @@ def _layout_flex_row(
             curr_y += free_h / 2
         elif align_content == "space-between" and len(line_configs) > 1:
             line_space = free_h / (len(line_configs) - 1)
+        elif align_content == "space-around" and len(line_configs) > 0:
+            line_space = free_h / len(line_configs)
+            curr_y += line_space / 2
+        elif align_content == "stretch" and len(line_configs) > 0:
+            extra_per_line = free_h / len(line_configs)
+            for config in line_configs:
+                config["lh"] += extra_per_line
 
     # Step 4: Final positioning
     from .inline import shift_box
@@ -275,7 +305,9 @@ def _layout_flex_row(
                 if isinstance(c, AnonymousBlockBox):
                     from .inline import layout_inline_context
 
-                    layout_inline_context(c, c.x, c.y, c.w, "left")
+                    layout_inline_context(
+                        c, c.x, c.y, c.w, "left", root_font_size=root_font_size
+                    )
                 else:
                     layout_block_context(
                         c,
@@ -285,6 +317,7 @@ def _layout_flex_row(
                         pos_cb=pos_cb,
                         override_w=c.w,
                         override_h=c.h,
+                        root_font_size=root_font_size,
                     )
 
             curr_x += _get_outer_width(c) + item_space
@@ -302,6 +335,7 @@ def _layout_flex_column(
     container_fixed_h,
     style,
     pos_cb,
+    root_font_size,
 ):
     justify_content = style.get("justify-content", "flex-start").strip().lower()
     align_items = style.get("align-items", "stretch").strip().lower()
@@ -309,7 +343,9 @@ def _layout_flex_column(
     # Pass 1: Measure
     curr_y = content_y
     for c in flow_children:
-        layout_block_context(c, content_x, curr_y, cb_w, pos_cb=pos_cb)
+        layout_block_context(
+            c, content_x, curr_y, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+        )
         curr_y += _get_outer_height(c)
 
     total_h = curr_y - content_y
@@ -358,12 +394,26 @@ def _layout_flex_column(
             pr = getattr(c, "padding_right", 0)
             c.w = cb_w - (ml + mr + bl + br + pl + pr)
             layout_block_context(
-                c, content_x, c.y, cb_w, pos_cb=pos_cb, override_w=c.w, override_h=c.h
+                c,
+                content_x,
+                c.y,
+                cb_w,
+                pos_cb=pos_cb,
+                override_w=c.w,
+                override_h=c.h,
+                root_font_size=root_font_size,
             )
         else:
             # Re-layout to ensure height is correct (if not already stretched)
             layout_block_context(
-                c, content_x, c.y, cb_w, pos_cb=pos_cb, override_w=c.w, override_h=c.h
+                c,
+                content_x,
+                c.y,
+                cb_w,
+                pos_cb=pos_cb,
+                override_w=c.w,
+                override_h=c.h,
+                root_font_size=root_font_size,
             )
 
             dx = 0.0

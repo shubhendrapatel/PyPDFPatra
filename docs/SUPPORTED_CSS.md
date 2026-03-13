@@ -38,7 +38,7 @@ In the PDF context, **`position: fixed`** follows the W3C paged media standard b
 The engine implements a comprehensive Flexbox Formatting Context (FFC):
 - **`display: flex`**
 - **`flex-direction`**: `row`, `column`, `row-reverse`, `column-reverse`.
-- **`flex-wrap`**: `nowrap`, `wrap` (support for multi-line flex containers).
+- **`flex-wrap`**: `nowrap`, `wrap`, `wrap-reverse` (support for multi-line flex containers).
 - **`justify-content`**: `flex-start`, `flex-end`, `center`, `space-between`.
 - **`align-items`**: `stretch`, `flex-start`, `flex-end`, `center`.
 - **`align-self`**: Per-item alignment override.
@@ -49,7 +49,7 @@ The engine implements a comprehensive Flexbox Formatting Context (FFC):
 - **Intrinsic Sizing**: Flex items with `width: auto` correctly use "shrink-to-fit" (max-content) logic before flex calculations.
 
 ## Dimensions (CSS 1 & CSS 2.1)
-Values can be specified in pixels (`px`) or percentages (`%`). Em (`em`) scaling is supported relative to current font sizes.
+Values can be specified in pixels (`px`), points (`pt`), inches (`in`), centimeters (`cm`), or millimeters (`mm`). Em (`em`) and Rem (`rem`) scaling is supported relative to current and root font sizes respectively.
 * **`width`** (CSS 1)
 * **`height`** (CSS 1)
 
@@ -75,6 +75,8 @@ Standard shorthand is supported (`border: 1px solid black;`).
 * `hidden`
 * `inset` (Creates a simulated 3D recessed shadow effect)
 * `outset` (Creates a simulated 3D raised button effect)
+* `ridge` (Creates a 3D ridged border)
+* `groove` (Creates a 3D grooved border)
 
 ### Table Cells & Spacing
 * **`border-spacing`**: Supports pixel values for horizontal and vertical gutter between cells.
@@ -89,8 +91,12 @@ Standard shorthand is supported (`border: 1px solid black;`).
 * **`text-align`** (CSS 1): `left`, `center`, `right` (aligns text within its containing block)
 * **`text-decoration`** (CSS 1): `underline`, `line-through` (also triggered automatically by standard `<u>`, `<s>`, `<del>` HTML tags)
 * **`white-space`** (CSS 1): `pre` (Supported; preserves explicit spaces and newlines over standard wrapping)
-* **`line-height`**: Specified in absolute points or relative unitless values (e.g., `1.6`).
+* **`line-height`**: Specified in absolute points, pixels, or relative unitless values (e.g., `1.6`).
 * **`text-transform`**: `uppercase`, `lowercase`, `capitalize`.
+* **`font-variant`**: `small-caps` (simulated).
+* **`letter-spacing`**: Support for custom character spacing.
+* **`hyphens`**: `auto` support via `pyphen` for automatic line-breaking.
+* **`text-align`**: `left`, `center`, `right`, `justify`.
 
 ## Colors & Backgrounds (CSS 1, CSS 2.1, CSS Color Module Level 4)
 Colors can be specified using short hex (e.g., `#fff`), standard hex (e.g., `#ffffff`), or by directly typing any of the 148 standard W3C CSS4 named colors (e.g., `blue`, `papayawhip`, `cornflowerblue`).
@@ -99,7 +105,7 @@ Colors can be specified using short hex (e.g., `#fff`), standard hex (e.g., `#ff
 * **`background-image`**: Support for local and remote image URLs.
 
 ## Lists (CSS 1 & 2.1)
-* **`list-style-type`**: `disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`.
+* **`list-style-type`**: `disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-latin`.
 
 ## Special Values/Keywords (CSS 2.1 & CSS 3)
 The W3C cascade inheritance model correctly propagates the following special keywords down the DOM tree.

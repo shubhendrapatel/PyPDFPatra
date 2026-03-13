@@ -28,6 +28,11 @@ def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
             size = base_size * float(size_str[:-2])
         except ValueError:
             pass
+    elif size_str.endswith("rem"):
+        try:
+            size = DEFAULT_FONT_SIZE * float(size_str[:-3])
+        except ValueError:
+            pass
     elif size_str.endswith("px") or size_str.endswith("pt"):
         try:
             size = float(size_str[:-2])
@@ -114,10 +119,40 @@ class FontMetrics:
         font_family: str = DEFAULT_FONT_FAMILY,
         font_size: float = DEFAULT_FONT_SIZE,
         font_style: str = "",
+        css_line_height: str | float | None = None,
     ) -> float:
         """
-        Returns standard line height (currently just 1.2 * font_size).
+        Calculates line height based on CSS property or ratio.
         """
+        if css_line_height is None or css_line_height == "normal":
+            return font_size * DEFAULT_LINE_HEIGHT_RATIO
+
+        # Handle numeric values (e.g. 1.5)
+        try:
+            ratio = float(css_line_height)
+            return font_size * ratio
+        except (ValueError, TypeError):
+            pass
+
+        # Handle explicit lengths (e.g. 24px)
+        if isinstance(css_line_height, str):
+            val = css_line_height.strip().lower()
+            if val.endswith("px") or val.endswith("pt"):
+                try:
+                    return float(val[:-2])
+                except ValueError:
+                    pass
+            elif val.endswith("em"):
+                try:
+                    return font_size * float(val[:-2])
+                except ValueError:
+                    pass
+            elif val.endswith("%"):
+                try:
+                    return font_size * (float(val[:-1]) / 100.0)
+                except ValueError:
+                    pass
+
         return font_size * DEFAULT_LINE_HEIGHT_RATIO
 
 
@@ -128,6 +163,11 @@ def measure_text(
 
 
 def get_line_height(
-    font_family=DEFAULT_FONT_FAMILY, size=DEFAULT_FONT_SIZE, style=""
+    font_family=DEFAULT_FONT_FAMILY,
+    size=DEFAULT_FONT_SIZE,
+    style="",
+    css_line_height=None,
 ) -> float:
-    return FontMetrics.get_instance().get_line_height(font_family, size, style)
+    return FontMetrics.get_instance().get_line_height(
+        font_family, size, style, css_line_height=css_line_height
+    )

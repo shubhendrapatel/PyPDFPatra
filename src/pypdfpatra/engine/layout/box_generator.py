@@ -209,6 +209,29 @@ def _process_pseudo_elements(node: Node, box: Box, base_url: str):
                 box.children.append(pseudo_box)
 
 
+def _int_to_roman(n: int) -> str:
+    """Converts an integer to a Roman numeral."""
+    val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    syb = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+    roman_num = ""
+    i = 0
+    while n > 0:
+        for _ in range(n // val[i]):
+            roman_num += syb[i]
+            n -= val[i]
+        i += 1
+    return roman_num
+
+
+def _int_to_alpha(n: int) -> str:
+    """Converts an integer to an alphabetical sequence (A, B, ..., Z, AA, ...)."""
+    alpha = ""
+    while n > 0:
+        n, rem = divmod(n - 1, 26)
+        alpha = chr(ord("A") + rem) + alpha
+    return alpha
+
+
 def _inject_list_marker(box: Box, style: dict, _list_index: int):
     """Generates the bullet/number marker for a list item."""
     list_style_type = style.get("list-style-type", "disc").strip().lower()
@@ -224,6 +247,18 @@ def _inject_list_marker(box: Box, style: dict, _list_index: int):
             marker_content = f"0{val}."
         else:
             marker_content = f"{val}."
+    elif list_style_type == "lower-roman":
+        val = _list_index if _list_index is not None else 1
+        marker_content = f"{_int_to_roman(val).lower()}."
+    elif list_style_type == "upper-roman":
+        val = _list_index if _list_index is not None else 1
+        marker_content = f"{_int_to_roman(val)}."
+    elif list_style_type == "lower-alpha" or list_style_type == "lower-latin":
+        val = _list_index if _list_index is not None else 1
+        marker_content = f"{_int_to_alpha(val).lower()}."
+    elif list_style_type == "upper-alpha" or list_style_type == "upper-latin":
+        val = _list_index if _list_index is not None else 1
+        marker_content = f"{_int_to_alpha(val)}."
 
     marker_box = MarkerBox(text_content=marker_content, node=box.node)
     box.children.insert(0, marker_box)
