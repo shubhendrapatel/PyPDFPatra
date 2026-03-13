@@ -22,8 +22,22 @@ The engine strictly follows the W3C cascading order:
 
 ## Display & Box Model (CSS 2.1)
 The block formatting context and inline formatting context support W3C-standard flow layout.
-* **`display`**: `block`, `inline`, `inline-block`, `none`, `list-item`, `table`, `table-row`, `table-cell`.
+* **`display`**: `block`, `inline`, `inline-block`, `none`, `list-item`, `table`, `table-row`, `table-cell`, `flex`.
 * **`box-sizing`**: `content-box`, `border-box` (W3C standard box model sizing).
+* **`visibility`**: `visible`, `hidden`.
+
+## Positioning (CSS 2.1)
+* **`position`**: `static`, `relative`, `absolute`, `fixed`.
+* **`top`**, **`right`**, **`bottom`**, **`left`**: Support for absolute and relative offsets.
+* **`z-index`**: Controls stacking order of overlapping elements.
+
+### Paged Media (position: fixed)
+In the PDF context, **`position: fixed`** follows the W3C paged media standard by repeating the element on **every page** of the document. This is the primary method for creating global headers and footers.
+
+### Basic Flexbox Support (In Progress)
+Current engine supports a simplified horizontal row for **`display: flex`**.
+*   **Behavior**: Non-positioned children are distributed equally across the horizontal width of the container.
+*   **Limitations**: No support for `justify-content`, `align-items`, or `flex-grow` yet.
 
 ## Dimensions (CSS 1 & CSS 2.1)
 Values can be specified in pixels (`px`) or percentages (`%`). Em (`em`) scaling is supported relative to current font sizes.
@@ -67,6 +81,7 @@ Standard shorthand is supported (`border: 1px solid black;`).
 * **`text-decoration`** (CSS 1): `underline`, `line-through` (also triggered automatically by standard `<u>`, `<s>`, `<del>` HTML tags)
 * **`white-space`** (CSS 1): `pre` (Supported; preserves explicit spaces and newlines over standard wrapping)
 * **`line-height`**: Specified in absolute points or relative unitless values (e.g., `1.6`).
+* **`text-transform`**: `uppercase`, `lowercase`, `capitalize`.
 
 ## Colors & Backgrounds (CSS 1, CSS 2.1, CSS Color Module Level 4)
 Colors can be specified using short hex (e.g., `#fff`), standard hex (e.g., `#ffffff`), or by directly typing any of the 148 standard W3C CSS4 named colors (e.g., `blue`, `papayawhip`, `cornflowerblue`).

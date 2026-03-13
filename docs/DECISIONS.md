@@ -69,9 +69,19 @@ This document tracks important implementation decisions, design choices, and CSS
 **Decision**: To improve readability of fragmented tables, `<thead>` blocks will be repeated at the top of every new page the table occupies.
 **Architectural Note**: This is handled in `layout_table.py` by monitoring the vertical cursor. When a row is pushed to a new page, the header height is added as a prefix to the new page fragment.
 
+### Position: Fixed Repetition (Paged Media Standard)
+**Context**: In paged media (PDF), `position: fixed` elements should appear on every page according to W3C CSS2.1 §9.3.1.
+**Decision**: We implement automatic repetition for fixed elements.
+**Implementation**: Fixed boxes are collected into a separate layer during rendering. After the main BFC/IFC flow is drawn, the renderer iterates through all generated pages and "stamps" the fixed boxes at their relative page coordinates. This allows for simple global headers and footers.
+
+### Basic Flexbox Support (Incomplete)
+**Context**: Modern invoice samples (like WeasyPrint's) use `display: flex` for simple horizontal alignment.
+**Decision**: We implemented a "Basic Flex Row" shortcut in `block.py` to support side-by-side block children.
+**Caveat**: This is *not* a full W3C Flexbox Formatting Context (Phase 10). It does not support `flex-grow`, `justify-content`, or complex wrapping. It simply divides the container width equally among children and lays them out horizontally.
+
+### HTML5 Semantic Tag Support
+**Decision**: To ensure modern HTML documents render correctly as blocks, our User-Agent stylesheet (`user_agent.py`) includes default `display: block` rules for `aside`, `footer`, `section`, `header`, `article`, `main`, and `address`.
+
 ### Overflow Clipping (`overflow: hidden`)
-**Context**: In `coverage.html`, `white-space: pre` blocks can bleed outside their containers if the content is too long. the block uses white-space: pre, which explicitly prevents line wrapping. According to W3C standards, the default behavior for overflow is visible, meaning the text should bleed outside its container if it's too long to fit.
-
-However, in a professional PDF, we usually expect this content to be clipped so it doesn't cross borders or bleed into the page margins.
-
-**Decision**: We have decided **not** to implement `overflow: hidden` at this stage. While `fpdf2` supports block-based clipping via `pdf.rect_clip()`, the interaction between clipping and our multi-page slicing logic requires careful design to avoid cutting off legitimate content at page boundaries. We will revisit this at a later date after core navigation features are solidified.
+**Context**: In `coverage.html`, `white-space: pre` blocks can bleed outside their containers if the content is too long. Standard W3C behavior for overflow is visible.
+**Decision**: We have decided **not** to implement `overflow: hidden` at this stage. While `fpdf2` supports block-based clipping via `pdf.rect_clip()`, the interaction between clipping and our multi-page slicing logic requires careful design to avoid cutting off legitimate content at page boundaries.

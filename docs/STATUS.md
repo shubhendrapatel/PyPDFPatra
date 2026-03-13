@@ -31,14 +31,14 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Pseudo-Classes**: `:first-of-type`, `:last-of-type`, `:nth-child`, `:nth-of-type`. (✅)
 - **Cascade & Specificity**: Full implementation of W3C specificity algorithm and `!important` support. (✅)
 
-### Phase 9: Positioning & Stacking (⬜ Not Started)
-- **Relative Positioning**: Offset boxes without affecting flow.
-- **Absolute Positioning**: Remove from flow and position relative to containers.
-- **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers).
-- **Z-Index**: Control overlapping paint order.
+### Phase 9: Positioning & Stacking (✅ Done)
+- **Relative Positioning**: Offset boxes without affecting flow. (✅)
+- **Absolute Positioning**: Remove from flow and position relative to containers. (✅)
+- **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers). (✅)
+- **Z-Index**: Control overlapping paint order. (✅)
 
-### Phase 10: Flexbox Formatting Context (⬜ Not Started)
-- **Flex Container**: `display: flex`.
+### Phase 10: Flexbox Formatting Context (🔄 In Progress)
+- **Flex Container**: `display: flex`. (🔄 Basic horizontal row implemented)
 - **Flex Directions**: `row`, `column`, `row-reverse`.
 - **Distribution**: `justify-content`, `align-items`, `flex-grow`.
 
@@ -49,9 +49,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Named Strings**: `string-set` and `string()` for dynamic headers.
 - **Cross-References**: `target-counter()` and `target-text()` for TOCs.
 
-### Phase 12: Advanced Typography & Formatting (⬜ Not Started)
-- **Text Transform**: `uppercase`, `lowercase`, `capitalize`.
-- **Letter Spacing**: `letter-spacing` (pts/em).
+### Phase 12: Advanced Typography & Formatting (✅ Done)
+- **Text Transform**: `uppercase`, `lowercase`, `capitalize`. (✅)
+- **Letter Spacing**: `letter-spacing` (pts/em). (⬜)
 - **Font Variants**: `small-caps`, ligatures, and OpenType features.
 - **Hyphenation**: Automatic line breaking for long words.
 
@@ -128,9 +128,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `display: inline-block` | ✅ |
 | `display: table`, `table-row`, `table-cell` | ✅ |
 | `position: static` (normal flow) | ✅ |
-| `position: relative / absolute / fixed` | 🔄 (Planned Phase 9) |
+| `position: relative / absolute / fixed` | ✅ |
 | `float: left / right` | ⬜ |
-| `display: flex / grid` | 🔄 (Planned Phase 10) |
+| `display: flex / grid` | 🔄 (Basic Flex implementation) |
 | `overflow` | ⬜ |
 
 ### Typography (CSS2.1 §15–16)
@@ -146,7 +146,7 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `vertical-align: sub / super` | ⬜ |
 | `line-height` | ✅ |
 | `text-align: left/center/right` | ✅ |
-| `text-transform: uppercase / lowercase` | 🔄 (Phase 12) |
+| `text-transform: uppercase / lowercase / capitalize` | ✅ |
 | `letter-spacing` | 🔄 (Phase 12) |
 | `font-variant: small-caps / numeric` | 🔄 (Phase 12) |
 | Inline text line-wrapping (IFC) | ✅ |

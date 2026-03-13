@@ -214,7 +214,40 @@ def _wrap_inline_children(box: Box) -> None:
 def _layout_block_children(
     box: Box, content_x: float, content_y: float, pos_cb: PosCB = None
 ) -> float:
-    """Lays out all child boxes and returns the final content bottom Y."""
+    style = getattr(box.node, "style", {}) if box.node else {}
+    display = style.get("display", "block").strip().lower()
+
+    if display == "flex":
+        # Phase 10 Preview: Basic Horizontal Flex Row
+        # 1. Gather flow children
+        flow_children = [
+            c for c in box.children if c.position not in ("absolute", "fixed")
+        ]
+        if not flow_children:
+            return content_y
+
+        # 2. Divide width (Simplified: equal shares)
+        child_w = box.w / len(flow_children)
+        max_child_h = 0.0
+        curr_x = content_x
+
+        for child_box in flow_children:
+            if isinstance(child_box, AnonymousBlockBox):
+                from .inline import layout_inline_context
+
+                child_box.x = curr_x
+                child_box.y = content_y
+                child_box.w = child_w
+                layout_inline_context(child_box, curr_x, content_y, child_w, "left")
+            else:
+                layout_block_context(
+                    child_box, curr_x, content_y, child_w, pos_cb=pos_cb
+                )
+            max_child_h = max(max_child_h, child_box.h)
+            curr_x += child_w
+
+        return content_y + max_child_h
+
     current_border_box_bottom = content_y
     prev_margin_bottom = 0.0
     first_child = True

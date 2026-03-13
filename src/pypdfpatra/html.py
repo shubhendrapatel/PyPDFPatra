@@ -109,7 +109,20 @@ class HTML:
         if root_box is not None:
             # 5a. Anchor Registration (Phase 7 Internal Links)
             anchor_map = register_anchors(pdf, [root_box])
-            draw_boxes(pdf, [root_box], anchor_map=anchor_map)
+            # 5b. Main Content (Skip fixed elements for now)
+            draw_boxes(pdf, [root_box], anchor_map=anchor_map, skip_fixed=True)
+
+            # 5c. Global Fixed Elements (Repeat on every page)
+            from pypdfpatra.render import collect_fixed_boxes
+            fixed_boxes = collect_fixed_boxes([root_box])
+            if fixed_boxes:
+                total_pages = len(pdf.pages)
+                for page_idx in range(total_pages):
+                    for fb in fixed_boxes:
+                        # Calculate shift from its original layout page to current page
+                        original_page = int((fb.y + fb.margin_top) / PAGE_HEIGHT)
+                        repeat_dy = (page_idx - original_page) * PAGE_HEIGHT
+                        draw_boxes(pdf, [fb], dy=repeat_dy, skip_fixed=False)
 
         # 5. Output Phase
         logger.info(f"[5/5] Saving to {target}...")

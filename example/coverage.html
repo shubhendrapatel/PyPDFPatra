@@ -263,10 +263,108 @@
         .imp-red {
             color: red;
         }
+
+        .pos-red {
+            color: red;
+        }
+
+        /* 12. Positioning & Stacking */
+        .pos-container {
+            position: relative;
+            height: 150px;
+            border: 1px solid #999;
+            background: #f9f9f9;
+            margin-top: 10px;
+        }
+
+        .pos-abs {
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            color: white;
+            padding: 5px;
+            border: 1px solid #0050b3;
+        }
+
+        .pos-rel {
+            position: relative;
+            top: 20px;
+            left: 20px;
+            background: #ffec3d;
+            border: 1px solid #d4b106;
+            padding: 5px;
+        }
+
+        .stack-1 {
+            z-index: 1;
+            top: 20px;
+            left: 20px;
+            background: red;
+        }
+
+        .stack-2 {
+            z-index: 2;
+            top: 40px;
+            left: 40px;
+            background: green;
+        }
+
+        .stack-3 {
+            z-index: 3;
+            top: 60px;
+            left: 60px;
+            background: blue;
+        }
+
+        .hidden-box {
+            visibility: hidden;
+            background: red;
+            height: 20px;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .lowercase {
+            text-transform: lowercase;
+        }
+
+        .capitalize {
+            text-transform: capitalize;
+        }
+
+        .pos-fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f0f5ff;
+            border-bottom: 1px solid #1890ff;
+            text-align: center;
+            font-size: 10px;
+            padding: 2px 0;
+            z-index: 9999;
+        }
+
+        .pos-fixed-footer {
+            position: fixed;
+            bottom: 5px;
+            left: 0;
+            width: 100%;
+            background-color: #f0f5ff;
+            border-top: 1px solid #1890ff;
+            text-align: center;
+            font-size: 10px;
+            padding: 2px 0;
+            z-index: 9999;
+        }
     </style>
 </head>
 
 <body>
+    <div class="pos-fixed-header"><b>PyPDFPatra Global Header</b> (position: fixed - repeats on every page)</div>
+    <div class="pos-fixed-footer"><b>PyPDFPatra Global Footer</b> (position: fixed - repeats on every page)</div>
 
     <h1>PyPDFPatra Coverage Showcase</h1>
     <p>This document demonstrates the full range of supported W3C CSS features in the current engine.</p>
@@ -285,6 +383,7 @@
             <li><a href="#section-selectors">9. Advanced Selectors & Pseudo-Elements</a></li>
             <li><a href="#section-links">10. Links & Navigation</a></li>
             <li><a href="#section-spec">11. Specificity & !important</a></li>
+            <li><a href="#section-pos">12. Positioning & Stacking</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -758,7 +857,7 @@
         </table>
     </div>
 
-    <h2 id="section-selectors">9. Advanced Selectors & Pseudo-Elements (Phase 8)</h2>
+    <h2 id="section-selectors">9. Advanced Selectors & Pseudo-Elements</h2>
     <div class="section selector-test">
         <div class="direct-child">
             I am a <b>direct child</b> (using <code>.selector-test &gt; .direct-child</code>).
@@ -809,7 +908,7 @@
         </div>
     </div>
 
-    <h2 id="section-links">10. Links & Navigation (Phase 7)</h2>
+    <h2 id="section-links">10. Links & Navigation</h2>
     <div class="section link-test">
         <p>
             Clickable PDF Hyperlink:
@@ -843,6 +942,41 @@
         <div class="spec-blue" style="color: orange; padding: 10px; border: 1px solid #ccc;">
             This text should be <b>Orange</b>.
             (Inline style wins over <code>div.spec-blue</code>)
+        </div>
+    </div>
+
+    <h2 id="section-pos">12. Positioning & Stacking</h2>
+    <div class="section">
+        <p><b>A. Absolute Positioning:</b></p>
+        <div class="pos-container">
+            <div class="pos-abs" style="top: 10px; left: 10px; background: #1890ff;">Top-Left</div>
+            <div class="pos-abs" style="bottom: 10px; right: 10px; background: #52c41a;">Bottom-Right</div>
+            <div style="padding: 50px; text-align: center; color: #ccc;">(Container Content)</div>
+        </div>
+
+        <p style="margin-top: 15px;"><b>B. Relative Offsets:</b></p>
+        <div style="border: 1px solid #ccc; padding: 20px; height: 60px;">
+            Normal Text.
+            <span class="pos-rel">Shifted Relative</span>
+            Continuing Normal Text.
+        </div>
+
+        <div class="pos-container" style="height: 150px; background: white;">
+            <div class="pos-abs stack-3">Z-Index: 3 (Blue)</div>
+            <div class="pos-abs stack-2">Z-Index: 2 (Green)</div>
+            <div class="pos-abs stack-1">Z-Index: 1 (Red)</div>
+        </div>
+
+        <p style="margin-top: 15px;"><b>D. Fixed Positioning (Running Elements):</b></p>
+        <p>The blue header and footer at the top/bottom of this PDF are using <code>position: fixed</code>.
+            In W3C paged media, these are automatically repeated on every page generated by the engine.</p>
+
+        <p style="margin-top: 15px;"><b>E. Visibility & Text Transform:</b></p>
+        <div style="border: 1px solid #ccc; padding: 10px;">
+            <div class="hidden-box">This box is visibility: hidden (takes up space but invisible)</div>
+            <p class="uppercase">this was lowercase text rendered as uppercase.</p>
+            <p class="lowercase">THIS WAS UPPERCASE TEXT RENDERED AS LOWERCASE.</p>
+            <p class="capitalize">this is capitalized text.</p>
         </div>
     </div>
 </body>

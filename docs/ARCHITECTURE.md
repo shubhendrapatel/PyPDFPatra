@@ -63,7 +63,7 @@ graph TD
 | :--- | :--- | :--- |
 | **Top-Level API** | `html.py` | Primary entry point (WeasyPrint style). |
 | | `api.py` | Parses HTML into a DOM tree of `Node` objects. |
-| | `render.py` | Draws the final box tree onto the `fpdf2` canvas. |
+| | `render.py` | Draws the final box tree onto the `fpdf2` canvas. Handles global repetition for `position: fixed` elements. |
 | **Core Engine** | `engine.tree` | High-performance Cython models for Nodes and Boxes. |
 | | `engine.font_metrics` | Measures text dimensions and handles font registration. |
 | | `engine.image` | Extracts metadata (dimensions) from image files. |

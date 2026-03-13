@@ -87,6 +87,8 @@ def generate_box_tree(
         box = InlineBlockBox(node=node)
     elif display == "table":
         box = TableBox(node=node)
+    elif display == "flex":
+        box = BlockBox(node=node)
     elif display in ("table-row-group", "table-header-group", "table-footer-group"):
         box = TableRowGroupBox(node=node)
     elif display == "table-row":

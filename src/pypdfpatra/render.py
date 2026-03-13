@@ -19,6 +19,19 @@ from pypdfpatra.engine.font_metrics import parse_font
 from pypdfpatra.engine.tree import Box, TextBox
 
 
+def collect_fixed_boxes(boxes: list[Box]) -> list[Box]:
+    """Recursively collects all boxes with position='fixed'."""
+    fixed = []
+    for box in boxes:
+        if box is None:
+            continue
+        if getattr(box, "position", "static") == "fixed":
+            fixed.append(box)
+        if hasattr(box, "children") and box.children:
+            fixed.extend(collect_fixed_boxes(box.children))
+    return fixed
+
+
 def register_anchors(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0) -> dict:
     """
     Traverses the box tree to find elements with 'id' attributes and
@@ -377,7 +390,11 @@ def _draw_image(
 
 
 def draw_boxes(
-    pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0, anchor_map: dict = None
+    pdf: fpdf.FPDF,
+    boxes: list[Box],
+    dy: float = 0.0,
+    anchor_map: dict = None,
+    skip_fixed: bool = False,
 ):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
@@ -405,6 +422,8 @@ def draw_boxes(
 
     for box in sorted_boxes:
         if box is None:
+            continue
+        if skip_fixed and getattr(box, "position", "static") == "fixed":
             continue
 
         style = getattr(box.node, "style", {})
@@ -511,7 +530,13 @@ def draw_boxes(
             )
 
         if box.children:
-            draw_boxes(pdf, box.children, dy=dy, anchor_map=anchor_map)
+            draw_boxes(
+                pdf,
+                box.children,
+                dy=dy,
+                anchor_map=anchor_map,
+                skip_fixed=skip_fixed,
+            )
 
         if dy == 0.0 and box.__class__.__name__ == "TableBox":
             thead_rows = getattr(box, "thead_rows", [])
