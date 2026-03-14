@@ -6,13 +6,17 @@ Implementation of the W3C Table Formatting Context.
 
 from __future__ import annotations
 
-from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
+from collections import namedtuple
+
+from pypdfpatra.defaults import PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import measure_text, parse_font
 from pypdfpatra.engine.tree import (
     Box,
     TableBox,
     TableCellBox,
 )
+
+PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
 
 
 def layout_table_context(
@@ -21,6 +25,9 @@ def layout_table_context(
     cb_y: float,
     cb_w: float,
     root_font_size: float = 12.0,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
+    pos_cb: PosCB | None = None,
 ) -> None:
     """
     Executes the Table Formatting Context (TFC) algorithm with support for
@@ -205,7 +212,14 @@ def layout_table_context(
     for child in box.children:
         if getattr(child.node, "tag", "") == "caption":
             layout_block_context(
-                child, content_x, current_y, box.w, root_font_size=root_font_size
+                child,
+                content_x,
+                current_y,
+                box.w,
+                root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
+                pos_cb=pos_cb,
             )
             current_y += (
                 child.margin_top
@@ -233,7 +247,16 @@ def layout_table_context(
             cell_w = sum(col_widths[sc : sc + csp]) + (csp - 1) * h_spacing
 
             # Reset cell to safe virtual position
-            layout_block_context(cell, 0, 0, cell_w, root_font_size=root_font_size)
+            layout_block_context(
+                cell,
+                0,
+                0,
+                cell_w,
+                root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
+                pos_cb=PosCB(0, 0, cell_w, 0),
+            )
 
             total_h = (
                 cell.h
@@ -291,7 +314,16 @@ def layout_table_context(
             c_h = sum(row_heights[r_idx : r_idx + rsp]) + (rsp - 1) * v_spacing
 
             # Re-layout with definitive width
-            layout_block_context(cell, c_x, 0.0, c_w, root_font_size=root_font_size)
+            layout_block_context(
+                cell,
+                c_x,
+                0.0,
+                c_w,
+                root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
+                pos_cb=PosCB(c_x, 0, c_w, 0),
+            )
 
             # Fix cell height to match spanned rows
             cell.h = (
@@ -310,10 +342,17 @@ def layout_table_context(
             thead_resolved = True
 
         if thead_resolved and thead_rows:
+            from ..page import get_resolved_margins
+
             page = int(current_row_y / PAGE_HEIGHT)
-            boundary = (page + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            mt, mb, _, _ = get_resolved_margins(page_rules, page, current_page_name)
+            boundary = (page + 1) * PAGE_HEIGHT - mb
             if current_row_y + row.h + v_spacing > boundary:
-                current_row_y = (page + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP + thead_h
+                next_page = page + 1
+                nmt, _, _, _ = get_resolved_margins(
+                    page_rules, next_page, current_page_name
+                )
+                current_row_y = (next_page * PAGE_HEIGHT) + nmt + thead_h
 
         shift_box(row, 0, current_row_y)
         current_row_y += row.h + v_spacing

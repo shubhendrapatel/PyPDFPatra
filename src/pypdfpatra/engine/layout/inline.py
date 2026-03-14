@@ -5,12 +5,17 @@ Implements the W3C Inline Formatting Context (IFC).
 """
 
 import re
+from collections import namedtuple
 
 import pyphen
 
-from pypdfpatra.defaults import DEFAULT_MARGIN_BOTTOM, DEFAULT_MARGIN_TOP, PAGE_HEIGHT
+from pypdfpatra.defaults import (
+    PAGE_HEIGHT,
+)
 from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
+
+PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
 
 _pyphen_cache = {}
 
@@ -73,6 +78,8 @@ def _commit_line(
     parent_box: Box,
     text_align: str = "left",
     is_last_line: bool = False,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
 ) -> float:
     """
     Constructs a LineBox from the accumulated inline boxes and appends it to the parent.
@@ -98,10 +105,17 @@ def _commit_line(
 
     # Pagination: move lines to next page if they overflow current boundary.
     current_page_idx = int(current_y / PAGE_HEIGHT)
-    page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+    from pypdfpatra.engine.page import get_resolved_margins
+
+    _, mb, _, _ = get_resolved_margins(page_rules, current_page_idx, current_page_name)
+    page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - mb
 
     if current_y + max_h > page_boundary:
-        current_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+        next_page_idx = current_page_idx + 1
+        nmt, _, _, _ = get_resolved_margins(
+            page_rules, next_page_idx, current_page_name
+        )
+        current_y = (next_page_idx * PAGE_HEIGHT) + nmt
 
     line_box.y = current_y
     line_box.h = max_h
@@ -165,6 +179,8 @@ def _process_text_box(
     parent_box: Box,
     text_align: str = "left",
     root_font_size: float = 12.0,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
 ) -> tuple[float, float, bool]:
     content = child.text_content
     if not content:
@@ -211,6 +227,8 @@ def _process_text_box(
                     parent_box,
                     text_align,
                     is_last_line=True,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
                 )
                 current_line_boxes.clear()
                 current_line_width = 0.0
@@ -230,6 +248,8 @@ def _process_text_box(
                         parent_box,
                         text_align,
                         is_last_line=False,
+                        current_page_name=current_page_name,
+                        page_rules=page_rules,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
@@ -281,6 +301,8 @@ def _process_text_box(
                         parent_box,
                         text_align,
                         is_last_line=True,
+                        current_page_name=current_page_name,
+                        page_rules=page_rules,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
@@ -386,6 +408,8 @@ def _process_text_box(
                             cb_w,
                             parent_box,
                             text_align,
+                            current_page_name=current_page_name,
+                            page_rules=page_rules,
                         )
                         current_line_boxes.clear()
                         current_line_width = 0.0
@@ -424,6 +448,8 @@ def _process_text_box(
                             parent_box,
                             text_align,
                             is_last_line=False,
+                            current_page_name=current_page_name,
+                            page_rules=page_rules,
                         )
                         current_line_boxes.clear()
                         current_line_width = 0.0
@@ -467,6 +493,8 @@ def _process_inline_box(
     parent_box: Box,
     text_align: str = "left",
     root_font_size: float = 12.0,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
 ) -> tuple[float, float, bool]:
     child_style = getattr(child.node, "style", {})
 
@@ -482,7 +510,16 @@ def _process_inline_box(
         if css_width is None:
             css_width = 150.0
 
-        layout_block_context(child, 0.0, 0.0, css_width, root_font_size=root_font_size)
+        layout_block_context(
+            child,
+            0.0,
+            0.0,
+            css_width,
+            root_font_size=root_font_size,
+            current_page_name=current_page_name,
+            page_rules=page_rules,
+            pos_cb=PosCB(0, 0, css_width, 0),
+        )
 
     elif child.__class__.__name__ == "ImageBox":
         from .block import _parse_length
@@ -558,7 +595,14 @@ def _process_inline_box(
 
     if current_line_width + child_total_w > cb_w and current_line_width > 0:
         consumed_h, current_y = _commit_line(
-            current_line_boxes, line_x, current_y, cb_w, parent_box, text_align
+            current_line_boxes,
+            line_x,
+            current_y,
+            cb_w,
+            parent_box,
+            text_align,
+            current_page_name=current_page_name,
+            page_rules=page_rules,
         )
         current_line_boxes.clear()
         current_line_width = 0.0
@@ -587,6 +631,8 @@ def layout_inline_context(
     cb_w: float,
     text_align: str = "left",
     root_font_size: float = 12.0,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
 ) -> None:
     """
     Implements a basic W3C Inline Formatting Context (IFC).
@@ -621,6 +667,8 @@ def layout_inline_context(
                     parent_box,
                     text_align,
                     root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
                 )
             )
         else:
@@ -635,6 +683,8 @@ def layout_inline_context(
                     parent_box,
                     text_align,
                     root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
                 )
             )
 
@@ -647,6 +697,8 @@ def layout_inline_context(
         parent_box,
         text_align,
         is_last_line=True,
+        current_page_name=current_page_name,
+        page_rules=page_rules,
     )
 
     # The parent block box height expands to fit all the line boxes

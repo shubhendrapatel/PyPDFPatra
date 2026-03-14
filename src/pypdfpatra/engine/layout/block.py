@@ -13,7 +13,6 @@ import math
 from collections import namedtuple
 
 from pypdfpatra.defaults import (
-    DEFAULT_MARGIN_BOTTOM,
     DEFAULT_MARGIN_TOP,
     PAGE_HEIGHT,
 )
@@ -330,7 +329,11 @@ def _layout_block_children(
     content_y: float,
     pos_cb: PosCB = None,
     root_font_size: float = 12.0,
-) -> float:
+    current_page_name: str = "default",
+    page_map: dict | None = None,
+    page_rules: list | None = None,
+    is_root: bool = False,
+) -> tuple[float, str]:
     style = getattr(box.node, "style", {}) if box.node else {}
     display = style.get("display", "block").strip().lower()
 
@@ -344,11 +347,28 @@ def _layout_block_children(
             box.w,
             pos_cb=pos_cb,
             root_font_size=root_font_size,
-        )
+            current_page_name=current_page_name,
+            page_rules=page_rules,
+        ), current_page_name
+
+    from ..page import get_resolved_margins
 
     current_border_box_bottom = content_y
+    if is_root:
+        idx_initial = int(current_border_box_bottom / PAGE_HEIGHT)
+        mt_initial, _, _, _ = get_resolved_margins(
+            page_rules, idx_initial, current_page_name
+        )
+        if current_border_box_bottom % PAGE_HEIGHT < mt_initial:
+            current_border_box_bottom = (idx_initial * PAGE_HEIGHT) + mt_initial
+
     prev_margin_bottom = 0.0
     first_child = True
+
+    # Use a running horizontal baseline that can change per page
+    current_content_x = content_x
+    current_cb_w = box.w
+    from pypdfpatra.defaults import PAGE_WIDTH
 
     for child_box in box.children:
         # Phase 9: Remove absolute/fixed from flow
@@ -357,27 +377,52 @@ def _layout_block_children(
 
         # Pagination: Determine if the child box overflows the current page area.
         current_page_idx = int(current_border_box_bottom / PAGE_HEIGHT)
-        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+        mt, mb, ml, mr = get_resolved_margins(
+            page_rules, current_page_idx, current_page_name
+        )
+
+        # If we are direct children of the ICB (root) OR at a page start,
+        # update horizontal baselines to match the current page's margins.
+        if (
+            (is_root or (current_border_box_bottom % PAGE_HEIGHT < mt + 1.0))
+            and pos_cb
+            and pos_cb.x == 0
+            and pos_cb.w == PAGE_WIDTH
+        ):
+            current_content_x = ml
+            current_cb_w = PAGE_WIDTH - ml - mr
+
+            # Vertical Snapping: Ensure content does not start above top margin.
+            local_start_y = current_border_box_bottom % PAGE_HEIGHT
+            if local_start_y < mt:
+                # Snap to current page's top margin
+                proposed_y = (current_page_idx * PAGE_HEIGHT) + mt
+                current_border_box_bottom = max(current_border_box_bottom, proposed_y)
+
+        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - mb
 
         if isinstance(child_box, AnonymousBlockBox):
             # Establish Inline Formatting Context (IFC) for this block
             from .inline import layout_inline_context
 
-            child_box.x = content_x
+            child_box.x = current_content_x
             child_box.y = current_border_box_bottom
-            child_box.w = box.w
+            child_box.w = current_cb_w
 
             style = getattr(box.node, "style", {}) if box.node else {}
             text_align = style.get("text-align", "left").strip().lower()
 
             layout_inline_context(
                 child_box,
-                content_x,
+                current_content_x,
                 current_border_box_bottom,
-                box.w,
+                current_cb_w,
                 text_align,
                 root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
             )
+            child_box.page_name = current_page_name
 
             current_border_box_bottom = child_box.y + child_box.h
             prev_margin_bottom = 0.0
@@ -390,28 +435,45 @@ def _layout_block_children(
             from .table import layout_table_context
 
             child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
-            # Phase 11: Support page-break-before: always
-            if child_style.get("page-break-before") == "always":
-                current_border_box_bottom = (
-                    current_page_idx + 1
-                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
-                current_page_idx += 1
-                page_boundary = (
-                    current_page_idx + 1
-                ) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            # Phase 11 & 14: Support page-break-before: always or NAMED page transitions
+            requested_page = child_style.get("page")
+            force_break = (child_style.get("page-break-before") == "always") or (
+                requested_page and requested_page != current_page_name
+            )
+
+            if force_break:
+                target_page_idx = current_page_idx + 1
+                if requested_page and requested_page != current_page_name:
+                    current_page_name = requested_page
+
+                next_mt, next_mb, next_ml, next_mr = get_resolved_margins(
+                    page_rules, target_page_idx, current_page_name
+                )
+                current_border_box_bottom = target_page_idx * PAGE_HEIGHT + next_mt
+                current_page_idx = target_page_idx
+                page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - next_mb
+
+                # Update horizontal baselines for the new forced page
+                if pos_cb and pos_cb.x == 0 and pos_cb.w == PAGE_WIDTH:
+                    current_content_x = next_ml
+                    current_cb_w = PAGE_WIDTH - next_ml - next_mr
                 # Forced breaks reset margin collapsing
                 prev_margin_bottom = 0.0
                 first_child = True
 
+            if page_map is not None:
+                current_page_idx = int(current_border_box_bottom / PAGE_HEIGHT)
+                page_map[current_page_idx] = current_page_name
+            child_box.page_name = current_page_name
+
             child_mt = _parse_length(
                 child_style.get("margin-top", "0px"),
-                box.w,
+                current_cb_w,
                 root_font_size=root_font_size,
             )
             # ... existing margin collapse logic ...
             if first_child:
                 collapsed_margin = child_mt
-                first_child = False
             else:
                 collapsed_margin = max(prev_margin_bottom, child_mt)
 
@@ -424,11 +486,11 @@ def _layout_block_children(
 
             if is_atomic:
                 _, predicted_w, _, _ = _resolve_box_geometry(
-                    child_box, box.w, child_style, root_font_size=root_font_size
+                    child_box, current_cb_w, child_style, root_font_size=root_font_size
                 )
                 css_h = _parse_length(
                     child_style.get("height", "auto"),
-                    box.w,
+                    current_cb_w,
                     default_auto=None,
                     root_font_size=root_font_size,
                 )
@@ -443,11 +505,18 @@ def _layout_block_children(
 
                 if (
                     child_margin_box_y + total_h > page_boundary
-                    and child_margin_box_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5
+                    and child_margin_box_y % PAGE_HEIGHT > mt + 5
                 ):
-                    current_border_box_bottom = (
-                        current_page_idx + 1
-                    ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                    target_page_idx = current_page_idx + 1
+                    next_mt, _, next_ml, next_mr = get_resolved_margins(
+                        page_rules, target_page_idx, current_page_name
+                    )
+                    current_border_box_bottom = target_page_idx * PAGE_HEIGHT + next_mt
+
+                    if pos_cb and pos_cb.x == 0 and pos_cb.w == PAGE_WIDTH:
+                        current_content_x = next_ml
+                        current_cb_w = PAGE_WIDTH - next_ml - next_mr
+
                     child_margin_box_y = (
                         current_border_box_bottom + collapsed_margin - child_mt
                     )
@@ -457,9 +526,16 @@ def _layout_block_children(
                     child_box.node, "pseudos", {}
                 )
                 if has_content and child_margin_box_y + 15 > page_boundary:
-                    current_border_box_bottom = (
-                        current_page_idx + 1
-                    ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                    target_page_idx = current_page_idx + 1
+                    next_mt, _, next_ml, next_mr = get_resolved_margins(
+                        page_rules, target_page_idx, current_page_name
+                    )
+                    current_border_box_bottom = target_page_idx * PAGE_HEIGHT + next_mt
+
+                    if pos_cb and pos_cb.x == 0 and pos_cb.w == PAGE_WIDTH:
+                        current_content_x = next_ml
+                        current_cb_w = PAGE_WIDTH - next_ml - next_mr
+
                     child_margin_box_y = (
                         current_border_box_bottom + collapsed_margin - child_mt
                     )
@@ -467,26 +543,33 @@ def _layout_block_children(
             if child_box.__class__.__name__ == "TableBox":
                 layout_table_context(
                     child_box,
-                    content_x,
+                    current_content_x,
                     child_margin_box_y,
-                    box.w,
+                    current_cb_w,
                     root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
+                    pos_cb=pos_cb,
                 )
             elif child_box.__class__.__name__ == "ImageBox":
                 _resolve_box_geometry(
-                    child_box, box.w, child_style, root_font_size=root_font_size
+                    child_box, current_cb_w, child_style, root_font_size=root_font_size
                 )
-                child_box.x = content_x
+                child_box.x = current_content_x
                 child_box.y = child_margin_box_y
                 child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
             else:
-                layout_block_context(
+                _, current_page_name = layout_block_context(
                     child_box,
-                    content_x,
+                    current_content_x,
                     child_margin_box_y,
-                    box.w,
+                    current_cb_w,
                     pos_cb=pos_cb,
                     root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_map=page_map,
+                    page_rules=page_rules,
+                    is_root=False,
                 )
 
             current_border_box_bottom = (
@@ -500,9 +583,14 @@ def _layout_block_children(
             # Phase 11: Support page-break-after: always
             if child_style.get("page-break-after") == "always":
                 page_idx_after = int(current_border_box_bottom / PAGE_HEIGHT)
-                current_border_box_bottom = (
-                    page_idx_after + 1
-                ) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+                target_page_idx = page_idx_after + 1
+                next_mt, _, next_ml, next_mr = get_resolved_margins(
+                    page_rules, target_page_idx, current_page_name
+                )
+                current_border_box_bottom = target_page_idx * PAGE_HEIGHT + next_mt
+                if pos_cb and pos_cb.x == 0 and pos_cb.w == PAGE_WIDTH:
+                    current_content_x = next_ml
+                    current_cb_w = PAGE_WIDTH - next_ml - next_mr
 
             prev_margin_bottom = child_box.margin_bottom
             first_child = False  # Ensure subsequent children aren't first_child
@@ -527,12 +615,12 @@ def _layout_block_children(
                 marker_h = get_line_height(family, size, fpdf_style)
                 y_offset = 0.0
 
-            child_box.x = content_x - marker_w - 5.0
+            child_box.x = current_content_x - marker_w - 5.0
             child_box.y = current_border_box_bottom + y_offset
             child_box.w = marker_w
             child_box.h = marker_h
 
-    return current_border_box_bottom
+    return current_border_box_bottom, current_page_name
 
 
 def layout_block_context(
@@ -544,10 +632,29 @@ def layout_block_context(
     override_w: float | None = None,
     override_h: float | None = None,
     root_font_size: float = 12.0,
-) -> None:
+    current_page_name: str = "default",
+    page_map: dict | None = None,
+    page_rules: list | None = None,
+    is_root: bool = False,
+) -> tuple[float, str]:
     """
     Recursively calculates the CSS Box Model layout for a block element.
     """
+    if is_root:
+        from ..page import resolve_page_style
+
+        rule = resolve_page_style(page_rules, 0, current_page_name)
+
+        def _p(k, d):
+            return float(
+                str(rule.style.get(k, str(d)))
+                .replace("pt", "")
+                .replace("px", "")
+                .replace("in", "")
+            )
+
+        mt_root = _p("margin-top", DEFAULT_MARGIN_TOP)
+        cb_y = max(cb_y, mt_root)
     if pos_cb is None:
         # Default to initial containing block (the page)
         # Using A4 default dimensions 519.0 (CONTENT_WIDTH)
@@ -560,6 +667,7 @@ def layout_block_context(
     box_sizing, css_width, mt, mb = _resolve_box_geometry(
         box, cb_w, style, pos_cb=pos_cb, root_font_size=root_font_size
     )
+    box.page_name = current_page_name
 
     if override_w is not None:
         box.w = override_w
@@ -584,13 +692,24 @@ def layout_block_context(
             )
 
         current_page_idx = int(cb_y / PAGE_HEIGHT)
-        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
 
-        if (
-            cb_y + total_h > page_boundary
-            and cb_y % PAGE_HEIGHT > DEFAULT_MARGIN_TOP + 5
-        ):
-            cb_y = (current_page_idx + 1) * PAGE_HEIGHT + DEFAULT_MARGIN_TOP
+        # Update page_map if needed
+        if page_map is not None:
+            page_map[current_page_idx] = current_page_name
+
+        from ..page import get_resolved_margins
+
+        mt_curr, mb_curr, _, _ = get_resolved_margins(
+            page_rules, current_page_idx, current_page_name
+        )
+        page_boundary = (current_page_idx + 1) * PAGE_HEIGHT - mb_curr
+
+        if cb_y + total_h > page_boundary and cb_y % PAGE_HEIGHT > mt_curr + 5:
+            target_page_idx = current_page_idx + 1
+            mt_next, _, _, _ = get_resolved_margins(
+                page_rules, target_page_idx, current_page_name
+            )
+            cb_y = target_page_idx * PAGE_HEIGHT + mt_next
 
     box.x = cb_x
     box.y = cb_y
@@ -616,12 +735,16 @@ def layout_block_context(
 
     _wrap_inline_children(box)
 
-    current_border_box_bottom = _layout_block_children(
+    current_border_box_bottom, current_page_name = _layout_block_children(
         box,
         content_x,
         current_border_box_bottom,
         pos_cb=child_pos_cb,
         root_font_size=root_font_size,
+        current_page_name=current_page_name,
+        page_map=page_map,
+        page_rules=page_rules,
+        is_root=is_root,
     )
 
     if css_height is not None:
@@ -683,6 +806,8 @@ def layout_block_context(
     # W3C: Absolute containing block is the PADDING box of the nearest
     # positioned ancestor.
     _layout_positioned_children(box, final_pos_cb, root_font_size=root_font_size)
+
+    return current_border_box_bottom, current_page_name
 
 
 def _get_outer_width(box: Box) -> float:

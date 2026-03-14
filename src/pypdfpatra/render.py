@@ -11,8 +11,6 @@ from pypdfpatra.colors import parse_color
 from pypdfpatra.defaults import (
     DEFAULT_COLOR,
     DEFAULT_FONT_FAMILY,
-    DEFAULT_MARGIN_BOTTOM,
-    DEFAULT_MARGIN_TOP,
     PAGE_HEIGHT,
 )
 from pypdfpatra.engine.font_metrics import parse_font
@@ -85,6 +83,16 @@ def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
         pdf.line_width = -1.0
 
 
+def _get_page_margins(pdf, page_idx, page_rules, page_names):
+    from pypdfpatra.engine.page import get_resolved_margins
+
+    page_name = "default"
+    if page_names and page_idx in page_names:
+        page_name = page_names[page_idx]
+
+    return get_resolved_margins(page_rules, page_idx, page_name)
+
+
 def _draw_background(
     pdf: fpdf.FPDF,
     style: dict,
@@ -92,6 +100,9 @@ def _draw_background(
     border_box_y: float,
     border_box_w: float,
     border_box_h: float,
+    page_rules: list = None,
+    page_names: dict = None,
+    skip_clipping: bool = False,
 ) -> None:
     """Paints background colors across potentially multiple pages."""
     if style.get("visibility") == "hidden":
@@ -102,6 +113,8 @@ def _draw_background(
         if rgb is None:
             return
         r, g, b = rgb
+        if r is None:
+            return
 
         start_page = int(border_box_y / PAGE_HEIGHT)
         end_page = int((border_box_y + border_box_h) / PAGE_HEIGHT)
@@ -111,17 +124,20 @@ def _draw_background(
                 _ensure_page(pdf, p)
             pdf.set_fill_color(r, g, b)
 
+            mt, mb, ml, mr = _get_page_margins(pdf, p, page_rules, page_names)
+
             # Local coordinates for this specific page fragment
             local_y = border_box_y - (p * PAGE_HEIGHT)
             local_h = border_box_h
 
             # Clip against page boundaries (top/bottom margins)
-            if local_y < DEFAULT_MARGIN_TOP:
-                local_h -= DEFAULT_MARGIN_TOP - local_y
-                local_y = DEFAULT_MARGIN_TOP
+            if not skip_clipping:
+                if local_y < mt:
+                    local_h -= mt - local_y
+                    local_y = mt
 
-            if local_y + local_h > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
-                local_h = (PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM) - local_y
+                if local_y + local_h > PAGE_HEIGHT - mb:
+                    local_h = (PAGE_HEIGHT - mb) - local_y
 
             if local_h > 0:
                 pdf.rect(
@@ -142,6 +158,9 @@ def _draw_borders(
     border_box_y: float,
     border_box_w: float,
     border_box_h: float,
+    page_rules: list = None,
+    page_names: dict = None,
+    skip_clipping: bool = False,
 ) -> None:
     """Paints element borders with correct styles: solid, dashed, dotted, double."""
     if style.get("visibility") == "hidden":
@@ -217,14 +236,20 @@ def _draw_borders(
             p_y2 = line_y2 - (p * PAGE_HEIGHT)
 
             # Clipping vertical fragments
-            if p_y1 < DEFAULT_MARGIN_TOP:
-                p_y1 = DEFAULT_MARGIN_TOP
-            if p_y2 < DEFAULT_MARGIN_TOP:
-                p_y2 = DEFAULT_MARGIN_TOP
-            if p_y1 > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
-                p_y1 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
-            if p_y2 > PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM:
-                p_y2 = PAGE_HEIGHT - DEFAULT_MARGIN_BOTTOM
+            if not skip_clipping:
+                mt, mb, ml, mr = _get_page_margins(pdf, p, page_rules, page_names)
+
+                if p_y1 < mt:
+                    p_y1 = mt
+                if p_y2 < mt:
+                    p_y2 = mt
+                if p_y1 > PAGE_HEIGHT - mb:
+                    p_y1 = PAGE_HEIGHT - mb
+                if p_y2 > PAGE_HEIGHT - mb:
+                    p_y2 = PAGE_HEIGHT - mb
+            else:
+                # Still need mt/mb if we want to call it, but let's just skip
+                pass
 
             if p_y1 == p_y2 and edge in ("left", "right"):
                 continue  # Whole fragment clipped out
@@ -557,6 +582,8 @@ def draw_boxes(
     anchor_map: dict = None,
     skip_fixed: bool = False,
     string_map: dict = None,
+    page_rules: list = None,
+    page_names: dict = None,
 ):
     """
     Recursively iterates through the W3C Box Tree (Render Tree)
@@ -624,8 +651,18 @@ def draw_boxes(
             border_box_y += caption_h
             border_box_h -= caption_h
 
+        is_fixed = getattr(box, "position", "static") == "fixed"
+
         _draw_background(
-            pdf, style, border_box_x, border_box_y, border_box_w, border_box_h
+            pdf,
+            style,
+            border_box_x,
+            border_box_y,
+            border_box_w,
+            border_box_h,
+            page_rules=page_rules,
+            page_names=page_names,
+            skip_clipping=is_fixed,
         )
 
         _draw_borders(
@@ -639,6 +676,9 @@ def draw_boxes(
             border_box_y,
             border_box_w,
             border_box_h,
+            page_rules=page_rules,
+            page_names=page_names,
+            skip_clipping=is_fixed,
         )
 
         # Handle string-set (Phase 11 Named Strings)
@@ -728,6 +768,8 @@ def draw_boxes(
                 anchor_map=anchor_map,
                 skip_fixed=skip_fixed,
                 string_map=string_map,
+                page_rules=page_rules,
+                page_names=page_names,
             )
 
         if dy == 0.0 and box.__class__.__name__ == "TableBox":
@@ -739,9 +781,17 @@ def draw_boxes(
                 if end_page > start_page:
                     header_original_y = thead_rows[0].y
                     for p in range(start_page + 1, end_page + 1):
-                        header_target_y = (p * PAGE_HEIGHT) + DEFAULT_MARGIN_TOP
+                        mt, _, _, _ = _get_page_margins(pdf, p, page_rules, page_names)
+                        header_target_y = (p * PAGE_HEIGHT) + mt
                         repeat_dy = header_target_y - header_original_y
-                        draw_boxes(pdf, thead_rows, dy=repeat_dy, anchor_map=anchor_map)
+                        draw_boxes(
+                            pdf,
+                            thead_rows,
+                            dy=repeat_dy,
+                            anchor_map=anchor_map,
+                            page_rules=page_rules,
+                            page_names=page_names,
+                        )
 
 
 def draw_page_margin_boxes(
@@ -750,13 +800,10 @@ def draw_page_margin_boxes(
     total_pages: int,
     anchor_map: dict = None,
     string_map: dict = None,
+    page_names: dict[int, str] = None,
 ):
     """Draws margin boxes (@top-left, etc) on every page."""
     from pypdfpatra.defaults import (
-        DEFAULT_MARGIN_BOTTOM,
-        DEFAULT_MARGIN_LEFT,
-        DEFAULT_MARGIN_RIGHT,
-        DEFAULT_MARGIN_TOP,
         PAGE_HEIGHT,
         PAGE_WIDTH,
     )
@@ -767,17 +814,15 @@ def draw_page_margin_boxes(
     pdf._suppress_page_jump = True
     for page_idx in range(total_pages):
         pdf.page = page_idx + 1
-        page_style = resolve_page_style(page_rules, page_idx)
+        page_name = "default"
+        if page_names and page_idx in page_names:
+            page_name = page_names[page_idx]
 
-        # Determine actual margins for this page (from @page { margin: ... })
-        def _get_m(key, default, style):
-            val = style.get(key, str(default))
-            return float(val.replace("pt", ""))
+        page_style = resolve_page_style(page_rules, page_idx, page_name=page_name)
 
-        ml = _get_m("margin-left", DEFAULT_MARGIN_LEFT, page_style.style)
-        mr = _get_m("margin-right", DEFAULT_MARGIN_RIGHT, page_style.style)
-        mt = _get_m("margin-top", DEFAULT_MARGIN_TOP, page_style.style)
-        mb = _get_m("margin-bottom", DEFAULT_MARGIN_BOTTOM, page_style.style)
+        from pypdfpatra.engine.page import get_resolved_margins
+
+        mt, mb, ml, mr = get_resolved_margins(page_rules, page_idx, page_name)
 
         content_w = PAGE_WIDTH - ml - mr
 
@@ -857,7 +902,7 @@ def draw_page_margin_boxes(
             else:
                 continue
 
-            _draw_background(pdf, mb_style, x, y, w, h)
+            _draw_background(pdf, mb_style, x, y, w, h, skip_clipping=True)
 
             family, fpdf_style, size = parse_font(mb_style)
             color_str = mb_style.get("color", DEFAULT_COLOR)
@@ -865,13 +910,27 @@ def draw_page_margin_boxes(
             r, g, b = rgb if rgb else (0, 0, 0)
 
             pdf.set_text_color(r, g, b)
-            from pypdfpatra.engine.font_metrics import FontMetrics
+            from pypdfpatra.engine.font_metrics import FontMetrics, get_line_height
 
             FontMetrics.get_instance().set_font_safe(pdf, family, size, fpdf_style)
+            line_h = get_line_height(family, size, fpdf_style)
 
-            pdf.set_xy(x, y)
+            v_align = mb_style.get("vertical-align", "middle").strip().lower()
+
+            # Adjust Y and H based on vertical-align
+            cell_y = y
+            cell_h = h
+
+            if v_align == "top":
+                cell_h = line_h
+            elif v_align == "bottom":
+                cell_y = y + h - line_h
+                cell_h = line_h
+            # "middle" (default) uses the full height of the margin area to center
+
+            pdf.set_xy(x, cell_y)
             fpdf_align = {"left": "L", "center": "C", "right": "R"}.get(align, "C")
-            pdf.cell(w=w, h=h, text=content, align=fpdf_align)
+            pdf.cell(w=w, h=cell_h, text=content, align=fpdf_align)
 
     pdf._suppress_page_jump = False
     pdf.set_text_color(0, 0, 0)

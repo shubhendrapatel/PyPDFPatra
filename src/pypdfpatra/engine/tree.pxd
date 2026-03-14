@@ -48,6 +48,7 @@ cdef class Box:
     cdef public double bottom
     cdef public double left
     cdef public int z_index
+    cdef public str page_name
 
 cdef class BlockBox(Box):
     pass

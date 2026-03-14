@@ -408,17 +408,52 @@
         }
 
         @page :first {
-            margin-top: 100pt;
+            margin-top: 60pt;
 
             @top-center {
                 content: "OFFICIAL REPORT";
                 color: #004d99;
                 font-weight: bold;
+                vertical-align: middle;
             }
         }
 
         h2 {
             string-set: chapter content();
+        }
+
+        /* 17. Named Pages */
+        @page wide-page {
+            margin-left: 10pt;
+            margin-right: 10pt;
+
+            @top-center {
+                content: "WIDE PAGE - CUSTOM MARGINS";
+                color: red;
+            }
+        }
+
+        @page tall-margin-page {
+            margin-top: 150pt;
+
+            @top-center {
+                content: "TALL MARGIN PAGE";
+                color: green;
+            }
+        }
+
+        .wide-section {
+            page: wide-page;
+            border: 5px solid red;
+            padding: 10px;
+            background: #fff1f0;
+        }
+
+        .tall-section {
+            page: tall-margin-page;
+            border: 5px solid green;
+            padding: 10px;
+            background: #f6ffed;
         }
     </style>
 </head>
@@ -451,6 +486,7 @@
             <li><a href="#section-paged-pro">14. Professional Paged Media (@page)</a></li>
             <li><a href="#section-breaks">15. Page Break Controls</a></li>
             <li><a href="#section-typo-adv">16. Advanced Typography & Formatting</a></li>
+            <li><a href="#section-named-pages">17. Robust Named Pages</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -1221,6 +1257,28 @@
                 </p>
             </div>
             <p><i>Note: The box above has <code>width: 150pt</code> and <code>hyphens: auto</code>.</i></p>
+        </div>
+        <h2 id="section-named-pages">17. Robust Named Pages</h2>
+        <div class="section">
+            <p>This section demonstrates the 3 key features of robust named pages:</p>
+            <ol>
+                <li><b>Forced Breaks:</b> Transitioning to a named page forces a new page even if space remains.</li>
+                <li><b>Dynamic Margins:</b> Each named page can have its own margins (Look at the headers and borders).
+                </li>
+                <li><b>Margin Inheritance:</b> The layout engine accounts for these margins during calculation.</li>
+            </ol>
+
+            <div class="wide-section">
+                <h3>Wide Section (page: wide-page)</h3>
+                <p>This box should start on a new page. It has very narrow side margins (10pt), so it should stretch
+                    nearly the full width of the PDF page. The border should be very close to the edges.</p>
+            </div>
+
+            <div class="tall-section">
+                <h3>Tall Margin Section (page: tall-margin-page)</h3>
+                <p>This box should also start on its own page. It has a massive top margin (150pt). The content should
+                    be pushed down significantly from the top header.</p>
+            </div>
         </div>
 </body>
 

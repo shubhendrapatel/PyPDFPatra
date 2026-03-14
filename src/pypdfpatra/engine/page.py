@@ -8,6 +8,12 @@ from typing import Dict, List
 
 import tinycss2
 
+from pypdfpatra.defaults import (
+    DEFAULT_MARGIN_BOTTOM,
+    DEFAULT_MARGIN_LEFT,
+    DEFAULT_MARGIN_RIGHT,
+    DEFAULT_MARGIN_TOP,
+)
 from pypdfpatra.engine.styling.shorthand import expand_shorthand_properties
 
 
@@ -87,7 +93,9 @@ def parse_page_rule(rule: tinycss2.ast.AtRule) -> PageRule:
     return page_rule
 
 
-def resolve_page_style(page_rules: List[PageRule], page_index: int) -> PageRule:
+def resolve_page_style(
+    page_rules: List[PageRule], page_index: int, page_name: str = "default"
+) -> PageRule:
     """
     Resolves the style for a specific page.
     page_index is 0-indexed.
@@ -111,6 +119,9 @@ def resolve_page_style(page_rules: List[PageRule], page_index: int) -> PageRule:
             match = True
         elif rule.selector == ":right" and page_index % 2 == 0:
             match = True
+        elif rule.selector == page_name:
+            # Named page match
+            match = True
 
         if match:
             # Merge styles
@@ -122,3 +133,43 @@ def resolve_page_style(page_rules: List[PageRule], page_index: int) -> PageRule:
                 curr_style.margin_boxes[mb_name].update(mb_style)
 
     return curr_style
+
+
+def get_resolved_margins(page_rules, page_index, page_name="default"):
+    """
+    Returns a tuple (mt, mb, ml, mr) of resolved margins for a given page.
+    """
+    if not page_rules:
+        return (
+            DEFAULT_MARGIN_TOP,
+            DEFAULT_MARGIN_BOTTOM,
+            DEFAULT_MARGIN_LEFT,
+            DEFAULT_MARGIN_RIGHT,
+        )
+
+    rule = resolve_page_style(page_rules, page_index, page_name)
+
+    def _parse(k, d):
+        val = rule.style.get(k, str(d))
+        if not val:
+            return float(d)
+        val = str(val).strip().lower()
+        try:
+            if val.endswith("pt") or val.endswith("px"):
+                return float(val[:-2])
+            if val.endswith("in"):
+                return float(val[:-2]) * 72.0
+            if val.endswith("cm"):
+                return float(val[:-2]) * 72.0 / 2.54
+            if val.endswith("mm"):
+                return float(val[:-2]) * 72.0 / 25.4
+            return float(val)
+        except (ValueError, TypeError):
+            return float(d)
+
+    return (
+        _parse("margin-top", DEFAULT_MARGIN_TOP),
+        _parse("margin-bottom", DEFAULT_MARGIN_BOTTOM),
+        _parse("margin-left", DEFAULT_MARGIN_LEFT),
+        _parse("margin-right", DEFAULT_MARGIN_RIGHT),
+    )

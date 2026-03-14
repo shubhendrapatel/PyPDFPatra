@@ -74,6 +74,8 @@ def layout_flex_context(
     cb_w: float,
     pos_cb: PosCB = None,
     root_font_size: float = 12.0,
+    current_page_name: str = "default",
+    page_rules: list | None = None,
 ) -> float:
     """
     Lays out children in a flex container.
@@ -114,6 +116,8 @@ def layout_flex_context(
             style,
             pos_cb,
             root_font_size,
+            current_page_name,
+            page_rules,
         )
     else:
         return _layout_flex_column(
@@ -126,6 +130,8 @@ def layout_flex_context(
             style,
             pos_cb,
             root_font_size,
+            current_page_name,
+            page_rules,
         )
 
 
@@ -139,6 +145,8 @@ def _layout_flex_row(
     style,
     pos_cb,
     root_font_size,
+    current_page_name,
+    page_rules,
 ):
     justify_content = style.get("justify-content", "flex-start").strip().lower()
     align_items = style.get("align-items", "stretch").strip().lower()
@@ -160,12 +168,26 @@ def _layout_flex_row(
             style_w = child_style.get("width", "auto")
             if style_w == "auto":
                 layout_block_context(
-                    child_box, 0, 0, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+                    child_box,
+                    0,
+                    0,
+                    cb_w,
+                    pos_cb=pos_cb,
+                    root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
                 )
                 child_box.w = _get_intrinsic_width(child_box)
             else:
                 layout_block_context(
-                    child_box, 0, 0, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+                    child_box,
+                    0,
+                    0,
+                    cb_w,
+                    pos_cb=pos_cb,
+                    root_font_size=root_font_size,
+                    current_page_name=current_page_name,
+                    page_rules=page_rules,
                 )
         else:
             child_box.w = 0.0
@@ -224,6 +246,8 @@ def _layout_flex_row(
                 pos_cb=pos_cb,
                 override_w=c.w,
                 root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
             )
 
         lh = max((_get_outer_height(c) for c in line), default=0.0)
@@ -306,7 +330,14 @@ def _layout_flex_row(
                     from .inline import layout_inline_context
 
                     layout_inline_context(
-                        c, c.x, c.y, c.w, "left", root_font_size=root_font_size
+                        c,
+                        c.x,
+                        c.y,
+                        c.w,
+                        "left",
+                        root_font_size=root_font_size,
+                        current_page_name=current_page_name,
+                        page_rules=page_rules,
                     )
                 else:
                     layout_block_context(
@@ -318,6 +349,8 @@ def _layout_flex_row(
                         override_w=c.w,
                         override_h=c.h,
                         root_font_size=root_font_size,
+                        current_page_name=current_page_name,
+                        page_rules=page_rules,
                     )
 
             curr_x += _get_outer_width(c) + item_space
@@ -336,6 +369,8 @@ def _layout_flex_column(
     style,
     pos_cb,
     root_font_size,
+    current_page_name,
+    page_rules,
 ):
     justify_content = style.get("justify-content", "flex-start").strip().lower()
     align_items = style.get("align-items", "stretch").strip().lower()
@@ -344,7 +379,14 @@ def _layout_flex_column(
     curr_y = content_y
     for c in flow_children:
         layout_block_context(
-            c, content_x, curr_y, cb_w, pos_cb=pos_cb, root_font_size=root_font_size
+            c,
+            content_x,
+            curr_y,
+            cb_w,
+            pos_cb=pos_cb,
+            root_font_size=root_font_size,
+            current_page_name=current_page_name,
+            page_rules=page_rules,
         )
         curr_y += _get_outer_height(c)
 
@@ -402,6 +444,8 @@ def _layout_flex_column(
                 override_w=c.w,
                 override_h=c.h,
                 root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
             )
         else:
             # Re-layout to ensure height is correct (if not already stretched)
@@ -414,6 +458,8 @@ def _layout_flex_column(
                 override_w=c.w,
                 override_h=c.h,
                 root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
             )
 
             dx = 0.0

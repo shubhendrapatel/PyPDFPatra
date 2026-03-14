@@ -83,10 +83,17 @@ class HTML:
 
         # 4. W3C Block Formatting Context Layout
         logger.info("[4/5] Calculating Layout Geometry...")
+        page_map = {0: "default"}
         if root_box is not None:
             # Shift everything by the top-left margin
             layout_block_context(
-                root_box, DEFAULT_MARGIN_LEFT, DEFAULT_MARGIN_TOP, CONTENT_WIDTH
+                root_box,
+                DEFAULT_MARGIN_LEFT,
+                DEFAULT_MARGIN_TOP,
+                CONTENT_WIDTH,
+                page_map=page_map,
+                page_rules=page_rules,
+                is_root=True,
             )
 
         # 5. Rendering Phase
@@ -120,6 +127,8 @@ class HTML:
                 anchor_map=anchor_map,
                 skip_fixed=True,
                 string_map=string_map,
+                page_rules=page_rules,
+                page_names=page_map,
             )
 
             # 5c. Global Fixed Elements (Repeat on every page)
@@ -131,7 +140,13 @@ class HTML:
                 pdf._suppress_page_jump = True
                 for page_idx in range(total_pages):
                     pdf.page = page_idx + 1
-                    draw_boxes(pdf, fixed_boxes, anchor_map=anchor_map)
+                    draw_boxes(
+                        pdf,
+                        fixed_boxes,
+                        anchor_map=anchor_map,
+                        page_rules=page_rules,
+                        page_names=page_map,
+                    )
                 pdf._suppress_page_jump = False
 
             # 5d. Page Margin Boxes (@top-left, etc.)
@@ -142,6 +157,7 @@ class HTML:
                 total_pages,
                 anchor_map=anchor_map,
                 string_map=string_map,
+                page_names=page_map,
             )
 
         # 5. Output Phase
