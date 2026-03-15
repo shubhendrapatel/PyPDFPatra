@@ -339,6 +339,7 @@ def _resolve_box_geometry(
         # Use viewport for fixed positioning stretching
         if box.position == "fixed":
             from pypdfpatra.defaults import PAGE_HEIGHT, PAGE_WIDTH
+
             pcb_w, pcb_h = PAGE_WIDTH, PAGE_HEIGHT
         else:
             pcb_w, pcb_h = pos_cb.w, pos_cb.h
@@ -529,7 +530,7 @@ def _layout_block_children(
             from .table import layout_table_context
 
             child_style = getattr(child_box.node, "style", {}) if child_box.node else {}
-            # Phase 11 & 14: Support page-break-before: always or NAMED page transitions.
+            # Support page-break-before: always or NAMED page transitions.
             # IMPORTANT: A child only changes the page context if it EXPLICITLY
             # declares a different 'page:' property. Without 'page:', the child
             # inherits the current page context and does NOT trigger a break.
