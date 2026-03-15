@@ -54,15 +54,7 @@ class PatraParser(HTMLParser):
         # Convert list of tuples [('class', 'main')] -> {'class': 'main'}
         attr_dict: Dict[str, str] = {k.lower(): v for k, v in attrs if v is not None}
 
-        # Parse and inline `style` attribute into the node's style dict
-        style_str: str = attr_dict.pop("style", "")
         node = Node(tag, attr_dict)
-        if style_str:
-            for declaration in style_str.split(";"):
-                declaration = declaration.strip()
-                if ":" in declaration:
-                    prop, _, val = declaration.partition(":")
-                    node.style[prop.strip()] = val.strip()
 
         # Attach to the current parent
         self.stack[-1].add_child(node)
@@ -77,7 +69,7 @@ class PatraParser(HTMLParser):
         """
         Triggered by XHTML-style self-closing tags (e.g. <br/>).
         """
-        attr_dict: Dict[str, str] = {k: v for k, v in attrs if v is not None}
+        attr_dict: Dict[str, str] = {k.lower(): v for k, v in attrs if v is not None}
         node = Node(tag, attr_dict)
         self.stack[-1].add_child(node)
 

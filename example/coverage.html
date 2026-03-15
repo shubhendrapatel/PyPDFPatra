@@ -367,6 +367,7 @@
             top: 0;
             left: 0;
             width: 100%;
+            height: 50pt;
             background-color: #f0f5ff;
             border-bottom: 1px solid #1890ff;
             text-align: center;
@@ -377,9 +378,10 @@
 
         .pos-fixed-footer {
             position: fixed;
-            bottom: 5px;
+            bottom: 0;
             left: 0;
             width: 100%;
+            height: 50pt;
             background-color: #f0f5ff;
             border-top: 1px solid #1890ff;
             text-align: center;
@@ -455,6 +457,43 @@
             padding: 10px;
             background: #f6ffed;
         }
+
+        /* 18. Floats & Clearance */
+        .float-container {
+            border: 1px solid black;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .float-left-box {
+            float: left;
+            width: 80px;
+            height: 80px;
+            background-color: #ff4d4f;
+            margin-right: 15px;
+            margin-bottom: 5px;
+            color: white;
+            padding: 5px;
+            font-weight: bold;
+        }
+
+        .float-right-box {
+            float: right;
+            width: 80px;
+            height: 80px;
+            background-color: #1890ff;
+            margin-left: 15px;
+            margin-bottom: 5px;
+            color: white;
+            padding: 5px;
+            font-weight: bold;
+        }
+
+        .float-text-wrap {
+            border: 1px solid #52c41a;
+            padding: 5px;
+            min-height: 100px;
+        }
     </style>
 </head>
 
@@ -487,6 +526,7 @@
             <li><a href="#section-breaks">15. Page Break Controls</a></li>
             <li><a href="#section-typo-adv">16. Advanced Typography & Formatting</a></li>
             <li><a href="#section-named-pages">17. Robust Named Pages</a></li>
+            <li><a href="#section-floats">18. Floats & Clearance</a></li>
         </ul>
         <p><i>Note: These links use internal anchor support (<code>#id</code>) which also enables document-level
                 TOCs.</i></p>
@@ -1280,6 +1320,33 @@
                     be pushed down significantly from the top header.</p>
             </div>
         </div>
-</body>
+
+        <h2 id="section-floats">18. Floats & Clearance</h2>
+        <div class="section">
+            <p>This section demonstrates CSS <code>float</code> and <code>clear</code> support.</p>
+
+            <div class="float-container">
+                <div class="float-left-box">Left Float</div>
+                <div class="float-right-box">Right Float</div>
+                <div class="float-text-wrap">
+                    This text correctly wraps between a red left-aligned float and a blue right-aligned float.
+                    The layout engine dynamically calculates the available horizontal space for each line of text.
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore
+                    et dolore magna aliqua.
+                </div>
+                <div
+                    style="clear: both; margin-top: 10px; padding: 5px; background: #f0f0f0; border: 1px dashed #666;">
+                    This block uses <code>clear: both</code>, ensuring it starts below all preceding floats.
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="float-left-box" style="height: 40px; background: orange;">Clear Left</div>
+                <p style="clear: left; padding: 5px; border: 1px solid #ccc;">
+                    This paragraph uses <code>clear: left</code> to jump below the orange float.
+                </p>
+            </div>
+        </div>
+    </body>
 
 </html>

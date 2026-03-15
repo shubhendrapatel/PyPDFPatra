@@ -41,7 +41,12 @@ def generate_box_tree(
     if not isinstance(node, Node):
         return None
     style = getattr(node, "style", {})
+    float_mode = style.get("float", "none").strip().lower()
     display = style.get("display", "inline").strip().lower()
+
+    if float_mode != "none" and display != "none":
+        # W3C: Floating elements compute their display to 'block'
+        display = "block"
 
     if display == "none":
         return None  # Node and its children generate no boxes
@@ -153,6 +158,9 @@ def generate_box_tree(
         box.z_index = int(style.get("z-index", "0"))
     except ValueError:
         box.z_index = 0
+
+    box.float_mode = float_mode
+    box.clear_mode = style.get("clear", "none").strip().lower()
 
     return box
 

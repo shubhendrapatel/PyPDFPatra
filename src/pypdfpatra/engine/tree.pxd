@@ -49,6 +49,8 @@ cdef class Box:
     cdef public double left
     cdef public int z_index
     cdef public str page_name
+    cdef public str float_mode
+    cdef public str clear_mode
 
 cdef class BlockBox(Box):
     pass

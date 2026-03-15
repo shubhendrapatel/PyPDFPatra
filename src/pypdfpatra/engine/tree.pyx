@@ -49,6 +49,8 @@ cdef class Box:
         self.left = float('nan')
         self.z_index = 0
         self.page_name = "default"
+        self.float_mode = "none"
+        self.clear_mode = "none"
 
 cdef class BlockBox(Box):
     def __init__(self, object node=None):

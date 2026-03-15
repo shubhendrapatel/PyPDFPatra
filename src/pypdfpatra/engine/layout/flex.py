@@ -80,6 +80,10 @@ def layout_flex_context(
     """
     Lays out children in a flex container.
     """
+    # Flex items never establish an ICB context for their children
+    if pos_cb:
+        pos_cb = PosCB(pos_cb.x, pos_cb.y, pos_cb.w, pos_cb.h, is_icb=False)
+
     style = getattr(box.node, "style", {}) if box.node else {}
     flex_direction = style.get("flex-direction", "row").strip().lower()
 

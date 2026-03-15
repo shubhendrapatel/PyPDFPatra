@@ -6,8 +6,6 @@ Implementation of the W3C Table Formatting Context.
 
 from __future__ import annotations
 
-from collections import namedtuple
-
 from pypdfpatra.defaults import PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import measure_text, parse_font
 from pypdfpatra.engine.tree import (
@@ -16,7 +14,7 @@ from pypdfpatra.engine.tree import (
     TableCellBox,
 )
 
-PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
+from .common import PosCB
 
 
 def layout_table_context(

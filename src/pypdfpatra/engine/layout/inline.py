@@ -5,7 +5,6 @@ Implements the W3C Inline Formatting Context (IFC).
 """
 
 import re
-from collections import namedtuple
 
 import pyphen
 
@@ -15,7 +14,7 @@ from pypdfpatra.defaults import (
 from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
 
-PosCB = namedtuple("PosCB", ["x", "y", "w", "h"])
+from .common import PosCB
 
 _pyphen_cache = {}
 
@@ -74,13 +73,14 @@ def _commit_line(
     current_line_boxes: list[tuple[Box, float, float]],
     line_x: float,
     current_y: float,
-    cb_w: float,
+    line_w: float,
     parent_box: Box,
     text_align: str = "left",
     is_last_line: bool = False,
     current_page_name: str = "default",
     page_rules: list | None = None,
-) -> float:
+    float_manager: object = None,
+) -> tuple[float, float]:
     """
     Constructs a LineBox from the accumulated inline boxes and appends it to the parent.
     Returns (consumed_max_h, new_y_bottom).
@@ -91,7 +91,7 @@ def _commit_line(
     # Create the LineBox container
     line_box = LineBox(node=None)
     line_box.x = line_x
-    line_box.w = cb_w
+    line_box.w = line_w
 
     # Determine line height (max height of outer box dimensions)
     max_h = 0.0
@@ -132,19 +132,19 @@ def _commit_line(
     # Calculate horizontal shift
     dx = 0.0
     if text_align == "center":
-        dx = max(0.0, (cb_w - total_line_width) / 2.0)
+        dx = max(0.0, (line_w - total_line_width) / 2.0)
     elif text_align == "right":
-        dx = max(0.0, cb_w - total_line_width)
+        dx = max(0.0, line_w - total_line_width)
     elif text_align == "justify":
         # W3C: last line of a paragraph is NOT justified by default (text-align-last).
         if not is_last_line and len(current_line_boxes) > 1:
-            extra_total = cb_w - total_line_width
+            extra_total = line_w - total_line_width
             # Only justify if there's a reasonable amount of text (avoid weird gaps)
-            if extra_total > 0 and extra_total < (cb_w * 0.4):
+            if extra_total > 0 and extra_total < (line_w * 0.4):
                 gap_per_word = extra_total / (len(current_line_boxes) - 1)
                 for i, (child, _, _) in enumerate(current_line_boxes):
                     shift_box(child, i * gap_per_word, 0)
-                total_line_width = cb_w
+                total_line_width = line_w
 
     for item in current_line_boxes:
         child, _, outer_h = item
@@ -170,7 +170,7 @@ def _commit_line(
 
 def _process_text_box(
     child: TextBox,
-    cb_w: float,
+    line_w: float,
     line_x: float,
     current_y: float,
     current_line_width: float,
@@ -181,10 +181,17 @@ def _process_text_box(
     root_font_size: float = 12.0,
     current_page_name: str = "default",
     page_rules: list | None = None,
-) -> tuple[float, float, bool]:
+    float_manager: object = None,
+) -> tuple[float, float, bool, float, float]:
     content = child.text_content
     if not content:
-        return current_y, current_line_width, current_line_ends_with_space
+        return (
+            current_y,
+            current_line_width,
+            current_line_ends_with_space,
+            line_x,
+            line_w,
+        )
 
     style = getattr(child.node, "style", {}) if child.node else {}
     white_space = style.get("white-space", "normal")
@@ -223,37 +230,47 @@ def _process_text_box(
                     current_line_boxes,
                     line_x,
                     current_y,
-                    cb_w,
+                    line_w,
                     parent_box,
                     text_align,
                     is_last_line=True,
                     current_page_name=current_page_name,
                     page_rules=page_rules,
+                    float_manager=float_manager,
                 )
                 current_line_boxes.clear()
                 current_line_width = 0.0
                 current_line_ends_with_space = False
+                if float_manager:
+                    line_x, line_w = float_manager.get_line_geometry(
+                        current_y, size, parent_box.x, parent_box.w
+                    )
 
             if not line:
                 continue
 
             word_w = measure_text(line, family, size, fpdf_style)
-            while current_line_width + word_w > cb_w:
+            while current_line_width + word_w > line_w:
                 if current_line_width > 0:
                     consumed_h, current_y = _commit_line(
                         current_line_boxes,
                         line_x,
                         current_y,
-                        cb_w,
+                        line_w,
                         parent_box,
                         text_align,
                         is_last_line=False,
                         current_page_name=current_page_name,
                         page_rules=page_rules,
+                        float_manager=float_manager,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
                     current_line_ends_with_space = False
+                    if float_manager:
+                        line_x, line_w = float_manager.get_line_geometry(
+                            current_y, size, parent_box.x, parent_box.w
+                        )
                 else:
                     break
 
@@ -297,16 +314,21 @@ def _process_text_box(
                         current_line_boxes,
                         line_x,
                         current_y,
-                        cb_w,
+                        line_w,
                         parent_box,
                         text_align,
                         is_last_line=True,
                         current_page_name=current_page_name,
                         page_rules=page_rules,
+                        float_manager=float_manager,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
                     current_line_ends_with_space = False
+                    if float_manager:
+                        line_x, line_w = float_manager.get_line_geometry(
+                            current_y, size, parent_box.x, parent_box.w
+                        )
                     continue
                 else:
                     # Treat newline as space for 'normal'
@@ -345,7 +367,7 @@ def _process_text_box(
                 if letter_spacing != 0 and len(token) > 1:
                     word_w += (len(token) - 1) * letter_spacing
 
-            if current_line_width + word_w > cb_w:
+            if current_line_width + word_w > line_w:
                 hyphens_mode = style.get("hyphens", "manual").lower()
                 if hyphens_mode == "auto":
                     lang = _get_lang(child.node).split("-")[0]
@@ -353,7 +375,7 @@ def _process_text_box(
 
                     # Try to hyphenate the word
                     hyphenated = dic.iterate(token)
-                    remaining_space = cb_w - current_line_width
+                    remaining_space = line_w - current_line_width
                     hyphen_w = measure_text("-", family, size, fpdf_style)
 
                     best_prefix = None
@@ -405,15 +427,20 @@ def _process_text_box(
                             current_line_boxes,
                             line_x,
                             current_y,
-                            cb_w,
+                            line_w,
                             parent_box,
                             text_align,
                             current_page_name=current_page_name,
                             page_rules=page_rules,
+                            float_manager=float_manager,
                         )
                         current_line_boxes.clear()
                         current_line_width = 0.0
                         current_line_ends_with_space = False
+                        if float_manager:
+                            line_x, line_w = float_manager.get_line_geometry(
+                                current_y, size, parent_box.x, parent_box.w
+                            )
 
                         # Process the remaining part of the word as the new token
                         token = leftover
@@ -444,29 +471,39 @@ def _process_text_box(
                             current_line_boxes,
                             line_x,
                             current_y,
-                            cb_w,
+                            line_w,
                             parent_box,
                             text_align,
                             is_last_line=False,
                             current_page_name=current_page_name,
                             page_rules=page_rules,
+                            float_manager=float_manager,
                         )
                         current_line_boxes.clear()
                         current_line_width = 0.0
                         current_line_ends_with_space = False
+                        if float_manager:
+                            line_x, line_w = float_manager.get_line_geometry(
+                                current_y, size, parent_box.x, parent_box.w
+                            )
                 elif current_line_width > 0:
                     consumed_h, current_y = _commit_line(
                         current_line_boxes,
                         line_x,
                         current_y,
-                        cb_w,
+                        line_w,
                         parent_box,
                         text_align,
                         is_last_line=False,
+                        float_manager=float_manager,
                     )
                     current_line_boxes.clear()
                     current_line_width = 0.0
                     current_line_ends_with_space = False
+                    if float_manager:
+                        line_x, line_w = float_manager.get_line_geometry(
+                            current_y, size, parent_box.x, parent_box.w
+                        )
 
             word_box = TextBox(text_content=token, node=child.node)
             word_box.w = word_w
@@ -480,12 +517,12 @@ def _process_text_box(
             current_line_boxes.append((word_box, word_w, word_box.h))
             current_line_ends_with_space = False
 
-    return current_y, current_line_width, current_line_ends_with_space
+    return current_y, current_line_width, current_line_ends_with_space, line_x, line_w
 
 
 def _process_inline_box(
     child: Box,
-    cb_w: float,
+    line_w: float,
     line_x: float,
     current_y: float,
     current_line_width: float,
@@ -495,7 +532,8 @@ def _process_inline_box(
     root_font_size: float = 12.0,
     current_page_name: str = "default",
     page_rules: list | None = None,
-) -> tuple[float, float, bool]:
+    float_manager: object = None,
+) -> tuple[float, float, bool, float, float]:
     child_style = getattr(child.node, "style", {})
 
     if child.__class__.__name__ == "InlineBlockBox":
@@ -503,7 +541,7 @@ def _process_inline_box(
 
         css_width = _parse_length(
             child_style.get("width", "auto"),
-            cb_w,
+            line_w,
             default_auto=None,
             root_font_size=root_font_size,
         )
@@ -526,13 +564,13 @@ def _process_inline_box(
 
         css_width = _parse_length(
             child_style.get("width", "auto"),
-            cb_w,
+            line_w,
             default_auto=None,
             root_font_size=root_font_size,
         )
         css_height = _parse_length(
             child_style.get("height", "auto"),
-            cb_w,
+            line_w,
             default_auto=None,
             root_font_size=root_font_size,
         )
@@ -569,9 +607,9 @@ def _process_inline_box(
             child.h = child.image_h
 
         # Responsive layout: don't bleed outside container
-        if child.w > cb_w and cb_w > 0:
-            ratio = cb_w / child.w
-            child.w = cb_w
+        if child.w > line_w and line_w > 0:
+            ratio = line_w / child.w
+            child.w = line_w
             child.h *= ratio
 
     child_total_w = (
@@ -593,19 +631,24 @@ def _process_inline_box(
         + child.margin_bottom
     )
 
-    if current_line_width + child_total_w > cb_w and current_line_width > 0:
+    if current_line_width + child_total_w > line_w and current_line_width > 0:
         consumed_h, current_y = _commit_line(
             current_line_boxes,
             line_x,
             current_y,
-            cb_w,
+            line_w,
             parent_box,
             text_align,
             current_page_name=current_page_name,
             page_rules=page_rules,
+            float_manager=float_manager,
         )
         current_line_boxes.clear()
         current_line_width = 0.0
+        if float_manager:
+            line_x, line_w = float_manager.get_line_geometry(
+                current_y, root_font_size, parent_box.x, parent_box.w
+            )
 
     target_content_x = (
         line_x
@@ -621,7 +664,7 @@ def _process_inline_box(
     current_line_width += child_total_w
     current_line_boxes.append((child, child_total_w, child_total_h))
 
-    return current_y, current_line_width, False
+    return current_y, current_line_width, False, line_x, line_w
 
 
 def layout_inline_context(
@@ -633,6 +676,7 @@ def layout_inline_context(
     root_font_size: float = 12.0,
     current_page_name: str = "default",
     page_rules: list | None = None,
+    float_manager: object = None,
 ) -> None:
     """
     Implements a basic W3C Inline Formatting Context (IFC).
@@ -649,43 +693,58 @@ def layout_inline_context(
     current_line_ends_with_space = False
 
     current_y = cb_y
-    line_x = cb_x
+    if float_manager:
+        line_x, line_w = float_manager.get_line_geometry(
+            current_y, root_font_size, cb_x, cb_w
+        )
+    else:
+        line_x, line_w = cb_x, cb_w
 
     # Flow the inline children
     flat_children = _flatten_inline(inline_children)
     for child in flat_children:
         if isinstance(child, TextBox):
-            current_y, current_line_width, current_line_ends_with_space = (
-                _process_text_box(
-                    child,
-                    cb_w,
-                    line_x,
-                    current_y,
-                    current_line_width,
-                    current_line_ends_with_space,
-                    current_line_boxes,
-                    parent_box,
-                    text_align,
-                    root_font_size=root_font_size,
-                    current_page_name=current_page_name,
-                    page_rules=page_rules,
-                )
+            (
+                current_y,
+                current_line_width,
+                current_line_ends_with_space,
+                line_x,
+                line_w,
+            ) = _process_text_box(
+                child,
+                line_w,
+                line_x,
+                current_y,
+                current_line_width,
+                current_line_ends_with_space,
+                current_line_boxes,
+                parent_box,
+                text_align,
+                root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
+                float_manager=float_manager,
             )
         else:
-            current_y, current_line_width, current_line_ends_with_space = (
-                _process_inline_box(
-                    child,
-                    cb_w,
-                    line_x,
-                    current_y,
-                    current_line_width,
-                    current_line_boxes,
-                    parent_box,
-                    text_align,
-                    root_font_size=root_font_size,
-                    current_page_name=current_page_name,
-                    page_rules=page_rules,
-                )
+            (
+                current_y,
+                current_line_width,
+                current_line_ends_with_space,
+                line_x,
+                line_w,
+            ) = _process_inline_box(
+                child,
+                line_w,
+                line_x,
+                current_y,
+                current_line_width,
+                current_line_boxes,
+                parent_box,
+                text_align,
+                root_font_size=root_font_size,
+                current_page_name=current_page_name,
+                page_rules=page_rules,
+                float_manager=float_manager,
             )
 
     # Final commit for the last remaining line of the paragraph
@@ -693,12 +752,12 @@ def layout_inline_context(
         current_line_boxes,
         line_x,
         current_y,
-        cb_w,
+        line_w,
         parent_box,
         text_align,
         is_last_line=True,
         current_page_name=current_page_name,
-        page_rules=page_rules,
+        float_manager=float_manager,
     )
 
     # The parent block box height expands to fit all the line boxes
