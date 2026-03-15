@@ -34,8 +34,9 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 ### Phase 9: Positioning & Stacking (✅ Done)
 - **Relative Positioning**: Offset boxes without affecting flow. (✅)
 - **Absolute Positioning**: Remove from flow and position relative to containers (including outer dimension logic). (✅)
-- **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers). (✅)
+- **Fixed Positioning**: Anchor boxes to page coordinates (e.g., footers). (✅ with explicit height requirement for paged media)
 - **Z-Index**: Control overlapping paint order. (✅)
+- **Note**: Fixed-position elements in paged media (headers/footers) must have explicit `height` CSS property for proper space reservation.
 
 ### Phase 10: Flexbox Formatting Context (✅ Done)
 - **Flex Container**: `display: flex`. (✅ Support for row and column flow)

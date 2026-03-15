@@ -34,6 +34,26 @@ The block formatting context and inline formatting context support W3C-standard 
 ### Paged Media (position: fixed)
 In the PDF context, **`position: fixed`** follows the W3C paged media standard by repeating the element on **every page** of the document. This is the primary method for creating global headers and footers.
 
+**⚠️ Important Requirement**: Fixed-position elements **MUST** have an explicit `height` CSS property (e.g., `height: 20px`). Without explicit height, the layout engine cannot reserve proper vertical space for the element on each page, potentially causing overlapping with content or inconsistent pagination.
+
+```css
+/* ✅ Correct */
+.header {
+    position: fixed;
+    top: 0;
+    height: 20px;
+    width: 100%;
+}
+
+/* ❌ Wrong – will cause layout issues */
+.header {
+    position: fixed;
+    top: 0;
+    /* height: auto; or missing */
+    width: 100%;
+}
+```
+
 ### Flexbox Support (CSS Flexible Box Layout Module Level 1)
 The engine implements a comprehensive Flexbox Formatting Context (FFC):
 - **`display: flex`**

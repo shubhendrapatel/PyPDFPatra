@@ -74,6 +74,16 @@ This document tracks important implementation decisions, design choices, and CSS
 **Decision**: We implement automatic repetition for fixed elements.
 **Implementation**: Fixed boxes are collected into a separate layer during rendering. After the main BFC/IFC flow is drawn, the renderer iterates through all generated pages and "stamps" the fixed boxes at their relative page coordinates. This allows for simple global headers and footers.
 
+### Fixed-Position Elements Require Explicit Height (Paged Media)
+**Context**: Fixed-position elements (headers/footers) in CSS Paged Media were rendering without consistent height across pages, causing content layout issues and vertical space allocation failures.
+**Decision**: Fixed-position elements MUST have an explicit `height` property defined in CSS.
+**Rationale**: Unlike browser viewports where content can scroll, paged media has discrete page breaks. Without explicit height, the layout engine cannot calculate how much vertical space to reserve on each page, leading to:
+1. Headers/footers with variable height per page
+2. Content overlapping with headers/footers
+3. Inconsistent pagination calculations
+**Implementation**: During `_resolve_box_geometry` in `block.py`, fixed-position boxes are required to have an explicit height value (not `auto`). If not provided in CSS, the renderer should treat it as a styling error.
+**User Guidance**: When creating PDFs with fixed headers/footers, always set `height: <value>px` explicitly on fixed-position elements.
+
 ### Basic Flexbox Support (Incomplete)
 **Context**: Modern invoice samples (like WeasyPrint's) use `display: flex` for simple horizontal alignment.
 **Decision**: We implemented a "Basic Flex Row" shortcut in `block.py` to support side-by-side block children.
