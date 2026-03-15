@@ -16,8 +16,12 @@ USER_AGENT_STYLES = {
     "link": {"display": "none"},
     "param": {"display": "none"},
     # Block formatting defaults
-    "html": {"display": "block"},
-    "body": {"display": "block", "margin": "8px"},
+    "html": {"display": "block", "font-size": "16px"},
+    "body": {
+        "display": "block",
+        "margin": "8px",
+        "font-size": "16px",
+    },
     "div": {"display": "block"},
     "p": {"display": "block", "margin-top": "1em", "margin-bottom": "1em"},
     "blockquote": {
@@ -34,6 +38,7 @@ USER_AGENT_STYLES = {
         "margin-left": "40px",
         "margin-right": "40px",
     },
+    "figcaption": {"display": "block"},
     "pre": {
         "display": "block",
         "margin-top": "1em",
@@ -50,6 +55,7 @@ USER_AGENT_STYLES = {
         "border-top-color": "#808080",
         "height": "0px",
     },
+    "br": {"display": "block"},
     # Headings
     "h1": {
         "display": "block",
@@ -129,6 +135,7 @@ USER_AGENT_STYLES = {
     },
     "dl": {"display": "block", "margin-top": "1em", "margin-bottom": "1em"},
     "dd": {"display": "block", "margin-left": "40px"},
+    "dt": {"display": "block"},
     "li": {"display": "list-item"},
     # Tables
     "table": {
@@ -198,6 +205,13 @@ USER_AGENT_STYLES = {
     "code": {"display": "inline", "font-family": "monospace"},
     "kbd": {"display": "inline", "font-family": "monospace"},
     "samp": {"display": "inline", "font-family": "monospace"},
+    "mark": {"display": "inline", "background-color": "yellow", "color": "black"},
+    "small": {"display": "inline", "font-size": "smaller"},
+    "big": {"display": "inline", "font-size": "larger"},
+    "q": {"display": "inline"},
+    "abbr": {"display": "inline"},
+    "dfn": {"display": "inline", "font-style": "italic"},
+    "nobr": {"display": "inline", "white-space": "nowrap"},
     "img": {"display": "inline-block"},
     # Anonymous text node default wrapper
     "#text": {"display": "inline"},
