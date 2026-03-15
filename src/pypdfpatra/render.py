@@ -379,6 +379,105 @@ def _draw_borders(
     pdf._out("2 J")
 
 
+def _draw_inline_backgrounds(
+    pdf: fpdf.FPDF,
+    box: Box,
+    style: dict,
+    dy: float = 0.0,
+    page_rules: list = None,
+    page_names: dict = None,
+) -> None:
+    """
+    Draws background colors for inline elements.
+
+    During layout, InlineBox objects have their background regions pre-calculated
+    and stored in _inline_bg_regions. However, in the render tree, these boxes
+    are flattened to TextBox objects. We use node.props["_inline_parent_box"]
+    to find the original InlineBox and draw its backgrounds.
+    """
+    # Only process TextBox objects to find their inline parents
+    if box.__class__.__name__ != "TextBox":
+        return
+
+    # Look for an inline parent box reference
+    parent_inline = None
+    if hasattr(box, "node") and hasattr(box.node, "props"):
+        parent_inline = box.node.props.get("_inline_parent_box")
+
+    if not parent_inline:
+        return
+
+    if parent_inline.__class__.__name__ != "InlineBox":
+        return
+
+    node_style = getattr(parent_inline.node, "style", {}) if hasattr(
+        parent_inline, "node"
+    ) else {}
+
+    if node_style.get("visibility") == "hidden":
+        return
+
+    bg_color_str = node_style.get("background-color")
+    if not bg_color_str or bg_color_str == "transparent":
+        return
+
+    rgb = parse_color(bg_color_str)
+    if rgb is None:
+        return
+    r, g, b = rgb
+    if r is None:
+        return
+
+    # Get the inline background regions
+    bg_regions = getattr(parent_inline, '_inline_bg_regions', [])
+    if not bg_regions:
+        return
+
+    # Prevent drawing the same inline background multiple times
+    # (once per TextBox child). Use a set on the PDF object to track drawn boxes.
+    if not hasattr(pdf, '_drawn_inline_boxes'):
+        pdf._drawn_inline_boxes = set()
+
+    parent_id = id(parent_inline)
+    if parent_id in pdf._drawn_inline_boxes:
+        return
+
+    pdf._drawn_inline_boxes.add(parent_id)
+
+    pdf.set_fill_color(r, g, b)
+
+    for x, y, w, h in bg_regions:
+        # Convert absolute coordinates to page-relative
+        absolute_y = y + dy
+        start_page = int(absolute_y / PAGE_HEIGHT)
+        end_page = int((absolute_y + h) / PAGE_HEIGHT)
+
+        for p in range(start_page, end_page + 1):
+            if not getattr(pdf, "_suppress_page_jump", False):
+                _ensure_page(pdf, p)
+            pdf.set_fill_color(r, g, b)
+
+            # Get page margins for clipping
+            mt, mb, ml, mr = _get_page_margins(pdf, p, page_rules, page_names)
+
+            # Local y position on this page
+            local_y = absolute_y - (p * PAGE_HEIGHT)
+            local_h = h
+
+            # Clip against page boundaries
+            if local_y < mt:
+                local_h -= mt - local_y
+                local_y = mt
+
+            if local_y + local_h > PAGE_HEIGHT - mb:
+                local_h = (PAGE_HEIGHT - mb) - local_y
+
+            if local_h > 0:
+                pdf.rect(x=x, y=local_y, w=w, h=local_h, style="F")
+
+    pdf.set_fill_color(0, 0, 0)
+
+
 def _draw_text(
     pdf: fpdf.FPDF,
     box: TextBox,
@@ -679,6 +778,16 @@ def draw_boxes(
             page_rules=page_rules,
             page_names=page_names,
             skip_clipping=is_fixed,
+        )
+
+        # Draw inline element backgrounds (Phase 15)
+        _draw_inline_backgrounds(
+            pdf,
+            box,
+            style,
+            dy=dy,
+            page_rules=page_rules,
+            page_names=page_names,
         )
 
         # Handle string-set (Phase 11 Named Strings)

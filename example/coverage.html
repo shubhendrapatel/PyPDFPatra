@@ -532,7 +532,7 @@
                 TOCs.</i></p>
     </div>
 
-    <h2 id="section-box">1. Visual Box Model & Borders</h2>
+    <h2 id="section-box" style="page-break-before: always;">1. Visual Box Model & Borders</h2>
     <div class="section">
         <div class="border-solid" style="padding: 10px; margin-bottom: 10px;">Solid Border</div>
         <div class="border-dashed" style="padding: 10px; margin-bottom: 10px;">Dashed Border</div>
@@ -939,9 +939,18 @@
             </div>
         </div>
         <div style="color: #ff0000; margin-top: 10px;">
-            Named colors: <span style="color: papayawhip; background-color: darkblue;">PapayaWhip on DarkBlue</span>,
+            Named colors: <span style="color: papayawhip; background-color: darkblue;padding: 2px 4px;">PapayaWhip on DarkBlue</span>,
             <span style="color: limegreen;">LimeGreen Text</span>.
         </div>
+
+        <p style="margin-top: 15px;"><b>Inline Element Backgrounds (Phase 15):</b></p>
+        <p style="background: #f0f0f0; padding: 5px;">
+            Note: Background support for <code>display: inline</code> elements is being implemented.
+            Currently, use <code>display: inline-block</code> with explicit padding for inline backgrounds:
+            <span style="background-color: yellow; display: inline-block; padding: 2px;">yellow background</span>,
+            <span style="background-color: #ffcccc; display: inline-block; padding: 2px;">light red</span>,
+            and <span style="background-color: #ccffcc; color: darkgreen; display: inline-block; padding: 2px;">green with dark text</span>.
+        </p>
     </div>
 
     <h2 id="section-paged">8. Pagination & Fragmentation</h2>

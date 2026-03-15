@@ -39,24 +39,122 @@ def _get_lang(node):
     return "en"
 
 
-def _flatten_inline(boxes: list[Box]) -> list[Box]:
-    """Flattens nested InlineBox wrappers into a 1D sequence for line wrapper."""
+# Removed - functionality merged into _flatten_inline
+
+
+def _calculate_inline_bg_regions(line_box: LineBox) -> None:
+    """
+    After a LineBox is populated, traverse its children to calculate
+    background regions for InlineBox ancestors of TextBoxes.
+
+    This stores the bounding rectangles on each InlineBox's _inline_bg_regions
+    property without modifying the line_box.children structure.
+    """
+    if not hasattr(line_box, 'children') or not line_box.children:
+        return
+
+    # Build a mapping of (InlineBox, y_position) -> list of TextBoxes
+    inline_regions = {}
+
+    for child in line_box.children:
+        if isinstance(child, TextBox):
+            # Get inline parent from node.props (stored during flattening)
+            parent_inline = None
+            if child.node and hasattr(child.node, "props"):
+                parent_inline = child.node.props.get("_inline_parent_box")
+
+            if parent_inline and parent_inline.__class__.__name__ == "InlineBox":
+                # Round y to group TextBoxes on same baseline
+                y_key = round(child.y, 2)
+                key = (id(parent_inline), y_key)
+                if key not in inline_regions:
+                    inline_regions[key] = (parent_inline, [])
+                inline_regions[key][1].append(child)
+
+    # For each inline box, calculate its background regions
+    for (_inline_id, _y_pos), (inline_box, text_boxes) in inline_regions.items():
+        if not text_boxes:
+            continue
+
+        # Sort text boxes by x position
+        text_boxes_sorted = sorted(text_boxes, key=lambda tb: tb.x)
+
+        # Group consecutive text boxes that should be in one background region
+        regions = []
+        current_region_boxes = [text_boxes_sorted[0]]
+
+        for tb in text_boxes_sorted[1:]:
+            prev_box = current_region_boxes[-1]
+            # Check if this box is adjacent or overlapping with previous
+            # Allow small gap for spacing
+            gap = tb.x - (prev_box.x + prev_box.w)
+            if gap <= 0.5:  # Adjacent or overlapping
+                current_region_boxes.append(tb)
+            else:
+                # Start a new region
+                regions.append(current_region_boxes)
+                current_region_boxes = [tb]
+
+        if current_region_boxes:
+            regions.append(current_region_boxes)
+
+        # Calculate bounding box for each region
+        bg_regions = []
+        for region_boxes in regions:
+            min_x = min(tb.x for tb in region_boxes)
+            max_x = max(tb.x + tb.w for tb in region_boxes)
+            min_y = min(tb.y for tb in region_boxes)
+            max_y = max(tb.y + tb.h for tb in region_boxes)
+
+            # Add padding from inline box's padding
+            padding_left = getattr(inline_box, 'padding_left', 0.0)
+            padding_right = getattr(inline_box, 'padding_right', 0.0)
+            padding_top = getattr(inline_box, 'padding_top', 0.0)
+            padding_bottom = getattr(inline_box, 'padding_bottom', 0.0)
+
+            x = min_x - padding_left
+            y = min_y - padding_top
+            w = (max_x - min_x) + padding_left + padding_right
+            h = (max_y - min_y) + padding_top + padding_bottom
+
+            bg_regions.append((x, y, w, h))
+
+        # Store regions on the inline box
+        if hasattr(inline_box, '_inline_bg_regions'):
+            inline_box._inline_bg_regions = bg_regions
+        else:
+            # Should be initialized in tree.pyx
+            pass
+
+
+def _flatten_inline(boxes: list[Box], parent_inline=None) -> list[Box]:
+    """
+    Flattens nested InlineBox wrappers into a 1D sequence for line wrapper.
+    Also tracks inline parent on each TextBox for background-color support.
+    Stores parent reference in node.props (Cython objects lack __dict__).
+    """
     flat = []
     for b in boxes:
         if isinstance(b, TextBox):
+            # Store the inline parent in node.props for later background calculation
+            if b.node and hasattr(b.node, "props"):
+                b.node.props["_inline_parent_box"] = parent_inline
             flat.append(b)
         elif b.__class__.__name__ == "InlineBox":
             href = getattr(b.node, "props", {}).get("href")
-            children = _flatten_inline(b.children)
+            children = _flatten_inline(b.children, parent_inline=b)
             if href:
                 for c in children:
                     # Inherit the anchor's href if the child node doesn't have one
-                    if "href" not in c.node.props:
+                    if c.node and "href" not in c.node.props:
                         c.node.props["href"] = href
             flat.extend(children)
         elif b.__class__.__name__ == "LineBox":
-            flat.extend(_flatten_inline(b.children))
+            flat.extend(_flatten_inline(b.children, parent_inline))
         else:
+            # Store parent reference for non-TextBox children too
+            if b.node and hasattr(b.node, "props"):
+                b.node.props["_inline_parent_box"] = parent_inline
             flat.append(b)
     return flat
 
@@ -163,6 +261,9 @@ def _commit_line(
         shift_box(child, dx, dy)
 
         line_box.children.append(child)
+
+    # Calculate background regions for inline elements (after positioning)
+    _calculate_inline_bg_regions(line_box)
 
     parent_box.children.append(line_box)
     return max_h, current_y + max_h

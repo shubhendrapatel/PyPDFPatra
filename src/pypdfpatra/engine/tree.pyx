@@ -63,6 +63,7 @@ cdef class AnonymousBlockBox(BlockBox):
 cdef class InlineBox(Box):
     def __init__(self, object node=None):
         super().__init__(node)
+        self._inline_bg_regions = []
 
 cdef class InlineBlockBox(Box):
     def __init__(self, object node=None):

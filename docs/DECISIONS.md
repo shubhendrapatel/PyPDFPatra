@@ -95,3 +95,18 @@ This document tracks important implementation decisions, design choices, and CSS
 ### Overflow Clipping (`overflow: hidden`)
 **Context**: In `coverage.html`, `white-space: pre` blocks can bleed outside their containers if the content is too long. Standard W3C behavior for overflow is visible.
 **Decision**: We have decided **not** to implement `overflow: hidden` at this stage. While `fpdf2` supports block-based clipping via `pdf.rect_clip()`, the interaction between clipping and our multi-page slicing logic requires careful design to avoid cutting off legitimate content at page boundaries.
+
+### Inline Element Backgrounds - False Start (Phase 15)
+**Context**: Implementing `background-color` support for `display: inline` elements (`<span>`, `<a>`, etc.).
+**Initial Approach**: Post-process inline boxes after line layout by traversing line boxes to find descendants and calculating bounding boxes. Insert the inline box back into line_box.children for rendering.
+**Problem**: This approach caused fixed-position elements to duplicate and render in wrong positions, breaking the fixed header/footer feature.
+**Root Cause**: The post-processing step that modified `line_box.children` interacted poorly with fixed element rendering logic in `render.py`, which relies on specific box tree structure and ordering.
+**Resolution**: 
+- Disabled the inline background feature to restore fixed positioning
+- Reverted coverage.html to use safe workaround (`display: inline-block` with padding)
+- Implementation delayed until a safer approach can be designed
+**Future Approach**: 
+- Calculate inline bounds as a completely separate rendering pass, not modifying the layout tree
+- Or: Implement inline box dimension calculation during the initial line layout phase (before `_commit_line`)
+- Ensure isolated changes that don't affect fixed element rendering paths
+**User Guidance**: For inline element backgrounds, currently use `display: inline-block` with explicit `padding`.

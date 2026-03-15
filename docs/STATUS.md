@@ -63,11 +63,16 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Floats**: `float: left / right`. Requires complex IFC integration for text flow wrapping.
 - **Clearance**: `clear: left / right / both` support to break out of floating contexts.
 
-### Phase 15: CSS3 Backgrounds & Visual Effects (⬜ Planned)
-- **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths).
-- **Borders**: `border-radius` (Rounded corners).
-- **Transparency**: `opacity` support for text and boxes.
-- **Backgrounds**: Linear gradients (`linear-gradient`) and `background-size: cover/contain`.
+### Phase 15: CSS3 Backgrounds & Visual Effects (🔄 In Progress)
+- **Inline Element Backgrounds**: `background-color` on `display: inline` elements (`<span>`, `<a>`, `<strong>`, etc.). (🔄 In Progress)
+  - Workaround: Use `display: inline-block` with padding for backgrounds on inline elements
+  - Full `display: inline` background support requires careful integration with fixed positioning without side effects
+  - Initial implementation was too invasive and caused fixed element positioning regression
+  - Planned re-implementation: Calculate inline bounds as a separate pass after layout, with stricter guards for fixed elements
+- **SVG Rendering**: Integration of an SVG engine (e.g., `svglib` or raw paths). (⬜)
+- **Borders**: `border-radius` (Rounded corners). (⬜)
+- **Transparency**: `opacity` support for text and boxes. (⬜)
+- **Backgrounds**: Linear gradients (`linear-gradient`) and `background-size: cover/contain`. (⬜)
 
 ### Phase 16: CSS 2.1 Layout Polish (⬜ Planned)
 - **Min/Max Dimensions**: `min-width`, `max-width`, `min-height`, `max-height`.

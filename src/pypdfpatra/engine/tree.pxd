@@ -59,7 +59,9 @@ cdef class AnonymousBlockBox(BlockBox):
     pass
 
 cdef class InlineBox(Box):
-    pass
+    # List of background regions: each region is a tuple (x, y, w, h)
+    # Calculated after line layout to support background-color
+    cdef public list _inline_bg_regions
 
 cdef class InlineBlockBox(Box):
     pass
