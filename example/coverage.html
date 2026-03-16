@@ -321,6 +321,8 @@
             background: #ffec3d;
             border: 1px solid #d4b106;
             padding: 5px;
+            display: inline-block;
+            transform: translate(20px, 20px);
         }
 
         .stack-1 {
@@ -912,6 +914,9 @@
 
     <h2 id="section-media">6. Replaced Elements (Images & Forms)</h2>
     <div class="section">
+        <b>Image with actual image:</b><br>
+        <img src="./test_image1.png" alt="Fallback Logo" style="border: 1px solid red; margin: 10px 0;">
+        <br>
         <b>Image with Alt Fallback:</b><br>
         <img src="missing.png" alt="Fallback Logo"
             style="width: 100px; height: 50px; border: 1px solid red; margin: 10px 0;">
@@ -939,7 +944,8 @@
             </div>
         </div>
         <div style="color: #ff0000; margin-top: 10px;">
-            Named colors: <span style="color: papayawhip; background-color: darkblue;padding: 2px 4px;">PapayaWhip on DarkBlue</span>,
+            Named colors: <span style="color: papayawhip; background-color: darkblue;padding: 2px 4px;">PapayaWhip on
+                DarkBlue</span>,
             <span style="color: limegreen;">LimeGreen Text</span>.
         </div>
 
@@ -949,7 +955,8 @@
             Currently, use <code>display: inline-block</code> with explicit padding for inline backgrounds:
             <span style="background-color: yellow; display: inline-block; padding: 2px;">yellow background</span>,
             <span style="background-color: #ffcccc; display: inline-block; padding: 2px;">light red</span>,
-            and <span style="background-color: #ccffcc; color: darkgreen; display: inline-block; padding: 2px;">green with dark text</span>.
+            and <span style="background-color: #ccffcc; color: darkgreen; display: inline-block; padding: 2px;">green
+                with dark text</span>.
         </p>
     </div>
 
@@ -1152,7 +1159,7 @@
         <p style="margin-top: 15px;"><b>B. Relative Offsets:</b></p>
         <div style="border: 1px solid #ccc; padding: 20px; height: 60px;">
             Normal Text.
-            <span class="pos-rel">Shifted Relative</span>
+            <span class="pos-rel">Shifted Relative with translate property and </span>
             Continuing Normal Text.
         </div>
 
@@ -1343,8 +1350,7 @@
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore
                     et dolore magna aliqua.
                 </div>
-                <div
-                    style="clear: both; margin-top: 10px; padding: 5px; background: #f0f0f0; border: 1px dashed #666;">
+                <div style="clear: both; margin-top: 10px; padding: 5px; background: #f0f0f0; border: 1px dashed #666;">
                     This block uses <code>clear: both</code>, ensuring it starts below all preceding floats.
                 </div>
             </div>
@@ -1356,6 +1362,6 @@
                 </p>
             </div>
         </div>
-    </body>
+</body>
 
 </html>

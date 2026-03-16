@@ -14,6 +14,7 @@ import math
 from pypdfpatra.defaults import (
     DEFAULT_MARGIN_TOP,
     PAGE_HEIGHT,
+    UNIT_FACTORS,
 )
 from pypdfpatra.engine.layout.inline import shift_box
 from pypdfpatra.engine.tree import (
@@ -114,25 +115,20 @@ def _parse_length(
     value = value.strip().lower()
     if value == "auto":
         return default_auto
+    if value.endswith("%"):
+        return float(value[:-1]) / 100.0 * parent_value
+
+    if value.endswith("rem"):
+        return float(value[:-3]) * root_font_size
+    if value.endswith("em"):
+        return float(value[:-2]) * font_size
+
+    for unit, factor in UNIT_FACTORS.items():
+        if factor is not None and value.endswith(unit):
+            return float(value[: -len(unit)]) * factor
+
     try:
-        if value.endswith("px"):
-            return float(value[:-2])
-        elif value.endswith("pt"):
-            return float(value[:-2])
-        elif value.endswith("in"):
-            return float(value[:-2]) * 72.0
-        elif value.endswith("cm"):
-            return float(value[:-2]) * 72.0 / 2.54
-        elif value.endswith("mm"):
-            return float(value[:-2]) * 72.0 / 25.4
-        elif value.endswith("em"):
-            return float(value[:-2]) * font_size
-        elif value.endswith("rem"):
-            return float(value[:-3]) * root_font_size
-        elif value.endswith("%"):
-            return float(value[:-1]) / 100.0 * parent_value
-        else:
-            return float(value)
+        return float(value)
     except ValueError:
         return 0.0
 
@@ -790,6 +786,7 @@ def layout_block_context(
                 .replace("pt", "")
                 .replace("px", "")
                 .replace("in", "")
+                .replace("cm", "")
             )
 
         mt_root = _p("margin-top", DEFAULT_MARGIN_TOP)

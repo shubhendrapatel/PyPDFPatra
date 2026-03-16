@@ -30,6 +30,11 @@ The block formatting context and inline formatting context support W3C-standard 
 * **`position`**: `static`, `relative`, `absolute`, `fixed`.
 * **`top`**, **`right`**, **`bottom`**, **`left`**: Support for absolute and relative offsets.
 * **`z-index`**: Controls stacking order of overlapping elements.
+* **`transform`**: Visual-only 2D transformations.
+    * `translate(x, y)` / `translateX(x)` / `translateY(y)`: **Fully Supported**. Effectively shifts the element without affecting document flow.
+    * `scale(x, y)` / `rotate(angle)` / `skew(x, y)`: Currently **Placeholders** (Parsed and composed into a matrix but not yet rendered).
+    * `matrix(a, b, c, d, e, f)`: Supported for translation components.
+    * Support for all units: `px`, `pt`, `in`, `mm`, `cm`, `em`, `rem`.
 
 ### Paged Media (position: fixed)
 In the PDF context, **`position: fixed`** follows the W3C paged media standard by repeating the element on **every page** of the document. This is the primary method for creating global headers and footers.

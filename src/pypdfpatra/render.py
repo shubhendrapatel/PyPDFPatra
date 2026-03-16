@@ -18,6 +18,29 @@ from pypdfpatra.engine.page import PageRule, resolve_page_style
 from pypdfpatra.engine.tree import Box, TextBox
 
 
+def _apply_transform(transform_matrix: list | None) -> tuple[float, float]:
+    """
+    Extracts translation components from a transformation matrix.
+    Other effects (scale, rotate, skew) are currently ignored by the renderer.
+
+    Args:
+        transform_matrix: [a, b, c, d, e, f] or None
+
+    Returns:
+        A tuple of (tx, ty) representing the points to shift in X and Y.
+    """
+    if not transform_matrix:
+        return 0.0, 0.0
+
+    # In PDF matrix [a, b, c, d, e, f], e and f are the translation components.
+    # While we don't fully support rotation/scale yet, extracting e/f allows
+    # simple translate() to work perfectly.
+    tx = transform_matrix[4]
+    ty = transform_matrix[5]
+
+    return tx, ty
+
+
 def collect_fixed_boxes(boxes: list[Box]) -> list[Box]:
     """Recursively collects all boxes with position='fixed'."""
     fixed = []
@@ -410,9 +433,11 @@ def _draw_inline_backgrounds(
     if parent_inline.__class__.__name__ != "InlineBox":
         return
 
-    node_style = getattr(parent_inline.node, "style", {}) if hasattr(
-        parent_inline, "node"
-    ) else {}
+    node_style = (
+        getattr(parent_inline.node, "style", {})
+        if hasattr(parent_inline, "node")
+        else {}
+    )
 
     if node_style.get("visibility") == "hidden":
         return
@@ -429,13 +454,13 @@ def _draw_inline_backgrounds(
         return
 
     # Get the inline background regions
-    bg_regions = getattr(parent_inline, '_inline_bg_regions', [])
+    bg_regions = getattr(parent_inline, "_inline_bg_regions", [])
     if not bg_regions:
         return
 
     # Prevent drawing the same inline background multiple times
     # (once per TextBox child). Use a set on the PDF object to track drawn boxes.
-    if not hasattr(pdf, '_drawn_inline_boxes'):
+    if not hasattr(pdf, "_drawn_inline_boxes"):
         pdf._drawn_inline_boxes = set()
 
     parent_id = id(parent_inline)
@@ -594,7 +619,9 @@ def _draw_text(
     # Phase 12: Manual character drawing for letter-spacing/small-caps
     if letter_spacing != 0 or variant == "small-caps":
         current_x = content_x
-        small_size = size * 0.8
+        from pypdfpatra.defaults import SMALL_CAPS_RATIO
+
+        small_size = size * SMALL_CAPS_RATIO
 
         for char in text_content:
             is_small = variant == "small-caps" and char.islower()
@@ -677,6 +704,7 @@ def _draw_image(
 def draw_boxes(
     pdf: fpdf.FPDF,
     boxes: list[Box],
+    dx: float = 0.0,
     dy: float = 0.0,
     anchor_map: dict = None,
     skip_fixed: bool = False,
@@ -724,8 +752,11 @@ def draw_boxes(
         border_top = getattr(box, "border_top", 0)
         border_bottom = getattr(box, "border_bottom", 0)
 
-        border_box_x = box.x + box.margin_left
-        border_box_y = (box.y + dy) + box.margin_top
+        # Phase 9b: Apply CSS Transforms (currently Translation only)
+        tx, ty = _apply_transform(getattr(box, "transform_matrix", None))
+
+        border_box_x = (box.x + dx) + box.margin_left + tx
+        border_box_y = (box.y + dy) + box.margin_top + ty
         border_box_w = (
             border_left + box.padding_left + box.w + box.padding_right + border_right
         )
@@ -873,7 +904,8 @@ def draw_boxes(
             draw_boxes(
                 pdf,
                 box.children,
-                dy=dy,
+                dx=dx + tx,
+                dy=dy + ty,
                 anchor_map=anchor_map,
                 skip_fixed=skip_fixed,
                 string_map=string_map,
@@ -896,11 +928,14 @@ def draw_boxes(
                         draw_boxes(
                             pdf,
                             thead_rows,
+                            dx=dx,
                             dy=repeat_dy,
                             anchor_map=anchor_map,
                             page_rules=page_rules,
                             page_names=page_names,
                         )
+
+        pass
 
 
 def draw_page_margin_boxes(

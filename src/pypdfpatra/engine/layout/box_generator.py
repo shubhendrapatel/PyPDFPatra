@@ -15,6 +15,14 @@ from __future__ import annotations
 import re
 
 from pypdfpatra.engine.image import get_image_info
+from pypdfpatra.engine.styling.transform_matrix import (
+    compose_transforms,
+    normalize_matrix,
+)
+from pypdfpatra.engine.styling.transform_parser import (
+    normalize_length_to_pixels,
+    parse_transform_string,
+)
 from pypdfpatra.engine.tree import (
     BlockBox,
     Box,
@@ -161,6 +169,72 @@ def generate_box_tree(
 
     box.float_mode = float_mode
     box.clear_mode = style.get("clear", "none").strip().lower()
+
+    # 6. Parse and compute CSS Transform (Phase 9b)
+    # Transforms are visual-only and do not affect layout
+    transform_str = style.get("transform", "none").strip().lower()
+    if transform_str and transform_str != "none":
+        try:
+            # Parse transform property value into structured format
+            transforms = parse_transform_string(transform_str)
+
+            if transforms:
+                # 6.5 Resolve font sizes for em/rem normalization
+                from pypdfpatra.engine.font_metrics import parse_font
+
+                # Find root font size for 'rem'
+                root_node = node
+                while root_node.parent:
+                    root_node = root_node.parent
+                _, _, resolved_root_font_size = parse_font(root_node.style)
+
+                # Find current and parent font size for 'em'
+                parent_style = getattr(node.parent, "style", {}) if node.parent else {}
+                _, _, parent_font_size = parse_font(
+                    parent_style, base_size=resolved_root_font_size
+                )
+                _, _, current_font_size = parse_font(
+                    style, base_size=parent_font_size
+                )
+
+                # Normalize length values
+                for t in transforms:
+                    if "units" in t:
+                        normalized_args = []
+                        for i, arg in enumerate(t["args"]):
+                            if i < len(t["units"]):
+                                unit = t["units"][i]
+                                normalized_args.append(
+                                    normalize_length_to_pixels(
+                                        arg,
+                                        unit,
+                                        ref_font_size=current_font_size,
+                                        root_font_size=resolved_root_font_size,
+                                    )
+                                )
+                            else:
+                                normalized_args.append(arg)
+                        t["args"] = normalized_args
+                        del t["units"]
+
+                # Compose multiple transforms into a single matrix
+                matrix = compose_transforms(transforms)
+
+                # Normalize matrix to avoid floating-point precision issues
+                matrix = normalize_matrix(matrix)
+
+                # Store the transformation matrix
+                box.transform_matrix = matrix
+        except Exception as e:
+            # Log error but continue (graceful degradation)
+            import warnings
+
+            warnings.warn(
+                f"Failed to parse transform property: {e}",
+                UserWarning,
+                stacklevel=2,
+            )
+            box.transform_matrix = None
 
     return box
 

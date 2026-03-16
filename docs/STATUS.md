@@ -38,7 +38,12 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 - **Z-Index**: Control overlapping paint order. (✅)
 - **Note**: Fixed-position elements in paged media (headers/footers) must have explicit `height` CSS property for proper space reservation.
 
-### Phase 10: Flexbox Formatting Context (✅ Done)
+### Phase 9b: CSS Transforms (✅ Done)
+- **Transform Functions**: `translate()`, `scale()`, `rotate()`, `skew()`, `matrix()`. (✅)
+- **Transform Composition**: Multiple transforms on same element combined into single affine matrix. (✅)
+- **Units Support**: Pixel, em, rem, degree, radian for transform arguments. (✅)
+- **Visual-Only**: Transforms applied during rendering only, do not affect layout or document flow. (✅)
+- **PDF Integration**: Transforms computed as 2D affine matrices and applied via PDF transformation context. (✅)
 - **Flex Container**: `display: flex`. (✅ Support for row and column flow)
 - **Flex Directions**: `row`, `column`. (✅ Robust axis management)
 - **Distribution**: `justify-content` (flex-start, flex-end, center, space-between) and `align-items` (stretch, flex-start, flex-end, center). (✅)
@@ -130,13 +135,15 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `engine/image.py` | Fetch and place `<img>` elements on the PDF canvas |
 | `src/pypdfpatra/defaults.py` | **Global Config** — A4 dimensions, standard margins, and content area constants |
 | `src/pypdfpatra/logger.py` | Centralized logging for the library |
+| `engine/styling/transform_parser.py` | Parses CSS `transform` property values into structured format |
+| `engine/styling/transform_matrix.py` | Converts transform functions to PDF affine matrices and composes them |
+| `engine/page.py` | Page size, `@page` CSS rules, page-break handling |
 
 ### ⬜ Still Needs to be Created
 
 | File | Purpose | Priority |
 |---|---|---|
 | `engine/font_resolver.py` | Resolve `font-family` → actual font file, load into `fpdf2` | 🟡 Medium |
-| `engine/page.py` | Page size, `@page` CSS rules, page-break handling | ✅ Done |
 
 ---
 
@@ -167,6 +174,8 @@ Legend: ✅ Done · 🔄 In Progress · ⬜ Not Started
 | `display: table`, `table-row`, `table-cell` | ✅ |
 | `position: static` (normal flow) | ✅ |
 | `position: relative / absolute / fixed` | ✅ |
+| `z-index` | ✅ |
+| `transform: translate() / scale() / rotate() / skew() / matrix()` | ✅ (Phase 9b) |
 | `float: left / right` | 🔄 (Phase 14) |
 | `display: flex` | ✅ |
 | `display: grid` | ⬜ (Phase 19) |

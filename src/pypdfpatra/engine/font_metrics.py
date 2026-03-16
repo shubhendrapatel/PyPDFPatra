@@ -5,11 +5,23 @@ from pypdfpatra.defaults import (
     DEFAULT_FONT_SIZE,
     DEFAULT_LINE_HEIGHT_RATIO,
     DEFAULT_MONOSPACE_FONT,
+    UNIT_FACTORS,
 )
 
 
-def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
-    """Parses CSS dictionary into (family, style_str, size_float) for FPDF."""
+def parse_font(
+    style: dict, base_size: float = DEFAULT_FONT_SIZE
+) -> tuple[str, str, float]:
+    """
+    Parses CSS dictionary into (family, style_str, size_float) for FPDF.
+
+    Args:
+        style: CSS property dictionary.
+        base_size: The font-size of the current element (used for relative units).
+
+    Returns:
+        A tuple of (font_family, fpdf_style, font_size_in_pt).
+    """
     family = (
         style.get("font-family", DEFAULT_FONT_FAMILY)
         .split(",")[0]
@@ -23,21 +35,27 @@ def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
 
     size_str = style.get("font-size", "1em").strip().lower()
     size = base_size
-    if size_str.endswith("em"):
-        try:
-            size = base_size * float(size_str[:-2])
-        except ValueError:
-            pass
-    elif size_str.endswith("rem"):
+
+    # Handle numeric units
+    if size_str.endswith("rem"):
         try:
             size = DEFAULT_FONT_SIZE * float(size_str[:-3])
         except ValueError:
             pass
-    elif size_str.endswith("px") or size_str.endswith("pt"):
+    elif size_str.endswith("em"):
         try:
-            size = float(size_str[:-2])
+            size = base_size * float(size_str[:-2])
         except ValueError:
             pass
+    else:
+        # Check absolute units
+        for unit, factor in UNIT_FACTORS.items():
+            if factor is not None and size_str.endswith(unit):
+                try:
+                    size = float(size_str[: -len(unit)]) * factor
+                    break
+                except ValueError:
+                    pass
 
     # Basic style flags for FPDF
     fpdf_style = ""
@@ -45,8 +63,6 @@ def parse_font(style: dict, base_size: float = DEFAULT_FONT_SIZE) -> tuple:
         fpdf_style += "B"
     if style.get("font-style", "") == "italic":
         fpdf_style += "I"
-    # Note: We do NOT add "U" here — text-decoration:underline is drawn
-    # manually in render.py using pdf.line() for better positioning control.
 
     return family, fpdf_style, size
 
@@ -123,36 +139,59 @@ class FontMetrics:
     ) -> float:
         """
         Calculates line height based on CSS property or ratio.
+
+        Args:
+            font_family: Registered font family name.
+            font_size: Actual font size of the text block in PT.
+            font_style: FPDF style string ('', 'B', 'I', 'BI').
+            css_line_height: Raw CSS line-height value ('1.2', '24px', '200%', etc.).
+
+        Returns:
+            Line height in points.
         """
         if css_line_height is None or css_line_height == "normal":
             return font_size * DEFAULT_LINE_HEIGHT_RATIO
 
-        # Handle numeric values (e.g. 1.5)
+        # 1. Numeric values (e.g. 1.5) are ratios of current font-size
+        if isinstance(css_line_height, (int, float)):
+            return font_size * float(css_line_height)
+
+        val = str(css_line_height).strip().lower()
+
+        # Handle numeric ratio as string
         try:
-            ratio = float(css_line_height)
-            return font_size * ratio
-        except (ValueError, TypeError):
+            return font_size * float(val)
+        except ValueError:
             pass
 
-        # Handle explicit lengths (e.g. 24px)
-        if isinstance(css_line_height, str):
-            val = css_line_height.strip().lower()
-            if val.endswith("px") or val.endswith("pt"):
+        # 2. Percentage (%) is relative to font-size
+        if val.endswith("%"):
+            try:
+                return font_size * (float(val[:-1]) / 100.0)
+            except ValueError:
+                pass
+
+        # 3. Relative units em/rem
+        if val.endswith("rem"):
+            try:
+                return DEFAULT_FONT_SIZE * float(val[:-3])
+            except ValueError:
+                pass
+        if val.endswith("em"):
+            try:
+                return font_size * float(val[:-2])
+            except ValueError:
+                pass
+
+        # 4. Absolute units (converted to PT)
+        for unit, factor in UNIT_FACTORS.items():
+            if factor is not None and val.endswith(unit):
                 try:
-                    return float(val[:-2])
-                except ValueError:
-                    pass
-            elif val.endswith("em"):
-                try:
-                    return font_size * float(val[:-2])
-                except ValueError:
-                    pass
-            elif val.endswith("%"):
-                try:
-                    return font_size * (float(val[:-1]) / 100.0)
+                    return float(val[: -len(unit)]) * factor
                 except ValueError:
                     pass
 
+        # Fallback to default ratio
         return font_size * DEFAULT_LINE_HEIGHT_RATIO
 
 

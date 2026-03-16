@@ -104,9 +104,27 @@ This document tracks important implementation decisions, design choices, and CSS
 **Resolution**: 
 - Disabled the inline background feature to restore fixed positioning
 - Reverted coverage.html to use safe workaround (`display: inline-block` with padding)
-- Implementation delayed until a safer approach can be designed
+- Implementation delayed until a safer approach can be designed. Planned re-implementation: Calculate inline bounds as a separate pass after layout, with stricter guards for fixed elements.
 **Future Approach**: 
 - Calculate inline bounds as a completely separate rendering pass, not modifying the layout tree
 - Or: Implement inline box dimension calculation during the initial line layout phase (before `_commit_line`)
 - Ensure isolated changes that don't affect fixed element rendering paths
 **User Guidance**: For inline element backgrounds, currently use `display: inline-block` with explicit `padding`.
+
+## Phase 9b: CSS Transforms
+
+### Implementation Strategy
+**Context**: Support for `transform: translate()`, `scale()`, `rotate()`, etc.
+**Decision**: We implemented a two-stage pipeline:
+1.  **Stage 1: Matrix Composition**: All transform functions are parsed and combined into a single 2×3 PDF affine transformation matrix `[a, b, c, d, e, f]` during the box generation phase.
+2.  **Stage 2: Coordinate Shifting**: During rendering, we extract the translation components (`e` and `f`) from the final matrix and apply them as coordinate offsets (`dx`, `dy`).
+
+### Why not fpdf2 `transform()`?
+**Context**: Applying the full matrix via the PDF graphics state.
+**Problem**: FPDF2's `transform()` method and graphics state management (`push_transformation_matrix`) have known compatibility issues with our multi-page slicing logic and internal font/color cache trackers. Specifically, it often causes text to become invisible or coordinates to desync across page boundaries.
+**Resolution**: We currently support **Translation** (`translate()`) visually by shifting rendering coordinates. Rotation and Scaling are parsed and stored in the matrix for future support but do not yet have a visual effect.
+
+### Unit Normalization (em/rem)
+**Context**: Handling relative units in transforms.
+**Decision**: Unlike layout properties which are resolved during the layout phase, transforms are resolved during box tree generation.
+**Implementation**: We added a root-traversal step to find the `html` font-size for `rem` and look up parent font-sizes for `em`. This ensures `transform: translate(1em)` correctly uses the element's actual font-size (including user-defined values).

@@ -50,7 +50,7 @@ def _calculate_inline_bg_regions(line_box: LineBox) -> None:
     This stores the bounding rectangles on each InlineBox's _inline_bg_regions
     property without modifying the line_box.children structure.
     """
-    if not hasattr(line_box, 'children') or not line_box.children:
+    if not hasattr(line_box, "children") or not line_box.children:
         return
 
     # Build a mapping of (InlineBox, y_position) -> list of TextBoxes
@@ -107,10 +107,10 @@ def _calculate_inline_bg_regions(line_box: LineBox) -> None:
             max_y = max(tb.y + tb.h for tb in region_boxes)
 
             # Add padding from inline box's padding
-            padding_left = getattr(inline_box, 'padding_left', 0.0)
-            padding_right = getattr(inline_box, 'padding_right', 0.0)
-            padding_top = getattr(inline_box, 'padding_top', 0.0)
-            padding_bottom = getattr(inline_box, 'padding_bottom', 0.0)
+            padding_left = getattr(inline_box, "padding_left", 0.0)
+            padding_right = getattr(inline_box, "padding_right", 0.0)
+            padding_top = getattr(inline_box, "padding_top", 0.0)
+            padding_bottom = getattr(inline_box, "padding_bottom", 0.0)
 
             x = min_x - padding_left
             y = min_y - padding_top
@@ -120,7 +120,7 @@ def _calculate_inline_bg_regions(line_box: LineBox) -> None:
             bg_regions.append((x, y, w, h))
 
         # Store regions on the inline box
-        if hasattr(inline_box, '_inline_bg_regions'):
+        if hasattr(inline_box, "_inline_bg_regions"):
             inline_box._inline_bg_regions = bg_regions
         else:
             # Should be initialized in tree.pyx
@@ -447,7 +447,9 @@ def _process_text_box(
                 word_w = measure_text("00", family, size, fpdf_style)
             elif variant == "small-caps":
                 word_w = 0.0
-                small_size = size * 0.8
+                from pypdfpatra.defaults import SMALL_CAPS_RATIO
+
+                small_size = size * SMALL_CAPS_RATIO
                 for char in token:
                     if char.islower():
                         word_w += (
@@ -491,9 +493,14 @@ def _process_text_box(
                             p_w = 0.0
                             for char in prefix:
                                 if char.islower():
+                                    from pypdfpatra.defaults import SMALL_CAPS_RATIO
+
                                     p_w += (
                                         measure_text(
-                                            char.upper(), family, size * 0.8, fpdf_style
+                                            char.upper(),
+                                            family,
+                                            size * SMALL_CAPS_RATIO,
+                                            fpdf_style,
                                         )
                                         + letter_spacing
                                     )

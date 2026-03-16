@@ -51,6 +51,11 @@ cdef class Box:
         self.page_name = "default"
         self.float_mode = "none"
         self.clear_mode = "none"
+        
+
+        # Stores PDF affine transformation matrix [a, b, c, d, e, f]
+        # or None if no transform is applied
+        self.transform_matrix = None
 
 cdef class BlockBox(Box):
     def __init__(self, object node=None):

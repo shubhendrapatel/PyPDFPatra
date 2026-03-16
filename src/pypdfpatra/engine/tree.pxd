@@ -51,6 +51,9 @@ cdef class Box:
     cdef public str page_name
     cdef public str float_mode
     cdef public str clear_mode
+    
+    # Stores PDF affine transformation matrix [a, b, c, d, e, f] or None
+    cdef public list transform_matrix
 
 cdef class BlockBox(Box):
     pass
