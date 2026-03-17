@@ -1,4 +1,3 @@
-
 import os
 
 from pypdfpatra.html import HTML
@@ -20,6 +19,7 @@ def render_invoice():
     # We need to set the base_url so it finds the CSS
     HTML(string=html_string, base_url=base_dir).write_pdf(output_path)
     print(f"Invoice PDF saved to {output_path}")
+
 
 if __name__ == "__main__":
     render_invoice()

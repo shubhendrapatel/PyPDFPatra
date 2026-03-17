@@ -1,4 +1,3 @@
-
 from pypdfpatra.html import HTML
 
 
@@ -32,6 +31,7 @@ def test_fixed_repetition():
     output_path = "test_fixed_repeat.pdf"
     HTML(string=html_content).write_pdf(output_path)
     print(f"Fixed repetition test saved to {output_path}")
+
 
 if __name__ == "__main__":
     test_fixed_repetition()

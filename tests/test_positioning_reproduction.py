@@ -1,4 +1,3 @@
-
 from pypdfpatra.api import build_tree
 from pypdfpatra.defaults import CONTENT_WIDTH, DEFAULT_MARGIN_LEFT, DEFAULT_MARGIN_TOP
 from pypdfpatra.engine import (
@@ -69,9 +68,9 @@ def test_absolute_containing_block():
         )
 
     def find_abs_box(box):
-        if getattr(box, 'position', None) == 'absolute':
+        if getattr(box, "position", None) == "absolute":
             return box
-        for child in getattr(box, 'children', []):
+        for child in getattr(box, "children", []):
             found = find_abs_box(child)
             if found:
                 return found
@@ -89,13 +88,13 @@ def test_absolute_containing_block():
 
         # Let's find relative-root
         def find_box_by_class(box, class_name):
-            style = getattr(box.node, 'style', {})
-            if style.get('class') == class_name: # Node classes are stored differently?
+            style = getattr(box.node, "style", {})
+            if style.get("class") == class_name:  # Node classes are stored differently?
                 return box
             # Check node props
-            if getattr(box.node, 'props', {}).get('class') == class_name:
+            if getattr(box.node, "props", {}).get("class") == class_name:
                 return box
-            for child in getattr(box, 'children', []):
+            for child in getattr(box, "children", []):
                 found = find_box_by_class(child, class_name)
                 if found:
                     return found
@@ -109,13 +108,18 @@ def test_absolute_containing_block():
             print(f"Relative Root Padding Box: x={px}, y={py}")
 
             if abs_box.x == px and abs_box.y == py:
-                print("SUCCESS: Absolute box is correctly positioned relative to the nearest positioned ancestor.")
+                print(
+                    "SUCCESS: Absolute box is correctly positioned relative to the nearest positioned ancestor."
+                )
             else:
-                print("FAILURE: Absolute box is WRONGLY positioned relative to something else (probably parent).")
+                print(
+                    "FAILURE: Absolute box is WRONGLY positioned relative to something else (probably parent)."
+                )
         else:
             print("Relative Root not found!")
     else:
         print("Absolute Box not found in tree!")
+
 
 if __name__ == "__main__":
     test_absolute_containing_block()

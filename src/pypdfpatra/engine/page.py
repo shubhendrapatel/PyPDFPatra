@@ -15,6 +15,7 @@ from pypdfpatra.defaults import (
     DEFAULT_MARGIN_TOP,
 )
 from pypdfpatra.engine.styling.shorthand import expand_shorthand_properties
+from pypdfpatra.engine.styling.utils import parse_length
 
 
 class PageRule:
@@ -133,9 +134,6 @@ def resolve_page_style(
                 curr_style.margin_boxes[mb_name].update(mb_style)
 
     return curr_style
-
-
-from pypdfpatra.engine.styling.utils import parse_length
 
 
 def get_resolved_margins(page_rules, page_index, page_name="default"):

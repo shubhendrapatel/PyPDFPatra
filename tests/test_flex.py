@@ -1,4 +1,3 @@
-
 from pypdfpatra.html import HTML
 
 
@@ -18,6 +17,7 @@ def test_flex_row():
     HTML(string=html_content).write_pdf(output_path)
     print(f"Flex Row test saved to {output_path}")
 
+
 def test_flex_column():
     html_content = """
     <html>
@@ -33,6 +33,7 @@ def test_flex_column():
     output_path = "test_flex_column.pdf"
     HTML(string=html_content).write_pdf(output_path)
     print(f"Flex Column test saved to {output_path}")
+
 
 def test_flex_alignment():
     html_content = """
@@ -57,6 +58,7 @@ def test_flex_alignment():
     output_path = "test_flex_alignment.pdf"
     HTML(string=html_content).write_pdf(output_path)
     print(f"Flex Alignment test saved to {output_path}")
+
 
 if __name__ == "__main__":
     test_flex_row()

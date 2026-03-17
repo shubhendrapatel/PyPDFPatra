@@ -1,4 +1,3 @@
-
 from pypdfpatra.html import HTML
 
 
@@ -56,6 +55,7 @@ def test_absolute_positioning():
     output_path = "test_positioning.pdf"
     HTML(string=html_content).write_pdf(output_path)
     print(f"PDF saved to {output_path}")
+
 
 if __name__ == "__main__":
     test_absolute_positioning()

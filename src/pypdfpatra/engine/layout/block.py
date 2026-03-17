@@ -11,11 +11,7 @@ from __future__ import annotations
 
 import math
 
-from pypdfpatra.defaults import (
-    DEFAULT_MARGIN_TOP,
-    PAGE_HEIGHT,
-    UNIT_FACTORS,
-)
+from pypdfpatra.defaults import DEFAULT_MARGIN_TOP, PAGE_HEIGHT, UNIT_FACTORS
 from pypdfpatra.engine.layout.inline import shift_box
 from pypdfpatra.engine.tree import (
     AnonymousBlockBox,

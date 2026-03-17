@@ -1,4 +1,3 @@
-
 import os
 
 from pypdfpatra.html import HTML
@@ -14,6 +13,7 @@ def render_coverage():
 
     HTML(string=html_string, base_url=base_dir).write_pdf(output_path)
     print(f"Coverage PDF saved to {output_path}")
+
 
 if __name__ == "__main__":
     render_coverage()

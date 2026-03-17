@@ -1,4 +1,3 @@
-
 from pypdfpatra.api import build_tree
 from pypdfpatra.engine import (
     apply_styles,
@@ -46,13 +45,16 @@ def test_auto_dimensions():
 
     if root_box is not None:
         layout_block_context(
-            root_box, 0, 0, 1000 # Large enough
+            root_box,
+            0,
+            0,
+            1000,  # Large enough
         )
 
     def find_box_by_class(box, class_name):
-        if getattr(box.node, 'props', {}).get('class') == class_name:
+        if getattr(box.node, "props", {}).get("class") == class_name:
             return box
-        for child in getattr(box, 'children', []):
+        for child in getattr(box, "children", []):
             found = find_box_by_class(child, class_name)
             if found:
                 return found
@@ -60,7 +62,9 @@ def test_auto_dimensions():
 
     stretched = find_box_by_class(root_box, "abs-stretched")
     if stretched:
-        print(f"Stretched Box: x={stretched.x}, y={stretched.y}, w={stretched.w}, h={stretched.h}")
+        print(
+            f"Stretched Box: x={stretched.x}, y={stretched.y}, w={stretched.w}, h={stretched.h}"
+        )
         # Container is 400x400.
         # top: 10, bottom: 20 -> Height should be 400 - 10 - 20 = 370.
         # left: 30, right: 40 -> Width should be 400 - 30 - 40 = 330.
@@ -71,9 +75,12 @@ def test_auto_dimensions():
         if stretched.w == expected_w and stretched.h == expected_h:
             print("SUCCESS: Absolute box auto-dimensions based on offsets are correct.")
         else:
-            print(f"FAILURE: Absolute box auto-dimensions are WRONG. Expected w={expected_w}, h={expected_h}")
+            print(
+                f"FAILURE: Absolute box auto-dimensions are WRONG. Expected w={expected_w}, h={expected_h}"
+            )
     else:
         print("Stretched Box not found!")
+
 
 if __name__ == "__main__":
     test_auto_dimensions()

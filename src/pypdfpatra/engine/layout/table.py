@@ -8,11 +8,7 @@ from __future__ import annotations
 
 from pypdfpatra.defaults import PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import measure_text, parse_font
-from pypdfpatra.engine.tree import (
-    Box,
-    TableBox,
-    TableCellBox,
-)
+from pypdfpatra.engine.tree import Box, TableBox, TableCellBox
 
 from .common import PosCB
 
@@ -31,11 +27,7 @@ def layout_table_context(
     Executes the Table Formatting Context (TFC) algorithm with support for
     colspan and rowspan.
     """
-    from .block import (
-        _parse_length,
-        _resolve_box_geometry,
-        layout_block_context,
-    )
+    from .block import _parse_length, _resolve_box_geometry, layout_block_context
     from .inline import shift_box
 
     style = getattr(box.node, "style", {}) if box.node else {}

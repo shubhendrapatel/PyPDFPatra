@@ -8,12 +8,11 @@ Design: Extensible for adding new transform functions later.
 Each parser function returns a dict with 'type' and 'args' keys.
 """
 
-from pypdfpatra.defaults import UNIT_FACTORS
-
 import math
 import re
 from typing import Any, Dict, List, Tuple
 
+from pypdfpatra.defaults import UNIT_FACTORS
 
 # Angle unit conversion to radians
 ANGLE_UNITS = {
@@ -89,8 +88,8 @@ def parse_number_value(value_str: str) -> float:
     value_str = value_str.strip()
     try:
         return float(value_str)
-    except ValueError:
-        raise ValueError(f"Invalid number value: '{value_str}'")
+    except ValueError as e:
+        raise ValueError(f"Invalid number value: '{value_str}'") from e
 
 
 def extract_function_args(func_str: str) -> List[str]:
@@ -326,7 +325,8 @@ def parse_transform_string(transform_str: str) -> List[Dict[str, Any]]:
     ]
 
     Args:
-        transform_str: CSS transform property value (e.g., 'translate(10px) rotate(45deg)')
+        transform_str: CSS transform property value
+        (e.g., 'translate(10px) rotate(45deg)')
 
     Returns:
         List of dicts with 'type' and 'args' keys
@@ -363,7 +363,7 @@ def parse_transform_string(transform_str: str) -> List[Dict[str, Any]]:
             transform_dict = parser_func(args)
             transforms.append(transform_dict)
         except ValueError as e:
-            raise ValueError(f"Error parsing {func_name}(): {e}")
+            raise ValueError(f"Error parsing {func_name}(): {e}") from e
 
     return transforms
 

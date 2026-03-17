@@ -10,8 +10,7 @@ Which applies the transformation: x' = a*x + c*y + e
 """
 
 import math
-from typing import List, Tuple, Dict, Any
-
+from typing import Any, Dict, List
 
 # Identity matrix
 IDENTITY_MATRIX = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]

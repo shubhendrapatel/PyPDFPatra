@@ -8,9 +8,7 @@ import re
 
 import pyphen
 
-from pypdfpatra.defaults import (
-    PAGE_HEIGHT,
-)
+from pypdfpatra.defaults import PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import get_line_height, measure_text, parse_font
 from pypdfpatra.engine.tree import Box, LineBox, TextBox
 

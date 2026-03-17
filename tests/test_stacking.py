@@ -14,24 +14,60 @@ class DummyPDF:
         self.pages = []
         self.page = 0
         self.y = 0
-    def add_link(self): return 0
-    def set_link(self, *args, **kwargs): pass
-    def add_page(self): self.pages.append(None)
-    def set_fill_color(self, *args, **kwargs): pass
-    def rect(self, *args, **kwargs): pass
-    def _out(self, *args, **kwargs): pass
-    def set_draw_color(self, *args, **kwargs): pass
-    def set_line_width(self, *args, **kwargs): pass
-    def line(self, *args, **kwargs): pass
-    def set_xy(self, *args, **kwargs): pass
-    def set_text_color(self, *args, **kwargs): pass
-    def cell(self, *args, **kwargs): pass
-    def link(self, *args, **kwargs): pass
-    def start_section(self, *args, **kwargs): pass
-    def set_font(self, *args, **kwargs): pass
-    def ellipse(self, *args, **kwargs): pass
-    def image(self, *args, **kwargs): pass
-    def set_dash_pattern(self, *args, **kwargs): pass
+
+    def add_link(self):
+        return 0
+
+    def set_link(self, *args, **kwargs):
+        pass
+
+    def add_page(self):
+        self.pages.append(None)
+
+    def set_fill_color(self, *args, **kwargs):
+        pass
+
+    def rect(self, *args, **kwargs):
+        pass
+
+    def _out(self, *args, **kwargs):
+        pass
+
+    def set_draw_color(self, *args, **kwargs):
+        pass
+
+    def set_line_width(self, *args, **kwargs):
+        pass
+
+    def line(self, *args, **kwargs):
+        pass
+
+    def set_xy(self, *args, **kwargs):
+        pass
+
+    def set_text_color(self, *args, **kwargs):
+        pass
+
+    def cell(self, *args, **kwargs):
+        pass
+
+    def link(self, *args, **kwargs):
+        pass
+
+    def start_section(self, *args, **kwargs):
+        pass
+
+    def set_font(self, *args, **kwargs):
+        pass
+
+    def ellipse(self, *args, **kwargs):
+        pass
+
+    def image(self, *args, **kwargs):
+        pass
+
+    def set_dash_pattern(self, *args, **kwargs):
+        pass
 
 
 def test_stacking_order():
@@ -79,6 +115,7 @@ def test_stacking_order():
         print("SUCCESS: Positioned box is on top (paints last).")
     else:
         print(f"FAILURE: Incorrect paint order: {order}")
+
 
 if __name__ == "__main__":
     test_stacking_order()

@@ -8,11 +8,7 @@ drawing commands to a lightweight PDF backend (fpdf2).
 import fpdf
 
 from pypdfpatra.colors import parse_color
-from pypdfpatra.defaults import (
-    DEFAULT_COLOR,
-    DEFAULT_FONT_FAMILY,
-    PAGE_HEIGHT,
-)
+from pypdfpatra.defaults import DEFAULT_COLOR, DEFAULT_FONT_FAMILY, PAGE_HEIGHT
 from pypdfpatra.engine.font_metrics import parse_font
 from pypdfpatra.engine.page import PageRule, resolve_page_style
 from pypdfpatra.engine.tree import Box, TextBox
@@ -1055,10 +1051,7 @@ def draw_page_margin_boxes(
     page_names: dict[int, str] = None,
 ):
     """Draws margin boxes (@top-left, etc) on every page."""
-    from pypdfpatra.defaults import (
-        PAGE_HEIGHT,
-        PAGE_WIDTH,
-    )
+    from pypdfpatra.defaults import PAGE_HEIGHT, PAGE_WIDTH
 
     if string_map is None:
         string_map = {}  # Maps page_idx -> {string_name: value}
