@@ -54,7 +54,13 @@ def collect_fixed_boxes(boxes: list[Box]) -> list[Box]:
     return fixed
 
 
-def register_anchors(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0) -> dict:
+def register_anchors(
+    pdf: fpdf.FPDF,
+    boxes: list[Box],
+    dy: float = 0.0,
+    page_rules: list = None,
+    page_names: dict = None,
+) -> dict:
     """
     Traverses the box tree to find elements with 'id' attributes and
     registers them as PDF destinations (internal links).
@@ -74,7 +80,9 @@ def register_anchors(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0) -> dict:
                 local_y = border_box_y - (page_idx * PAGE_HEIGHT)
 
                 # Ensure the target page exists
-                _ensure_page(pdf, page_idx)
+                _ensure_page(
+                    pdf, page_idx, page_rules=page_rules, page_names=page_names
+                )
 
                 # Create link destination
                 link_id = pdf.add_link()
@@ -88,12 +96,20 @@ def register_anchors(pdf: fpdf.FPDF, boxes: list[Box], dy: float = 0.0) -> dict:
     return anchor_map
 
 
-def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
+def _ensure_page(
+    pdf: fpdf.FPDF,
+    page_idx: int,
+    page_rules: list = None,
+    page_names: dict = None,
+):
     """Ensures the PDF has enough pages and resets state cache for new pages."""
     target_page = page_idx + 1
     if len(pdf.pages) < target_page:
         while len(pdf.pages) < target_page:
             pdf.add_page()
+            # Draw page decorations (background/border) for the newly created page
+            new_page_idx = len(pdf.pages) - 1
+            _draw_page_decorations(pdf, new_page_idx, page_rules, page_names)
 
     if pdf.page != target_page:
         pdf.page = target_page
@@ -104,6 +120,82 @@ def _ensure_page(pdf: fpdf.FPDF, page_idx: int):
         pdf.fill_color = None
         pdf.text_color = None
         pdf.line_width = -1.0
+
+
+def _draw_page_decorations(
+    pdf: fpdf.FPDF,
+    page_idx: int,
+    page_rules: list = None,
+    page_names: dict = None,
+) -> None:
+    """Draws background and borders for the page box/area."""
+    if not page_rules:
+        return
+
+    from pypdfpatra.defaults import PAGE_HEIGHT, PAGE_WIDTH
+    from pypdfpatra.engine.page import get_resolved_margins, resolve_page_style
+    from pypdfpatra.engine.styling.utils import parse_length
+
+    page_name = "default"
+    if page_names and page_idx in page_names:
+        page_name = page_names[page_idx]
+
+    page_style = resolve_page_style(page_rules, page_idx, page_name)
+    style = page_style.style
+
+    # 1. Page Background (covers whole sheet)
+    bg_color = style.get("background-color")
+    if bg_color and bg_color != "transparent":
+        rgb = parse_color(bg_color)
+        if rgb:
+            pdf.set_fill_color(*rgb)
+            pdf.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, style="F")
+
+    # 2. Page Area Border (inside margins)
+    mt, mb, ml, mr = get_resolved_margins(page_rules, page_idx, page_name)
+
+    border_top_w = parse_length(
+        style.get("border-top-width", style.get("border-width", "0"))
+    )
+    border_bottom_w = parse_length(
+        style.get("border-bottom-width", style.get("border-width", "0"))
+    )
+    border_left_w = parse_length(
+        style.get("border-left-width", style.get("border-width", "0"))
+    )
+    border_right_w = parse_length(
+        style.get("border-right-width", style.get("border-width", "0"))
+    )
+
+    if any(
+        w > 0 for w in (border_top_w, border_bottom_w, border_left_w, border_right_w)
+    ):
+        border_box_x = ml
+        border_box_y = mt
+        border_box_w = PAGE_WIDTH - ml - mr
+        border_box_h = PAGE_HEIGHT - mt - mb
+
+        # Temporarily suppress page jump to avoid recursion and allow drawing on
+        # the page we are currently decorating.
+        orig_suppress = getattr(pdf, "_suppress_page_jump", False)
+        pdf._suppress_page_jump = True
+
+        _draw_borders(
+            pdf,
+            style,
+            border_top_w,
+            border_bottom_w,
+            border_left_w,
+            border_right_w,
+            border_box_x,
+            page_idx * PAGE_HEIGHT + border_box_y,
+            border_box_w,
+            border_box_h,
+            page_rules=None,
+            page_names=None,
+            skip_clipping=True,
+        )
+        pdf._suppress_page_jump = orig_suppress
 
 
 def _get_page_margins(pdf, page_idx, page_rules, page_names):
@@ -250,7 +342,7 @@ def _draw_borders(
 
         for p in range(start_page, end_page + 1):
             if not getattr(pdf, "_suppress_page_jump", False):
-                _ensure_page(pdf, p)
+                _ensure_page(pdf, p, page_rules=page_rules, page_names=page_names)
             pdf.set_draw_color(r, g, b)
             pdf.set_line_width(b_w)
 
@@ -512,6 +604,8 @@ def _draw_text(
     border_top: float,
     border_left: float,
     anchor_map: dict = None,
+    page_rules: list = None,
+    page_names: dict = None,
 ) -> None:
     """
     Paints correctly formatted and styled inline text primitives or
@@ -561,7 +655,7 @@ def _draw_text(
 
     page_idx = int(content_y / PAGE_HEIGHT)
     if not getattr(pdf, "_suppress_page_jump", False):
-        _ensure_page(pdf, page_idx)
+        _ensure_page(pdf, page_idx, page_rules=page_rules, page_names=page_names)
 
     local_y = content_y - (page_idx * PAGE_HEIGHT)
 
@@ -666,6 +760,8 @@ def _draw_image(
     border_box_y: float,
     border_top: float,
     border_left: float,
+    page_rules: list = None,
+    page_names: dict = None,
 ) -> None:
     """Paints external image assets onto the PDF respecting absolute geometry."""
     if style.get("visibility") == "hidden":
@@ -678,7 +774,7 @@ def _draw_image(
     content_y = border_box_y + border_top + box.padding_top
 
     page_idx = int(content_y / PAGE_HEIGHT)
-    _ensure_page(pdf, page_idx)
+    _ensure_page(pdf, page_idx, page_rules=page_rules, page_names=page_names)
 
     local_y = content_y - (page_idx * PAGE_HEIGHT)
 
@@ -873,6 +969,8 @@ def draw_boxes(
                 border_top,
                 border_left,
                 anchor_map=anchor_map,
+                page_rules=page_rules,
+                page_names=page_names,
             )
 
         # PDF Bookmarks (Outlines) for Headings (Phase 7)
@@ -888,7 +986,9 @@ def draw_boxes(
             if heading_text:
                 page_idx = int(border_box_y / PAGE_HEIGHT)
                 local_y = border_box_y - (page_idx * PAGE_HEIGHT)
-                _ensure_page(pdf, page_idx)
+                _ensure_page(
+                    pdf, page_idx, page_rules=page_rules, page_names=page_names
+                )
                 # Save position, jump to heading Y, start section, restore position
                 old_y = pdf.y
                 pdf.y = local_y
@@ -897,7 +997,15 @@ def draw_boxes(
 
         if box.__class__.__name__ == "ImageBox":
             _draw_image(
-                pdf, box, style, border_box_x, border_box_y, border_top, border_left
+                pdf,
+                box,
+                style,
+                border_box_x,
+                border_box_y,
+                border_top,
+                border_left,
+                page_rules=page_rules,
+                page_names=page_names,
             )
 
         if box.children:

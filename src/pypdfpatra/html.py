@@ -25,7 +25,12 @@ from pypdfpatra.engine import (
 )
 from pypdfpatra.engine.font_metrics import FontMetrics
 from pypdfpatra.logger import logger
-from pypdfpatra.render import draw_boxes, draw_page_margin_boxes, register_anchors
+from pypdfpatra.render import (
+    _ensure_page,
+    draw_boxes,
+    draw_page_margin_boxes,
+    register_anchors,
+)
 
 
 class HTML:
@@ -101,7 +106,6 @@ class HTML:
 
         pdf = fpdf.FPDF(unit="pt", format=(PAGE_WIDTH, PAGE_HEIGHT))
         pdf.set_auto_page_break(False)
-        pdf.add_page()
 
         # Load custom fonts
         fm = FontMetrics.get_instance()
@@ -117,8 +121,13 @@ class HTML:
                     logger.warning(f"Failed to add font to PDF: {e}")
 
         if root_box is not None:
+            # Ensure the first page is created and decorated
+            _ensure_page(pdf, 0, page_rules=page_rules, page_names=page_map)
+
             # 5a. Anchor Registration (Phase 7 Internal Links)
-            anchor_map = register_anchors(pdf, [root_box])
+            anchor_map = register_anchors(
+                pdf, [root_box], page_rules=page_rules, page_names=page_map
+            )
             # 5b. Main Content (Skip fixed elements for now)
             string_map = {}
             draw_boxes(

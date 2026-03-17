@@ -135,6 +135,9 @@ def resolve_page_style(
     return curr_style
 
 
+from pypdfpatra.engine.styling.utils import parse_length
+
+
 def get_resolved_margins(page_rules, page_index, page_name="default"):
     """
     Returns a tuple (mt, mb, ml, mr) of resolved margins for a given page.
@@ -149,27 +152,9 @@ def get_resolved_margins(page_rules, page_index, page_name="default"):
 
     rule = resolve_page_style(page_rules, page_index, page_name)
 
-    def _parse(k, d):
-        val = rule.style.get(k, str(d))
-        if not val:
-            return float(d)
-        val = str(val).strip().lower()
-        try:
-            if val.endswith("pt") or val.endswith("px"):
-                return float(val[:-2])
-            if val.endswith("in"):
-                return float(val[:-2]) * 72.0
-            if val.endswith("cm"):
-                return float(val[:-2]) * 72.0 / 2.54
-            if val.endswith("mm"):
-                return float(val[:-2]) * 72.0 / 25.4
-            return float(val)
-        except (ValueError, TypeError):
-            return float(d)
-
     return (
-        _parse("margin-top", DEFAULT_MARGIN_TOP),
-        _parse("margin-bottom", DEFAULT_MARGIN_BOTTOM),
-        _parse("margin-left", DEFAULT_MARGIN_LEFT),
-        _parse("margin-right", DEFAULT_MARGIN_RIGHT),
+        parse_length(rule.style.get("margin-top"), DEFAULT_MARGIN_TOP),
+        parse_length(rule.style.get("margin-bottom"), DEFAULT_MARGIN_BOTTOM),
+        parse_length(rule.style.get("margin-left"), DEFAULT_MARGIN_LEFT),
+        parse_length(rule.style.get("margin-right"), DEFAULT_MARGIN_RIGHT),
     )

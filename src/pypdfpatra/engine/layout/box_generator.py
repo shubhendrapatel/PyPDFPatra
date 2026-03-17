@@ -193,9 +193,7 @@ def generate_box_tree(
                 _, _, parent_font_size = parse_font(
                     parent_style, base_size=resolved_root_font_size
                 )
-                _, _, current_font_size = parse_font(
-                    style, base_size=parent_font_size
-                )
+                _, _, current_font_size = parse_font(style, base_size=parent_font_size)
 
                 # Normalize length values
                 for t in transforms:
