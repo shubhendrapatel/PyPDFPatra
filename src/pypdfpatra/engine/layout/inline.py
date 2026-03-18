@@ -601,6 +601,8 @@ def _process_text_box(
                         parent_box,
                         text_align,
                         is_last_line=False,
+                        current_page_name=current_page_name,
+                        page_rules=page_rules,
                         float_manager=float_manager,
                     )
                     current_line_boxes.clear()
@@ -863,6 +865,7 @@ def layout_inline_context(
         text_align,
         is_last_line=True,
         current_page_name=current_page_name,
+        page_rules=page_rules,
         float_manager=float_manager,
     )
 

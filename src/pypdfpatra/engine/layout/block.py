@@ -498,6 +498,8 @@ def _layout_block_children(
             style = getattr(box.node, "style", {}) if box.node else {}
             text_align = style.get("text-align", "left").strip().lower()
 
+            child_box.x = current_content_x
+            child_box.y = current_border_box_bottom
             layout_inline_context(
                 child_box,
                 current_content_x,
@@ -654,8 +656,18 @@ def _layout_block_children(
                 _resolve_box_geometry(
                     child_box, current_cb_w, child_style, root_font_size=root_font_size
                 )
-                child_box.x = current_content_x
-                child_box.y = child_margin_box_y
+                child_box.x = (
+                    current_content_x
+                    + child_box.margin_left
+                    + child_box.border_left
+                    + child_box.padding_left
+                )
+                child_box.y = (
+                    child_margin_box_y
+                    + child_box.margin_top
+                    + child_box.border_top
+                    + child_box.padding_top
+                )
                 child_box.h = child_box.image_h * (child_box.w / child_box.image_w)
             else:
                 # If it's a float, pre-calculate its width to determine target x
@@ -705,10 +717,9 @@ def _layout_block_children(
             else:
                 current_border_box_bottom = (
                     child_box.y
-                    + child_box.margin_top
-                    + child_box.padding_top
                     + child_box.h
                     + child_box.padding_bottom
+                    + child_box.border_bottom
                 )
                 prev_margin_bottom = child_box.margin_bottom
                 first_child = False  # Ensure subsequent children aren't first_child
@@ -845,15 +856,25 @@ def layout_block_context(
 
     box.x = cb_x
     box.y = cb_y
-
+    # In PyPDFPatra content tree, box.x and box.y are the origin of the CONTENT
+    # area, not the margin or border areas.
     content_x = box.x + box.margin_left + box.border_left + box.padding_left
-    current_border_box_bottom = (
-        box.y + box.margin_top + box.border_top + box.padding_top
-    )
+    content_y = box.y + box.margin_top + box.border_top + box.padding_top
+
+    # Store finalized content position. Subsequent children layout and drawing
+    # will be relative to this content origin.
+    box.x = content_x
+    box.y = content_y
+
+    current_border_box_bottom = content_y
+
+    from pypdfpatra.engine.font_metrics import parse_font
+
+    parse_font(style)
 
     # Determine the containing block for absolute children
-    padding_x = box.x + box.margin_left + box.border_left
-    padding_y = box.y + box.margin_top + box.border_top
+    padding_x = cb_x + box.margin_left + box.border_left
+    padding_y = cb_y + box.margin_top + box.border_top
     padding_w = box.w + box.padding_left + box.padding_right
     # padding_h is yet to be determined if height is auto
 
@@ -909,8 +930,7 @@ def layout_block_context(
         pass
     else:
         content_bottom = current_border_box_bottom
-        content_y = box.y + box.margin_top + box.border_top + box.padding_top
-        box.h = max(0.0, content_bottom - content_y)
+        box.h = max(0.0, content_bottom - box.y)
 
         if isinstance(box, TextBox) and box.h == 0:
             box.h = 20.0

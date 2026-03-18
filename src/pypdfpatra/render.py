@@ -843,17 +843,27 @@ def draw_boxes(
         border_right = getattr(box, "border_right", 0)
         border_top = getattr(box, "border_top", 0)
         border_bottom = getattr(box, "border_bottom", 0)
+        padding_top = getattr(box, "padding_top", 0)
+        padding_left = getattr(box, "padding_left", 0)
 
         # Phase 9b: Apply CSS Transforms (currently Translation only)
         tx, ty = _apply_transform(getattr(box, "transform_matrix", None))
 
-        border_box_x = (box.x + dx) + box.margin_left + tx
-        border_box_y = (box.y + dy) + box.margin_top + ty
+        border_box_x = (box.x + dx) - padding_left - border_left + tx
+        border_box_y = (box.y + dy) - padding_top - border_top + ty
         border_box_w = (
-            border_left + box.padding_left + box.w + box.padding_right + border_right
+            border_left
+            + padding_left
+            + box.w
+            + getattr(box, "padding_right", 0)
+            + border_right
         )
         border_box_h = (
-            border_top + box.padding_top + box.h + box.padding_bottom + border_bottom
+            border_top
+            + padding_top
+            + box.h
+            + getattr(box, "padding_bottom", 0)
+            + border_bottom
         )
 
         if box.__class__.__name__ == "TableBox":

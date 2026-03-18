@@ -195,9 +195,11 @@ def layout_table_context(
         total_table_w = cb_w
 
     box.w = total_table_w
+    box.x = cb_x + box.margin_left + box.border_left + box.padding_left
+    box.y = cb_y + box.margin_top + box.border_top + box.padding_top
 
-    content_x = box.x + box.margin_left + box.border_left + box.padding_left
-    current_y = box.y + box.margin_top + box.border_top + box.padding_top
+    content_x = box.x
+    current_y = box.y
 
     for child in box.children:
         if getattr(child.node, "tag", "") == "caption":
